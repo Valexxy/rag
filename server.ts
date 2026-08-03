@@ -2,11 +2,16 @@
 import express, { Request, Response } from 'express';
 import { messageQueue } from './queue.js';
 
-const app = express();
+const app = express(); // 👈 Initialized first!
 
 // 1. Mandatory Middleware: Parse JSON incoming requests
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Root health check route
+app.get('/', (req, res) => {
+  res.json({ status: 'online', message: 'RAG Backend API is running successfully!' });
+});
 
 // 2. Health check route (useful for verifying ngrok/server health)
 app.get('/health', (_req: Request, res: Response) => {
