@@ -2,7 +2,7 @@ import express from 'express';
 import dotenv from 'dotenv';
 dotenv.config();
 
-import { processTenantMessage } from './enterprise-platform.js';
+import { processAgenticQuery } from './agentic-rag.js';
 const app = express();
 app.use(express.json());
 
@@ -28,15 +28,19 @@ app.post('/api/agent/chat', async (req, res) => {
 
     console.log(`📥 [INCOMING WEBHOOK] Tenant: ${tenantId} | From: ${senderPhoneNumber}`);
 
-    // Process message through Gemini Flash + Monnify + Supabase memory
-    const reply = await processTenantMessage(tenantId, userMessage, senderPhoneNumber);
+    // Process message through clean agentic RAG pipeline
+    const agentResponse = await processAgenticQuery(userMessage, senderPhoneNumber);
+    
+    // Fallback empty string if AI is muted (e.g., personal chats)
+    const reply = agentResponse.text !== null ? agentResponse.text : "";
 
     // Return response back to n8n
     return res.status(200).json({
       success: true,
       tenantId,
       senderPhoneNumber,
-      reply
+      reply,
+      action: agentResponse.action
     });
   } catch (error: any) {
     console.error('❌ [WEBHOOK ERROR]:', error.message);
