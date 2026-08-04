@@ -7,6 +7,11 @@ import { processTenantMessage } from './enterprise-platform.js';
 const app = express();
 app.use(express.json());
 
+// 1. Health Check Route (Prevents Render deployment timeouts)
+app.get('/', (req, res) => {
+  res.status(200).send('🚀 Enterprise AI WhatsApp Agent Service is Live!');
+});
+
 /**
  * Endpoint called by n8n HTTP Request node ("Send to Local Enterprise Queue")
  */
@@ -24,7 +29,7 @@ app.post('/api/agent/chat', async (req, res) => {
 
     console.log(`📥 [INCOMING WEBHOOK] Tenant: ${tenantId} | From: ${senderPhoneNumber}`);
 
-    // Process message through Gemini 2.5/Flash + Monnify + Supabase memory
+    // Process message through Gemini Flash + Monnify + Supabase memory
     const reply = await processTenantMessage(tenantId, userMessage, senderPhoneNumber);
 
     // Return response back to n8n
@@ -40,7 +45,9 @@ app.post('/api/agent/chat', async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+const PORT = Number(process.env.PORT) || 3000;
+
+// Listen on 0.0.0.0 so Render routes incoming webhooks properly
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Enterprise AI Server listening on port ${PORT}`);
 });
