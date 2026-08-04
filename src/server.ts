@@ -2,7 +2,7 @@ import express from 'express';
 import dotenv from 'dotenv';
 dotenv.config();
 
-import { processAgenticQuery } from './agentic-rag.js';
+import { processAgenticQuery } from './agentic-rag';
 
 const app = express();
 app.use(express.json());
