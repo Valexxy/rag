@@ -3,7 +3,6 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import { processTenantMessage } from './enterprise-platform.js';
-
 const app = express();
 app.use(express.json());
 
