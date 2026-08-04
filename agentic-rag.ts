@@ -16,7 +16,7 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
 
 const genAI = new GoogleGenerativeAI(geminiApiKey);
 
-// Singleton instance for local fast embedding extraction
+// Singleton instance for local fast embedding extraction (384-dim)
 let extractorInstance: any = null;
 async function getExtractor() {
   if (!extractorInstance) {
@@ -35,12 +35,12 @@ export interface AgentResponse {
 
 /**
  * FAST REASONING ROUTER
- * Uses Gemini to classify message intent before running expensive RAG search
+ * Uses Gemini to classify message intent before running RAG search
  */
 async function classifyMessageIntent(userQuery: string): Promise<'PERSONAL' | 'BUSINESS_ENQUIRY' | 'HUMAN_REQUEST' | 'OUT_OF_SCOPE'> {
   try {
     const routerModel = genAI.getGenerativeModel({
-      model: 'gemini-3.1-flash-lite',
+      model: 'gemini-2.5-flash',
       generationConfig: { temperature: 0.0, responseMimeType: 'application/json' },
     });
 
@@ -64,7 +64,6 @@ JSON Output schema:
     return parsed.intent || 'BUSINESS_ENQUIRY';
   } catch (err) {
     console.warn('⚠️ Router classification fallback to BUSINESS_ENQUIRY:', err);
-    // Fallback: Check basic human keywords if JSON parsing fails
     const humanKeywords = ['agent', 'human', 'representative', 'real person', 'support team', 'manager', 'complaint'];
     if (humanKeywords.some(k => userQuery.toLowerCase().includes(k))) {
       return 'HUMAN_REQUEST';
@@ -74,7 +73,7 @@ JSON Output schema:
 }
 
 /**
- * 💡 WORLD-CLASS AGENTIC RAG ENGINE
+ * 💡 WORLD-CLASS AGENTIC RAG ENGINE (MANUAL HYBRID RAG)
  */
 export async function processAgenticQuery(
   userQuery: string,
@@ -82,7 +81,7 @@ export async function processAgenticQuery(
 ): Promise<AgentResponse> {
   try {
     // ----------------------------------------------------------------------
-    // STEP 1: STATE LOCK GUARD (Mute AI if human handover is already active)
+    // STEP 1: STATE LOCK GUARD (Mute AI if human handover is active)
     // ----------------------------------------------------------------------
     const { data: session, error: sessionErr } = await supabase
       .from('conversations')
@@ -95,7 +94,7 @@ export async function processAgenticQuery(
     }
 
     if (session?.status === 'human_agent_requested') {
-      console.log(`\n🔇 [STATE LOCKED] User ${phoneNumber} is currently assigned to Human Support. AI Muted.`);
+      console.log(`\n🔇 [STATE LOCKED] User ${phoneNumber} is assigned to Human Support. AI Muted.`);
       return { text: null, action: 'MUTE_AI', intent: 'HUMAN_HANDOVER_LOCKED' };
     }
 
@@ -105,7 +104,7 @@ export async function processAgenticQuery(
     const intent = await classifyMessageIntent(userQuery);
     console.log(`🧠 Intent Classified for [${userQuery}]:`, intent);
 
-    // 🔴 CASE A: PERSONAL / FRIEND / FAMILY CHAT -> MUTE AI SILENTLY
+    // 🔴 CASE A: PERSONAL CHAT -> MUTE AI SILENTLY
     if (intent === 'PERSONAL') {
       console.log(`🤫 Personal chat detected from ${phoneNumber}. AI stays silent.`);
       return {
@@ -217,7 +216,7 @@ ${formattedContext}
 `;
 
     const model = genAI.getGenerativeModel({
-      model: 'gemini-3.1-flash-lite',
+      model: 'gemini-2.5-flash',
       systemInstruction: systemInstruction,
       generationConfig: { temperature: 0.1 },
     });
