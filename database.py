@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from supabase import create_client, Client
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
@@ -18,7 +18,7 @@ def get_tenant_by_instance(instance_name: str) -> dict:
         return None
 
 def get_tenant_catalog(tenant_id: str) -> str:
-    """Fetches real-time products/services for a specific tenant."""
+    """Fetches real-time products/services for a specific tenant from Supabase."""
     try:
         res = supabase.table("tenant_products").select("name, description, price, stock_quantity").eq("tenant_id", tenant_id).execute()
         products = res.data

@@ -1,56 +1,55 @@
 import os
-import uuid
 from google import genai
-from database import get_tenant_catalog
-from monnify import create_tenant_payment_link
+from database import get_products_catalog
 
 client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 MODEL_ID = 'gemini-2.5-flash'
 
-def process_multitenant_message(tenant: dict, customer_phone: str, message_text: str) -> dict:
-    """Processes incoming chat, detects intents, formats answers, and builds payment links on demand."""
+def generate_reply(message_text: str) -> dict:
+    """Generates niche-accurate responses with modern tags, Gen-Z vibe matching, and WhatsApp buttons."""
     
-    catalog = get_tenant_catalog(tenant["id"])
+    catalog = get_products_catalog()
     
-    system_prompt = f"""
-You are the primary AI operations manager for '{tenant['business_name']}', operating in the '{tenant['niche']}' industry.
-Persona & Tone: {tenant['ai_persona']}
+    prompt = f"""You are an elite, hyper-modern AI sales and customer experience manager for a business in Nigeria.
 
 LIVE CATALOG / INVENTORY / SERVICES:
 {catalog}
 
 CUSTOMER MESSAGE: "{message_text}"
 
-INSTRUCTIONS:
-1. Identify if the user wants to buy/pay. If yes, extract the requested item and calculated total price.
-2. Reply in the exact dialect/language used by the customer (Pidgin, English, Hausa, Igbo).
-3. Be direct, authoritative, and concise.
+INSTRUCTIONS & RULES:
+1. MATCH DIALECT/VIBE: Detect if customer speaks Pidgin, English, Igbo, Hausa, or Gen Z slang and respond in the EXACT vibe (e.g., using clean emojis, modern friendly phrasing).
+2. STICK TO CATALOG: Quote exact prices and stock levels directly from the live catalog.
+3. ACTION TAGS:
+   - If user asks for human/call/complains: include tag `[TAG:TRANSFER_HUMAN]`
+   - If user wants to buy/order: include tag `[TAG:BUY_NOW]`
+4. INTERACTIVE BUTTONS:
+   - Always append 2 to 3 contextual quick reply buttons at the very bottom using format: `[BUTTONS: Button 1 | Button 2 | Button 3]`
+   - Examples: `[BUTTONS: 💳 Pay Now | 📦 Check Stock | 👤 Human Agent]`
 
-If the message is an explicit purchase request, structure your answer to confirm the total amount and state "GENERATING_PAYMENT_LINK:[AMOUNT]".
-Otherwise, reply naturally.
+Generate the complete response now:
 """
 
     response = client.models.generate_content(
         model=MODEL_ID,
-        contents=system_prompt
+        contents=prompt
     )
     
-    reply_text = response.text.strip()
+    raw_response = response.text.strip()
     
-    # Check for automated payment trigger
-    if "GENERATING_PAYMENT_LINK:" in reply_text:
-        try:
-            amount_str = reply_text.split("GENERATING_PAYMENT_LINK:")[1].split()[0].replace("₦", "").replace(",", "").strip()
-            amount = float(amount_str)
-            
-            payment_ref = f"TX_{tenant['instance_name'].upper()}_{uuid.uuid4().hex[:8]}"
-            checkout_url = create_tenant_payment_link(tenant, amount, customer_phone, payment_ref)
-            
-            if checkout_url:
-                clean_reply = reply_text.split("GENERATING_PAYMENT_LINK:")[0].strip()
-                final_response = f"{clean_reply}\n\n💳 *Payment Link:* {checkout_url}\n\n_Click the link to complete payment via Transfer or Card._"
-                return {"reply": final_response, "payment_ref": payment_ref, "amount": amount}
-        except Exception as e:
-            print(f"❌ Error generating link: {e}")
-            
-    return {"reply": reply_text, "payment_ref": None, "amount": 0}
+    # Parse buttons out of the text
+    buttons = ["👤 Talk to Human", "📜 View Catalog"]
+    clean_text = raw_response
+    
+    if "[BUTTONS:" in raw_response:
+        parts = raw_response.split("[BUTTONS:")
+        clean_text = parts[0].strip()
+        button_raw = parts[1].split("]")[0]
+        buttons = [b.strip() for b in button_raw.split("|")]
+
+    return {
+        "text": clean_text,
+        "buttons": buttons,
+        "is_human_transfer": "[TAG:TRANSFER_HUMAN]" in raw_response,
+        "is_buy_intent": "[TAG:BUY_NOW]" in raw_response
+    }
