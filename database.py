@@ -3,8 +3,11 @@ from datetime import datetime, timedelta, timezone
 from supabase import create_client, Client
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+# Accept either variable name to prevent configuration crashes
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY") or os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
 
 def get_tenant_by_instance(instance_name: str) -> dict:
     """Retrieves tenant settings, API keys, and business details by Evolution instance."""
