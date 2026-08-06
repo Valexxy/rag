@@ -1,5 +1,5 @@
 import os
-from google import genai
+import google.generativeai as genai
 
 # Initialize the modern Google Gen AI client
 client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
