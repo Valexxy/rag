@@ -5,7 +5,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-supabase = create_client(os.environ.get("SUPABASE_URL"), os.environ.get("SUPABASE_KEY"))
+# Check for either SUPABASE_KEY or SUPABASE_SERVICE_ROLE_KEY
+supabase_key = os.environ.get("SUPABASE_KEY") or os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+supabase_url = os.environ.get("SUPABASE_URL")
+
+supabase = create_client(supabase_url, supabase_key)
 
 def is_bot_muted(phone_number: str) -> bool:
     """Checks if the bot is currently locked out for a specific customer."""
