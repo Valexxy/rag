@@ -1,33 +1,56 @@
 import os
+import uuid
 from google import genai
+from database import get_tenant_catalog
+from monnify import create_tenant_payment_link
 
-# Initialize the modern Google Gen AI client
 client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 MODEL_ID = 'gemini-2.5-flash'
 
-def classify_intent(message_text: str) -> str:
-    """Routes the incoming text to the appropriate handler."""
-    prompt = f"""Analyze this text: "{message_text}".
-Categorize strictly as ONE word:
-- BUSINESS (Asking about prices, stock like power banks, location in Onitsha, bank details)
-- PERSONAL (Casual greetings like 'how far', family chat, social banter)
-- HANDOVER (Requests like 'call me', 'I want human', complaints)
-Output ONLY the single word."""
+def process_multitenant_message(tenant: dict, customer_phone: str, message_text: str) -> dict:
+    """Processes incoming chat, detects intents, formats answers, and builds payment links on demand."""
     
-    response = client.models.generate_content(
-        model=MODEL_ID,
-        contents=prompt
-    )
-    return response.text.strip().upper()
+    catalog = get_tenant_catalog(tenant["id"])
+    
+    system_prompt = f"""
+You are the primary AI operations manager for '{tenant['business_name']}', operating in the '{tenant['niche']}' industry.
+Persona & Tone: {tenant['ai_persona']}
 
-def generate_reply(message_text: str) -> str:
-    """Generates the sales response matching the buyer's exact dialect."""
-    prompt = f"""You are a helpful sales assistant for a Nigerian business.
-Understand and reply accurately in the EXACT language/dialect used by the customer (Pidgin, Igbo, Hausa, or English).
-Customer Message: "{message_text}" """
-    
+LIVE CATALOG / INVENTORY / SERVICES:
+{catalog}
+
+CUSTOMER MESSAGE: "{message_text}"
+
+INSTRUCTIONS:
+1. Identify if the user wants to buy/pay. If yes, extract the requested item and calculated total price.
+2. Reply in the exact dialect/language used by the customer (Pidgin, English, Hausa, Igbo).
+3. Be direct, authoritative, and concise.
+
+If the message is an explicit purchase request, structure your answer to confirm the total amount and state "GENERATING_PAYMENT_LINK:[AMOUNT]".
+Otherwise, reply naturally.
+"""
+
     response = client.models.generate_content(
         model=MODEL_ID,
-        contents=prompt
+        contents=system_prompt
     )
-    return f"🤖 *[Sales Assistant]*\n\n{response.text.strip()}"
+    
+    reply_text = response.text.strip()
+    
+    # Check for automated payment trigger
+    if "GENERATING_PAYMENT_LINK:" in reply_text:
+        try:
+            amount_str = reply_text.split("GENERATING_PAYMENT_LINK:")[1].split()[0].replace("₦", "").replace(",", "").strip()
+            amount = float(amount_str)
+            
+            payment_ref = f"TX_{tenant['instance_name'].upper()}_{uuid.uuid4().hex[:8]}"
+            checkout_url = create_tenant_payment_link(tenant, amount, customer_phone, payment_ref)
+            
+            if checkout_url:
+                clean_reply = reply_text.split("GENERATING_PAYMENT_LINK:")[0].strip()
+                final_response = f"{clean_reply}\n\n💳 *Payment Link:* {checkout_url}\n\n_Click the link to complete payment via Transfer or Card._"
+                return {"reply": final_response, "payment_ref": payment_ref, "amount": amount}
+        except Exception as e:
+            print(f"❌ Error generating link: {e}")
+            
+    return {"reply": reply_text, "payment_ref": None, "amount": 0}

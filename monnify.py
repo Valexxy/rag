@@ -2,54 +2,48 @@ import os
 import base64
 import requests
 
-MONNIFY_BASE_URL = os.getenv("MONNIFY_BASE_URL", "https://sandbox.monnify.com")
-MONNIFY_API_KEY = os.getenv("MONNIFY_API_KEY")
-MONNIFY_SECRET_KEY = os.getenv("MONNIFY_SECRET_KEY")
-MONNIFY_CONTRACT_CODE = os.getenv("MONNIFY_CONTRACT_CODE")
+DEFAULT_MONNIFY_BASE_URL = os.getenv("MONNIFY_BASE_URL", "https://sandbox.monnify.com")
 
-def get_monnify_token():
-    """Generates an OAuth2 access token using Monnify API & Secret keys."""
-    url = f"{MONNIFY_BASE_URL}/api/v1/auth/login"
+def get_tenant_monnify_token(tenant: dict) -> str:
+    """Authenticates with Monnify using tenant credentials."""
+    api_key = tenant.get("monnify_api_key") or os.getenv("MONNIFY_API_KEY")
+    secret_key = tenant.get("monnify_secret_key") or os.getenv("MONNIFY_SECRET_KEY")
     
-    # Basic Auth string (apiKey:secretKey encoded in Base64)
-    credentials = f"{MONNIFY_API_KEY}:{MONNIFY_SECRET_KEY}"
-    encoded_credentials = base64.b64encode(credentials.encode()).decode()
+    url = f"{DEFAULT_MONNIFY_BASE_URL}/api/v1/auth/login"
+    credentials = f"{api_key}:{secret_key}"
+    encoded = base64.b64encode(credentials.encode()).decode()
     
-    headers = {
-        "Authorization": f"Basic {encoded_credentials}"
-    }
-    
+    headers = {"Authorization": f"Basic {encoded}"}
     response = requests.post(url, headers=headers)
+    
     if response.status_code == 200:
         return response.json()["responseBody"]["accessToken"]
-    else:
-        print("Monnify Auth Failed:", response.text)
-        return None
+    return None
 
-def initialize_payment(amount: float, customer_name: str, customer_phone: str, payment_ref: str):
-    """Initializes a transaction and returns a Monnify checkout link."""
-    token = get_monnify_token()
+def create_tenant_payment_link(tenant: dict, amount: float, customer_phone: str, payment_ref: str, description: str = "Payment") -> str:
+    """Generates a dynamic payment checkout link for a tenant."""
+    token = get_tenant_monnify_token(tenant)
     if not token:
         return None
 
-    url = f"{MONNIFY_BASE_URL}/api/v1/merchant/transactions/init-transaction"
+    contract_code = tenant.get("monnify_contract_code") or os.getenv("MONNIFY_CONTRACT_CODE")
+    url = f"{DEFAULT_MONNIFY_BASE_URL}/api/v1/merchant/transactions/init-transaction"
     headers = {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json"
     }
     
-    # Standard dummy email format for phone numbers if missing
     clean_phone = customer_phone.replace("@s.whatsapp.net", "")
     customer_email = f"{clean_phone}@customer.com"
 
     payload = {
         "amount": amount,
-        "customerName": customer_name,
+        "customerName": f"Customer {clean_phone[-4:]}",
         "customerEmail": customer_email,
         "paymentReference": payment_ref,
-        "paymentDescription": "WhatsApp Order Payment",
-        "currencyCode": "NGN",
-        "contractCode": MONNIFY_CONTRACT_CODE,
+        "paymentDescription": description,
+        "currencyCode": tenant.get("currency", "NGN"),
+        "contractCode": contract_code,
         "paymentMethods": ["CARD", "ACCOUNT_TRANSFER"]
     }
 
@@ -58,6 +52,4 @@ def initialize_payment(amount: float, customer_name: str, customer_phone: str, p
     
     if data.get("requestSuccessful"):
         return data["responseBody"]["checkoutUrl"]
-    else:
-        print("Payment Init Failed:", data)
-        return None
+    return None

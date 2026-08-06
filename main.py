@@ -1,44 +1,43 @@
 import os
 import requests
 from fastapi import FastAPI, Request
-from database import is_bot_muted, mute_bot_for_owner
-from ai_engine import classify_intent, generate_reply
+from database import get_tenant_by_instance, is_tenant_bot_muted, mute_tenant_bot, supabase
+from ai_engine import process_multitenant_message
 from dotenv import load_dotenv
 
 load_dotenv()
 
-app = FastAPI(title="WhatsApp AI SaaS")
+app = FastAPI(title="Multi-Tenant Commerce AI SaaS Platform")
 
-# Environment variables
 EVOLUTION_URL = os.environ.get("EVOLUTION_API_URL", "").rstrip("/")
 EVOLUTION_KEY = os.environ.get("EVOLUTION_API_KEY", "")
-INSTANCE_NAME = os.environ.get("INSTANCE_NAME", "store-bot")
 
 @app.get("/")
 async def root():
-    """Health check endpoint for Render."""
-    return {"status": "online", "system": "WhatsApp AI Engine"}
+    return {"status": "online", "platform": "Enterprise Multi-Tenant AI Engine"}
 
-@app.post("/webhook/whatsapp")
-@app.post("/webhook/whatsapp/{full_path:path}")
-async def handle_whatsapp(request: Request):
+@app.post("/webhook/whatsapp/{instance_name}")
+async def handle_multitenant_whatsapp(instance_name: str, request: Request):
     try:
         payload = await request.json()
     except Exception:
         return {"status": "invalid_json"}
-    
-    # Extract nested data from the Evolution API payload
+
+    # 1. Fetch Tenant Context
+    tenant = get_tenant_by_instance(instance_name)
+    if not tenant:
+        return {"status": "unregistered_tenant_instance"}
+
     data = payload.get("data", {})
     key_info = data.get("key", {})
     message_info = data.get("message", {})
-    
+
     is_from_me = key_info.get("fromMe", False)
     remote_jid = key_info.get("remoteJid", "")
     customer_phone = remote_jid.replace("@s.whatsapp.net", "")
-    
-    # Extract text from standard, extended, or image caption messages
+
     message_text = (
-        message_info.get("conversation") 
+        message_info.get("conversation")
         or message_info.get("extendedTextMessage", {}).get("text", "")
         or message_info.get("imageMessage", {}).get("caption", "")
     )
@@ -46,87 +45,74 @@ async def handle_whatsapp(request: Request):
     if not customer_phone or not message_text:
         return {"status": "ignored"}
 
-    # NATIVE OWNER TAKEOVER (If you send a manual message from your business phone)
+    # 2. Native Owner Mute/Takeover
     if is_from_me:
-        print(f"👤 Owner manually messaged {customer_phone}. Muting bot for 60 mins.")
-        mute_bot_for_owner(customer_phone, minutes=60)
-        return {"status": "owner_replied_muted_bot"}
+        mute_tenant_bot(tenant["id"], customer_phone, minutes=60)
+        return {"status": "owner_takeover_bot_muted"}
 
-    # CHECK LOCK STATUS
-    if is_bot_muted(customer_phone):
-        print(f"🔒 Bot is currently muted for {customer_phone}.")
-        return {"status": "bot_is_muted"}
+    # 3. Check Mute Status
+    if is_tenant_bot_muted(tenant["id"], customer_phone):
+        return {"status": "tenant_bot_muted"}
 
-    # INTENT GUARD
-    intent = classify_intent(message_text)
-    print(f"📩 Incoming from {customer_phone}: '{message_text}' | Classified Intent: {intent}")
-
-    if "PERSONAL" in intent:
-        print(f"🙈 Personal chat detected from {customer_phone}. Ignored.")
-        return {"status": "personal_message_ignored"}
-
-    if "HANDOVER" in intent:
-        print(f"🤝 Handover requested by {customer_phone}.")
-        mute_bot_for_owner(customer_phone, minutes=60)
-        send_whatsapp(customer_phone, "🤖 *[Notice]* Transferring you to the business owner now.")
-        return {"status": "transferred_to_human"}
-
-    # GENERATE & SEND REPLY
-    bot_reply = generate_reply(message_text)
-    print(f"🤖 Sending AI Reply to {customer_phone}: {bot_reply}")
-    send_whatsapp(customer_phone, bot_reply)
+    # 4. Process Multi-Tenant Response
+    ai_result = process_multitenant_message(tenant, customer_phone, message_text)
     
-    return {"status": "success"}
+    # 5. Log transaction draft if payment link created
+    if ai_result["payment_ref"]:
+        supabase.table("tenant_transactions").insert({
+            "tenant_id": tenant["id"],
+            "customer_phone": customer_phone,
+            "payment_reference": ai_result["payment_ref"],
+            "amount": ai_result["amount"],
+            "status": "PENDING"
+        }).execute()
+
+    # 6. Send Response back via instance
+    send_whatsapp_message(instance_name, customer_phone, ai_result["reply"])
+    return {"status": "success", "tenant": tenant["business_name"]}
 
 
 @app.post("/webhook/monnify")
-async def handle_monnify_webhook(request: Request):
-    """Processes incoming payment notifications from Monnify."""
+async def handle_monnify_global_webhook(request: Request):
+    """Processes global Monnify payment notifications across all tenants."""
     try:
         payload = await request.json()
         event_type = payload.get("eventType")
         event_data = payload.get("eventData", {})
-        
+
         if event_type == "SUCCESSFUL_TRANSACTION":
             payment_ref = event_data.get("paymentReference")
             amount_paid = event_data.get("amountPaid")
-            customer_email = event_data.get("customer", {}).get("email", "")
             
-            print(f"💳 Monnify Payment Received! Ref: {payment_ref}, Amount: ₦{amount_paid:,.2f}")
+            # Fetch transaction & tenant info
+            tx_res = supabase.table("tenant_transactions").select("*, tenants(*)").eq("payment_reference", payment_ref).execute()
             
-            # Extract customer phone if email format is '2348000000000@customer.com'
-            if "@customer.com" in customer_email:
-                phone = customer_email.replace("@customer.com", "")
-                send_whatsapp(
-                    phone, 
-                    f"✅ *Payment Confirmed!*\n\nWe received your payment of *₦{amount_paid:,.2f}*. Your order is now being processed. Thank you!"
+            if tx_res.data:
+                tx = tx_res.data[0]
+                tenant = tx["tenants"]
+                
+                # Update status
+                supabase.table("tenant_transactions").update({"status": "PAID"}).eq("payment_reference", payment_ref).execute()
+                
+                # Send confirmation via tenant's instance
+                send_whatsapp_message(
+                    tenant["instance_name"],
+                    tx["customer_phone"],
+                    f"✅ *Payment Receipt - {tenant['business_name']}*\n\nPayment of *₦{amount_paid:,.2f}* confirmed! Your reference is `{payment_ref}`. Thank you for your business!"
                 )
-            
+
         return {"status": "success"}
     except Exception as e:
-        print(f"❌ Error processing Monnify webhook: {e}")
+        print(f"❌ Webhook Error: {e}")
         return {"status": "error", "message": str(e)}
 
 
-def send_whatsapp(phone: str, text: str):
-    """Sends the response back to the customer via Evolution API."""
-    if not EVOLUTION_URL or not EVOLUTION_KEY:
-        print("❌ EVOLUTION_API_URL or EVOLUTION_API_KEY environment variables are missing.")
-        return
-        
-    url = f"{EVOLUTION_URL}/message/sendText/{INSTANCE_NAME}"
-    headers = {
-        "apikey": EVOLUTION_KEY,
-        "Content-Type": "application/json"
-    }
-    payload = {
-        "number": phone,
-        "text": text
-    }
-    
+def send_whatsapp_message(instance_name: str, phone: str, text: str):
+    """Sends outbound WhatsApp message using tenant instance."""
+    url = f"{EVOLUTION_URL}/message/sendText/{instance_name}"
+    headers = {"apikey": EVOLUTION_KEY, "Content-Type": "application/json"}
+    payload = {"number": phone, "text": text}
     try:
-        res = requests.post(url, json=payload, headers=headers)
-        if res.status_code not in [200, 201]:
-            print(f"❌ Outbound WhatsApp Failed! Code: {res.status_code}, Response: {res.text}")
+        requests.post(url, json=payload, headers=headers, timeout=5)
     except Exception as e:
-        print(f"❌ Exception in send_whatsapp: {e}")
+        print(f"❌ Error sending outbound message: {e}")
