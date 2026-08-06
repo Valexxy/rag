@@ -12,7 +12,9 @@ app = FastAPI(title="WhatsApp AI SaaS")
 EVOLUTION_URL = os.environ.get("EVOLUTION_API_URL")
 EVOLUTION_KEY = os.environ.get("EVOLUTION_API_KEY")
 
+# Change this line in main.py:
 @app.post("/webhook/whatsapp")
+@app.post("/webhook/whatsapp/{full_path:path}")
 async def handle_whatsapp(request: Request):
     payload = await request.json()
     
