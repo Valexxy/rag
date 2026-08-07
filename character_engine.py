@@ -1,12 +1,10 @@
 import os
 import re
-from google import genai
-from google.genai import types
-from google.genai.errors import ClientError
+from groq import Groq
 from database import get_tenant_catalog, get_customer_ledger, get_customer_profile
 
-client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
-MODEL_ID = 'gemini-2.5-flash'
+client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+MODEL_ID = 'llama-3.1-8b-instant'
 
 def generate_live_character_reply(
     tenant: dict, 
@@ -15,13 +13,17 @@ def generate_live_character_reply(
     conversation_history: str, 
     is_owner: bool = False
 ) -> dict:
-    """Enterprise 1M-Scenario Intent Routing & Cognitive Character Engine."""
+    """Enterprise Engine using Groq Free Tier with Enhanced Database Bypasses (0% AI Cost)."""
     
     business_name = tenant.get('business_name', 'our company')
     query_lower = latest_query.lower().strip()
 
-    # Free-Tier Optimization: Direct Catalog Bypass (0 AI Quota Used)
-    catalog_keywords = ["catalog", "product", "sell", "price", "stock", "item", "list", "what do you sell"]
+    # -------------------------------------------------------------
+    # 1. ENHANCED DATABASE BYPASSES (0 AI Cost / Instant Supabase Fetch)
+    # -------------------------------------------------------------
+    
+    # Catalog & Pricing Bypass
+    catalog_keywords = ["catalog", "product", "sell", "price", "stock", "item", "list", "what do you sell", "how much"]
     if not is_owner and any(kw in query_lower for kw in catalog_keywords):
         catalog_text = get_tenant_catalog(tenant["id"], search_query=latest_query)
         return {
@@ -32,7 +34,7 @@ def generate_live_character_reply(
             "is_human_transfer": False
         }
 
-    # Free-Tier Optimization: Direct Greeting Bypass (0 AI Quota Used)
+    # Greeting Bypass
     greeting_keywords = ["hi", "hello", "hey", "good morning", "good afternoon", "good evening", "sup"]
     if not is_owner and query_lower in greeting_keywords:
         return {
@@ -43,6 +45,20 @@ def generate_live_character_reply(
             "is_human_transfer": False
         }
 
+    # Location, Hours, & Contact Bypass
+    location_keywords = ["address", "location", "where are you", "office", "store", "open", "closing time", "hours"]
+    if not is_owner and any(kw in query_lower for kw in location_keywords):
+        return {
+            "reply": f"🤖 *[{business_name} Client Care]*\n\nWe operate from our primary distribution warehouse in Onitsha, Anambra State, Nigeria. Open Monday to Saturday, 8:00 AM to 6:00 PM.",
+            "buttons": ["📜 View Catalog", "💳 Place Order", "👤 Human Agent"],
+            "detected_tags": [],
+            "is_high_value": False,
+            "is_human_transfer": False
+        }
+
+    # -------------------------------------------------------------
+    # 2. GROQ LLM API PIPELINE (For complex or unique queries)
+    # -------------------------------------------------------------
     catalog = get_tenant_catalog(tenant["id"], search_query=latest_query)
     customer_ledger = get_customer_ledger(tenant["id"], customer_phone)
     profile = get_customer_profile(tenant["id"], customer_phone) if 'get_customer_profile' in globals() else {}
@@ -57,13 +73,12 @@ INVENTORY STOCK: {catalog}
         known_name = profile.get("full_name") or "Valued Client"
         prompt = f"""
 You are the Senior Enterprise Client Experience Executive for {business_name}. 
-This WhatsApp line handles shared personal and business operations. Evaluate the incoming message using these strict scenario protocols:
-
-1. PERSONAL / FAMILY CHAT SCENARIO: If the sender is asking after the owner personally, catching up, or chatting casually, respond warmly and respectfully on behalf of management without pushing products.
-2. OUT OF STOCK / SOURCING SCENARIO: If an item requested is out of stock, inform the client that it can be sourced/pre-ordered through your warehouse import pipeline and offer to lock down a unit.
-3. PRICE HAGGLING SCENARIO: If the user asks for a price discount, state that standard institutional rates apply, but offer to escalate bulk orders for management review using [TAG:PRICE_NEGOTIATION].
-4. COMPLAINT / DISPUTE SCENARIO: If the user is complaining about delivery delays, damaged goods, or service errors, apologize with profound corporate empathy and immediately trigger [TAG:TRANSFER_HUMAN].
-5. HIGH-VALUE WHOLESALE SCENARIO (>= ₦1,000,000): If the inquiry involves bulk cartons, container loads, or major institutional funds, provide professional wholesale terms and trigger [TAG:HIGH_VALUE_TRANSACTION].
+Evaluate the incoming message using these strict scenario protocols:
+1. PERSONAL / FAMILY CHAT: Respond warmly and respectfully without pushing products if it's personal.
+2. OUT OF STOCK / SOURCING: Offer pre-order and warehouse import pipelines if an item is out of stock.
+3. PRICE HAGGLING: State standard institutional rates, and tag bulk reviews with [TAG:PRICE_NEGOTIATION].
+4. COMPLAINT / DISPUTE: Apologize with corporate empathy and trigger [TAG:TRANSFER_HUMAN].
+5. HIGH-VALUE WHOLESALE (>= ₦1,000,000): Provide wholesale terms and trigger [TAG:HIGH_VALUE_TRANSACTION].
 
 SENDER PROFILE: {known_name}
 LIVE CATALOG: {catalog}
@@ -73,24 +88,18 @@ CLIENT QUERY: {latest_query}
 """
 
     try:
-        response = client.models.generate_content(
+        response = client.chat.completions.create(
             model=MODEL_ID,
-            contents=prompt,
-            config=types.GenerateContentConfig(max_output_tokens=600, temperature=0.2)
+            messages=[
+                {"role": "system", "content": "You are a professional business executive assistant."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=600,
+            temperature=0.2
         )
-        raw_text = response.text.strip()
-    except ClientError as ce:
-        if "429" in str(ce) or "RESOURCE_EXHAUSTED" in str(ce):
-            catalog_fallback = get_tenant_catalog(tenant["id"])
-            return {
-                "reply": f"🤖 *[{business_name} Client Care]*\n\nOur systems are handling high institutional volume. Here is our active catalog:\n\n{catalog_fallback}",
-                "buttons": ["📜 View Catalog", "👤 Human Agent"],
-                "detected_tags": [],
-                "is_high_value": False,
-                "is_human_transfer": False
-            }
-        raise ce
+        raw_text = response.choices[0].message.content.strip()
     except Exception as e:
+        print(f"❌ Groq API error: {e}")
         catalog_fallback = get_tenant_catalog(tenant["id"])
         return {
             "reply": f"🤖 *[{business_name} Client Care]*\n\nWelcome! Here are our available products:\n\n{catalog_fallback}",
