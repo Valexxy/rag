@@ -198,10 +198,11 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
             return {"status": "security_attack_blocked"}
 
         # -------------------------------------------------------------
-        # 📰 MULTI-TIERED SOVEREIGN NEWS INTELLIGENCE COMMAND (#news)
+        # 📰 MULTI-TIERED SOVEREIGN NEWS INTELLIGENCE COMMAND (#news / news)
         # -------------------------------------------------------------
-        if message_text.lower().startswith("#news"):
-            raw_news = message_text.lower().replace("#news", "").strip()
+        msg_lower = message_text.lower().strip()
+        if msg_lower.startswith("#news") or msg_lower.startswith("news"):
+            raw_news = msg_lower.replace("#news", "").replace("news", "").strip()
             parts = raw_news.split()
             tier = parts[0] if len(parts) > 0 else "all"
             loc = parts[1] if len(parts) > 1 else "onitsha"
@@ -210,34 +211,34 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
             return {"status": "sovereign_news_sent"}
 
         # 100% Sovereign Zero-API Tracking Command (#track WB-XXXX)
-        if message_text.lower().startswith("#track "):
-            waybill_id = message_text.replace("#track ", "").strip()
+        if msg_lower.startswith("#track ") or msg_lower.startswith("track "):
+            waybill_id = message_text.replace("#track ", "").replace("track ", "").strip()
             track_report = sovereign_tracker.get_sovereign_tracking_report(waybill_id, clean_sender)
             send_whatsapp_message(instance_name, clean_sender, track_report)
             return {"status": "sovereign_track_sent"}
 
-        # REAL LIVE WEATHER INTELLIGENCE COMMAND (#weather)
-        if message_text.lower().startswith("#weather "):
-            target_city = message_text.replace("#weather ", "").strip()
+        # REAL LIVE WEATHER INTELLIGENCE COMMAND (#weather / weather)
+        if msg_lower.startswith("#weather ") or msg_lower.startswith("weather "):
+            target_city = message_text.replace("#weather ", "").replace("weather ", "").strip()
             weather_report = real_location_intel.generate_smart_location_intelligence(target_city)
             send_whatsapp_message(instance_name, clean_sender, weather_report)
             return {"status": "real_weather_sent"}
 
         if is_owner:
-            cmd = message_text.lower()
+            cmd = msg_lower
 
-            if cmd in ["#admin", "#dash", "#dashboard", "!menu", "#kpi"]:
+            if cmd in ["#admin", "#dash", "#dashboard", "!menu", "#kpi", "admin", "dashboard"]:
                 dashboard_text = render_executive_whatsapp_dashboard(tenant)
                 send_whatsapp_message(instance_name, clean_sender, dashboard_text)
                 return {"status": "owner_dashboard_sent"}
 
-            elif cmd in ["#streak", "#rank", "#tier"]:
+            elif cmd in ["#streak", "#rank", "#tier", "streak"]:
                 streak_text = gamification_engine.format_daily_streak_card(clean_sender, 7, 48500.0)
                 send_whatsapp_message(instance_name, clean_sender, streak_text)
                 return {"status": "streak_sent"}
 
-            elif message_text.startswith("#debt "):
-                raw_debt = message_text.replace("#debt ", "").strip()
+            elif msg_lower.startswith("#debt ") or msg_lower.startswith("debt "):
+                raw_debt = message_text.replace("#debt ", "").replace("debt ", "").strip()
                 if raw_debt.startswith("remind "):
                     target_p = raw_debt.replace("remind ", "").strip()
                     reminder_msg = nigerian_market.format_polite_debt_reminder(tenant["business_name"], target_p, 15000.0, "Solar Power Bank", tenant.get("currency"))
@@ -249,7 +250,7 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
                 send_whatsapp_message(instance_name, clean_sender, reply)
                 return {"status": "debt_command_processed"}
 
-            elif message_text.startswith("#add "):
+            elif msg_lower.startswith("#add "):
                 try:
                     raw_cmd = message_text.replace("#add ", "").strip()
                     parts = [p.strip() for p in raw_cmd.split("|")]
@@ -269,7 +270,7 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
                 send_whatsapp_message(instance_name, clean_sender, reply)
                 return {"status": "owner_add_processed"}
 
-            elif message_text.startswith("#data-export "):
+            elif msg_lower.startswith("#data-export "):
                 target_phone = message_text.replace("#data-export ", "").strip()
                 export_data = sovereign_compliance.export_customer_data(tenant["id"], target_phone)
                 audit_vault.create_audit_record(tenant["id"], "OWNER", "GDPR_DATA_EXPORT", {"target_phone": target_phone})
@@ -277,7 +278,7 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
                 send_whatsapp_message(instance_name, clean_sender, reply)
                 return {"status": "data_exported"}
 
-            elif message_text.startswith("#data-erase "):
+            elif msg_lower.startswith("#data-erase "):
                 target_phone = message_text.replace("#data-erase ", "").strip()
                 if sovereign_compliance.erase_customer_data(tenant["id"], target_phone):
                     audit_vault.create_audit_record(tenant["id"], "OWNER", "GDPR_RIGHT_TO_BE_FORGOTTEN", {"target_phone": target_phone})
@@ -287,7 +288,7 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
                 send_whatsapp_message(instance_name, clean_sender, reply)
                 return {"status": "data_erased"}
 
-            elif message_text.startswith("#broadcast "):
+            elif msg_lower.startswith("#broadcast "):
                 broadcast_text = message_text.replace("#broadcast ", "").strip()
                 phone_list = get_tenant_customer_phones(tenant["id"])
                 if phone_list:
@@ -314,7 +315,7 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
         send_whatsapp_presence(instance_name, clean_sender, "composing")
         register_tenant_customer(tenant["id"], clean_sender)
 
-        if message_text.lower().startswith("#market") or "market price" in message_text.lower():
+        if msg_lower.startswith("#market") or "market price" in msg_lower or msg_lower == "market":
             report = market_intel.format_market_intelligence_report()
             send_whatsapp_message(instance_name, clean_sender, report)
             return {"status": "market_intel_sent"}
