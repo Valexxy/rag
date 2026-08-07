@@ -81,62 +81,78 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
             return {"status": "unregistered_instance"}
         hp_cache.set_cached_tenant(instance_name, tenant)
 
+    # Ultra-robust Evolution API payload normalization
     data = payload.get("data", {})
-    key_info = data.get("key", {})
-    message_info = data.get("message", {})
+    if isinstance(data, list) and len(data) > 0:
+        data = data[0]
+    elif not isinstance(data, dict):
+        data = {}
+
+    key_info = data.get("key", {}) if isinstance(data, dict) else {}
+    message_info = data.get("message", {}) if isinstance(data, dict) else {}
 
     is_from_me = key_info.get("fromMe", False)
-    remote_jid = key_info.get("remoteJid", "")
-    customer_phone = remote_jid.replace("@s.whatsapp.net", "")
-
-    # Extract text or caption
-    message_text = (
-        message_info.get("conversation")
-        or message_info.get("extendedTextMessage", {}).get("text", "")
-        or message_info.get("imageMessage", {}).get("caption", "")
+    remote_jid = (
+        key_info.get("remoteJid")
+        or key_info.get("participant")
+        or data.get("sender")
+        or data.get("remoteJid")
+        or payload.get("sender")
         or ""
     )
+    
+    clean_sender = "".join(filter(str.isdigit, str(remote_jid)))
+
+    # Extract text content from all possible Baileys/Evolution message structures
+    message_text = (
+        message_info.get("conversation")
+        or message_info.get("extendedTextMessage", {}).get("text")
+        or message_info.get("imageMessage", {}).get("caption")
+        or data.get("body")
+        or data.get("text")
+        or payload.get("text")
+        or ""
+    ).strip()
 
     # Handle Image Upload (Receipt OCR / Verification)
     if message_info.get("imageMessage") and not message_text:
         ocr_result = vision_ocr.parse_payment_receipt_text("PAYMENT RECEIPT 0252796240 AMOUNT N25000")
         reply = f"🧾 *[RECEIPT OCR VERIFIED]*\n\nReference: `{ocr_result['transaction_reference']}`\nStatus: `PENDING SETTLEMENT`"
-        send_whatsapp_message(instance_name, customer_phone, reply)
+        send_whatsapp_message(instance_name, clean_sender, reply)
         return {"status": "receipt_ocr_processed"}
 
-    if not customer_phone or not message_text:
+    if not clean_sender or not message_text:
         return {"status": "ignored"}
 
-    owner_phone = (tenant.get("owner_phone") or "").replace("+", "").strip()
-    clean_sender = customer_phone.replace("+", "").strip()
-    is_owner = is_from_me or (owner_phone and clean_sender == owner_phone)
+    clean_owner = "".join(filter(str.isdigit, str(tenant.get("owner_phone", ""))))
+    is_owner = is_from_me or (clean_owner and clean_sender == clean_owner)
 
     # -------------------------------------------------------------
     # 🔐 PROMPT INJECTION & SECURITY DEFENSE SHIELD
     # -------------------------------------------------------------
     is_malicious, security_reply = security_fortress.inspect_prompt_injection(message_text)
     if is_malicious:
-        audit_vault.create_audit_record(tenant["id"], customer_phone, "PROMPT_INJECTION_ATTEMPT", {"input": message_text})
-        send_whatsapp_message(instance_name, customer_phone, security_reply)
-        owner_alert.send_urgent_owner_alert(instance_name, owner_phone, customer_phone, "PROMPT INJECTION DEFENSE TRIGGERED", message_text)
+        audit_vault.create_audit_record(tenant["id"], clean_sender, "PROMPT_INJECTION_ATTEMPT", {"input": message_text})
+        send_whatsapp_message(instance_name, clean_sender, security_reply)
+        owner_alert.send_urgent_owner_alert(instance_name, clean_owner, clean_sender, "PROMPT INJECTION DEFENSE TRIGGERED", message_text)
         return {"status": "security_attack_blocked"}
 
     # -------------------------------------------------------------
     # 2. OWNER EXECUTIVE COMMANDS & DASHBOARD CONTROL
     # -------------------------------------------------------------
     if is_owner:
-        cmd = message_text.strip().lower()
+        cmd = message_text.lower()
 
         # A. Executive Dashboard Command
         if cmd in ["#admin", "#dash", "#dashboard", "!menu", "#kpi"]:
             dashboard_text = render_executive_whatsapp_dashboard(tenant)
-            send_whatsapp_message(instance_name, customer_phone, dashboard_text)
+            send_whatsapp_message(instance_name, clean_sender, dashboard_text)
             return {"status": "owner_dashboard_sent"}
 
         # B. Owner Daily Streak Command: #streak
         elif cmd in ["#streak", "#rank", "#tier"]:
-            streak_text = gamification_engine.format_daily_streak_card(customer_phone, 7, 48500.0)
-            send_whatsapp_message(instance_name, customer_phone, streak_text)
+            streak_text = gamification_engine.format_daily_streak_card(clean_sender, 7, 48500.0)
+            send_whatsapp_message(instance_name, clean_sender, streak_text)
             return {"status": "streak_sent"}
 
         # C. Gbese / Credit Tracker Command: #debt add +phone amount item or #debt remind +phone
@@ -148,9 +164,9 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
                 send_whatsapp_message(instance_name, target_p, reminder_msg)
                 reply = f"✅ *[DEBT REMINDER SENT]*\n\nSent polite payment reminder to `{target_p}`."
             else:
-                reply = nigerian_market.record_customer_debt(customer_phone, 15000.0, "Solar Power Bank", tenant.get("currency"))
+                reply = nigerian_market.record_customer_debt(clean_sender, 15000.0, "Solar Power Bank", tenant.get("currency"))
             
-            send_whatsapp_message(instance_name, customer_phone, reply)
+            send_whatsapp_message(instance_name, clean_sender, reply)
             return {"status": "debt_command_processed"}
 
         # D. Owner Quick Add Entity
@@ -171,7 +187,7 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
             except Exception:
                 reply = "❌ *Format Error!* Use:\n`#add Name | Price | Description`"
 
-            send_whatsapp_message(instance_name, customer_phone, reply)
+            send_whatsapp_message(instance_name, clean_sender, reply)
             return {"status": "owner_add_processed"}
 
         # E. Compliance Data Export & Erase Commands
@@ -180,7 +196,7 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
             export_data = sovereign_compliance.export_customer_data(tenant["id"], target_phone)
             audit_vault.create_audit_record(tenant["id"], "OWNER", "GDPR_DATA_EXPORT", {"target_phone": target_phone})
             reply = f"📄 *[GDPR/NDPA DATA EXPORT]*\n\n`{json.dumps(export_data, indent=2)[:1000]}`"
-            send_whatsapp_message(instance_name, customer_phone, reply)
+            send_whatsapp_message(instance_name, clean_sender, reply)
             return {"status": "data_exported"}
 
         elif message_text.startswith("#data-erase "):
@@ -190,7 +206,7 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
                 reply = f"🗑️ *[GDPR RIGHT TO BE FORGOTTEN]*\n\nCustomer `{target_phone}` data successfully erased from server."
             else:
                 reply = "❌ Data erasure failed."
-            send_whatsapp_message(instance_name, customer_phone, reply)
+            send_whatsapp_message(instance_name, clean_sender, reply)
             return {"status": "data_erased"}
 
         # F. Owner Anti-Ban Safe Broadcast Command
@@ -208,53 +224,53 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
             else:
                 reply = "⚠️ No registered customers found for broadcast."
 
-            send_whatsapp_message(instance_name, customer_phone, reply)
+            send_whatsapp_message(instance_name, clean_sender, reply)
             return {"status": "broadcast_processed"}
 
         # G. Regular owner manual reply -> Auto-mute bot for 120 mins
         else:
-            mute_tenant_bot(tenant["id"], customer_phone, minutes=120)
+            mute_tenant_bot(tenant["id"], clean_sender, minutes=120)
             return {"status": "owner_takeover_muted"}
 
     # -------------------------------------------------------------
     # 3. CUSTOMER INBOUND PIPELINE & LOCAL AI ROUTING
     # -------------------------------------------------------------
-    if is_tenant_bot_muted(tenant["id"], customer_phone):
+    if is_tenant_bot_muted(tenant["id"], clean_sender):
         return {"status": "bot_muted"}
 
-    send_whatsapp_presence(instance_name, customer_phone, "composing")
-    register_tenant_customer(tenant["id"], customer_phone)
+    send_whatsapp_presence(instance_name, clean_sender, "composing")
+    register_tenant_customer(tenant["id"], clean_sender)
 
     # Market Price Intelligence Command (#market)
-    if message_text.strip().lower().startswith("#market") or "market price" in message_text.lower():
+    if message_text.lower().startswith("#market") or "market price" in message_text.lower():
         report = market_intel.format_market_intelligence_report()
-        send_whatsapp_message(instance_name, customer_phone, report)
+        send_whatsapp_message(instance_name, clean_sender, report)
         return {"status": "market_intel_sent"}
 
     intent, confidence = local_brain.classify_intent(message_text)
 
-    if message_text.strip() in ["menu", "1", "2", "3", "4", "5", "hi", "hello", "help"]:
-        reply_payload = render_role_based_menu("CLIENT", tenant, customer_phone)
-        send_whatsapp_message(instance_name, customer_phone, reply_payload)
+    if message_text in ["menu", "1", "2", "3", "4", "5", "hi", "hello", "help"]:
+        reply_payload = render_role_based_menu("CLIENT", tenant, clean_sender)
+        send_whatsapp_message(instance_name, clean_sender, reply_payload)
         return {"status": "menu_sent"}
 
     if intent == "LOGISTICS":
-        wb_sample = logistics_dept.generate_waybill(tenant["id"], customer_phone, "Customer Address", "Order Package")
+        wb_sample = logistics_dept.generate_waybill(tenant["id"], clean_sender, "Customer Address", "Order Package")
         reply_payload = logistics_dept.format_delivery_status(wb_sample)
-        send_whatsapp_message(instance_name, customer_phone, reply_payload)
+        send_whatsapp_message(instance_name, clean_sender, reply_payload)
         return {"status": "waybill_sent"}
 
     if intent == "PURCHASE":
-        reply_payload = financial_trust.format_trust_verified_payment_instructions(tenant, 25000.0, f"TRX-{customer_phone[-4:]}")
-        send_whatsapp_message(instance_name, customer_phone, reply_payload)
+        reply_payload = financial_trust.format_trust_verified_payment_instructions(tenant, 25000.0, f"TRX-{clean_sender[-4:]}")
+        send_whatsapp_message(instance_name, clean_sender, reply_payload)
         return {"status": "payment_instructions_sent"}
 
-    session_key = f"{tenant['id']}_{customer_phone}"
+    session_key = f"{tenant['id']}_{clean_sender}"
     history_str = "\n".join(chat_memory.get(session_key, []))
 
     ai_res = generate_live_character_reply(
         tenant=tenant,
-        customer_phone=customer_phone,
+        customer_phone=clean_sender,
         latest_query=message_text,
         conversation_history=history_str,
         is_owner=False
@@ -264,12 +280,12 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
 
     is_valid, verified_payload = zero_guard.verify_response_facts(reply_payload, "")
     if not is_valid:
-        mute_tenant_bot(tenant["id"], customer_phone, minutes=120)
-        owner_alert.send_urgent_owner_alert(instance_name, owner_phone, customer_phone, "Unverified inquiry - Manager Handoff", message_text)
+        mute_tenant_bot(tenant["id"], clean_sender, minutes=120)
+        owner_alert.send_urgent_owner_alert(instance_name, clean_owner, clean_sender, "Unverified inquiry - Manager Handoff", message_text)
 
     if ai_res.get("is_human_transfer"):
-        mute_tenant_bot(tenant["id"], customer_phone, minutes=120)
-        owner_alert.send_urgent_owner_alert(instance_name, owner_phone, customer_phone, "Customer requested Human Agent", message_text)
+        mute_tenant_bot(tenant["id"], clean_sender, minutes=120)
+        owner_alert.send_urgent_owner_alert(instance_name, clean_owner, clean_sender, "Customer requested Human Agent", message_text)
 
-    send_whatsapp_message(instance_name, customer_phone, reply_payload)
+    send_whatsapp_message(instance_name, clean_sender, reply_payload)
     return {"status": "success", "tenant": tenant["business_name"]}
