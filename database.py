@@ -1,4 +1,5 @@
 import os
+import json
 from supabase import create_client, Client
 from dotenv import load_dotenv
 
@@ -39,20 +40,52 @@ def mute_tenant_bot(tenant_id: str, customer_phone: str, minutes: int = 120):
     except Exception as e:
         print(f"❌ Error muting bot: {e}")
 
-def add_tenant_product(tenant_id: str, title: str, price: float, description: str, stock: int) -> bool:
-    """Adds or updates a product in tenant inventory."""
+def add_tenant_entity(tenant_id: str, name: str, price: float, description: str, metadata: dict = None) -> bool:
+    """Universal function to add ANY business offering with dynamic metadata."""
     try:
-        supabase.table("tenant_products").insert({
+        supabase.table("tenant_entities").insert({
             "tenant_id": tenant_id,
-            "title": title,
+            "name": name,
             "price": price,
             "description": description,
-            "stock": stock
+            "metadata": metadata or {}
         }).execute()
         return True
     except Exception as e:
-        print(f"❌ Error adding product: {e}")
+        print(f"❌ DB Insert Error: {e}")
         return False
+
+def get_tenant_catalog(tenant: dict, search_query: str = "") -> str:
+    """Dynamically formats the business offerings based on their niche."""
+    try:
+        res = supabase.table("tenant_entities").select("*").eq("tenant_id", tenant["id"]).execute()
+        entities = res.data or []
+        if not entities:
+            return "No offerings currently listed."
+        
+        niche = tenant.get("business_niche", "retail").lower()
+        lines = []
+        
+        for e in entities:
+            name = e.get('name', 'Item')
+            price_str = f"₦{e.get('price', 0):,.2f}" if e.get('price', 0) > 0 else "Custom Quote"
+            desc = e.get('description', '')
+            meta = e.get('metadata', {})
+            
+            # Deterministic formatting based on business type
+            if niche == "real_estate":
+                loc = meta.get("location", "Contact for location")
+                lines.append(f"🏠 *{name}* - {price_str}\n  📍 {loc}\n  _{desc}_")
+            elif niche == "salon" or niche == "service":
+                dur = meta.get("duration", "")
+                dur_str = f" ({dur})" if dur else ""
+                lines.append(f"✂️ *{name}*{dur_str} - {price_str}\n  _{desc}_")
+            else: # Default Retail/Importation
+                lines.append(f"📦 *{name}* - {price_str}\n  _{desc}_")
+                
+        return "\n\n".join(lines)
+    except Exception as e:
+        return "Catalog temporarily unavailable."
 
 def update_customer_ledger(tenant_id: str, customer_phone: str, ledger_type: str, data_dict: dict) -> bool:
     """Updates or inserts a customer ledger record in Supabase."""
@@ -74,7 +107,6 @@ def get_tenant_customer_phones(tenant_id: str) -> list:
         res = supabase.table("tenant_customers").select("phone_number").eq("tenant_id", tenant_id).execute()
         return [item["phone_number"] for item in res.data] if res.data else []
     except Exception as e:
-        print(f"❌ Error fetching customer phones: {e}")
         return []
 
 def register_tenant_customer(tenant_id: str, customer_phone: str):
@@ -86,25 +118,6 @@ def register_tenant_customer(tenant_id: str, customer_phone: str):
         }, on_conflict="tenant_id,phone_number").execute()
     except Exception as e:
         pass
-
-def get_tenant_catalog(tenant_id: str, search_query: str = "") -> str:
-    """Fetches formatted tenant catalog string without stock constraints."""
-    try:
-        res = supabase.table("tenant_products").select("*").eq("tenant_id", tenant_id).execute()
-        products = res.data or []
-        if not products:
-            return "No products currently listed in our catalog."
-        
-        catalog_lines = []
-        for p in products:
-            p_name = p.get('title') or p.get('name') or 'Product Item'
-            p_price = p.get('price', 0)
-            p_desc = p.get('description', '')
-            # Stock is omitted as requested
-            catalog_lines.append(f"• *{p_name}* - ₦{p_price:,.2f}\n  _{p_desc}_")
-        return "\n\n".join(catalog_lines)
-    except Exception as e:
-        return "Catalog temporarily unavailable."
 
 def get_customer_ledger(tenant_id: str, customer_phone: str) -> str:
     """Fetches customer ledger record."""
@@ -119,7 +132,7 @@ def get_customer_ledger(tenant_id: str, customer_phone: str) -> str:
 def get_customer_profile(tenant_id: str, customer_phone: str) -> dict:
     """Fetches customer profile data."""
     try:
-        res = supabase.table("tenant_customers").select("*").eq("tenant_id", tenant_id).eq("phone_number=eq.{customer_phone}").single().execute()
+        res = supabase.table("tenant_customers").select("*").eq("tenant_id", tenant_id).eq("phone_number", customer_phone).single().execute()
         return res.data or {}
     except Exception as e:
         return {}
