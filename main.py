@@ -34,6 +34,7 @@ from audit_vault import audit_vault
 from antiban_guardrail import antiban_guard
 from market_intelligence import market_intel
 from location_intelligence import real_location_intel
+from local_sovereign_tracker import sovereign_tracker
 from gamification_retention import gamification_engine
 from database_backup import backup_engine
 
@@ -195,9 +196,14 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
             owner_alert.send_urgent_owner_alert(instance_name, clean_owner, clean_sender, "PROMPT INJECTION DEFENSE TRIGGERED", message_text)
             return {"status": "security_attack_blocked"}
 
-        # -------------------------------------------------------------
-        # REAL LIVE WEATHER & LOCATION INTELLIGENCE COMMAND (#weather)
-        # -------------------------------------------------------------
+        # 100% Sovereign Zero-API Tracking Command (#track WB-XXXX)
+        if message_text.lower().startswith("#track "):
+            waybill_id = message_text.replace("#track ", "").strip()
+            track_report = sovereign_tracker.get_sovereign_tracking_report(waybill_id, clean_sender)
+            send_whatsapp_message(instance_name, clean_sender, track_report)
+            return {"status": "sovereign_track_sent"}
+
+        # REAL LIVE WEATHER INTELLIGENCE COMMAND (#weather)
         if message_text.lower().startswith("#weather "):
             target_city = message_text.replace("#weather ", "").strip()
             weather_report = real_location_intel.generate_smart_location_intelligence(target_city)
