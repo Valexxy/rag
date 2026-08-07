@@ -13,19 +13,17 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_URL and
 def get_tenant_by_instance(instance_name: str) -> dict:
     """Fetches tenant profile by WhatsApp instance name."""
     try:
-        res = supabase.table("tenants").select("*").eq("instance_name", instance_name).single().execute()
-        return res.data
+        res = supabase.table("tenants").select("*").eq("instance_name", instance_name).execute()
+        return res.data[0] if res.data else None
     except Exception as e:
-        print(f"❌ Error fetching tenant by instance: {e}")
+        print(f"[ERROR] Error fetching tenant by instance: {e}")
         return None
 
 def is_tenant_bot_muted(tenant_id: str, customer_phone: str) -> bool:
     """Checks if the bot is temporarily muted for a customer due to human takeover."""
     try:
         res = supabase.table("bot_mutes").select("*").eq("tenant_id", tenant_id).eq("phone_number", customer_phone).execute()
-        if res.data:
-            return True
-        return False
+        return bool(res.data)
     except Exception as e:
         return False
 
@@ -38,7 +36,7 @@ def mute_tenant_bot(tenant_id: str, customer_phone: str, minutes: int = 120):
             "muted": True
         }).execute()
     except Exception as e:
-        print(f"❌ Error muting bot: {e}")
+        print(f"[ERROR] Error muting bot: {e}")
 
 def add_tenant_entity(tenant_id: str, name: str, price: float, description: str, metadata: dict = None) -> bool:
     """Universal function to add ANY business offering with dynamic metadata."""
@@ -52,7 +50,7 @@ def add_tenant_entity(tenant_id: str, name: str, price: float, description: str,
         }).execute()
         return True
     except Exception as e:
-        print(f"❌ DB Insert Error: {e}")
+        print(f"[ERROR] DB Insert Error: {e}")
         return False
 
 def get_tenant_catalog(tenant: dict, search_query: str = "") -> str:
@@ -68,23 +66,24 @@ def get_tenant_catalog(tenant: dict, search_query: str = "") -> str:
         
         for e in entities:
             name = e.get('name', 'Item')
-            price_str = f"₦{e.get('price', 0):,.2f}" if e.get('price', 0) > 0 else "Custom Quote"
+            price_str = f"NGN {e.get('price', 0):,.2f}" if e.get('price', 0) > 0 else "Custom Quote"
             desc = e.get('description', '')
             meta = e.get('metadata', {})
             
             # Deterministic formatting based on business type
             if niche == "real_estate":
                 loc = meta.get("location", "Contact for location")
-                lines.append(f"🏠 *{name}* - {price_str}\n  📍 {loc}\n  _{desc}_")
+                lines.append(f"*{name}* - {price_str}\n  Location: {loc}\n  _{desc}_")
             elif niche == "salon" or niche == "service":
                 dur = meta.get("duration", "")
                 dur_str = f" ({dur})" if dur else ""
-                lines.append(f"✂️ *{name}*{dur_str} - {price_str}\n  _{desc}_")
+                lines.append(f"*{name}*{dur_str} - {price_str}\n  _{desc}_")
             else: # Default Retail/Importation
-                lines.append(f"📦 *{name}* - {price_str}\n  _{desc}_")
+                lines.append(f"*{name}* - {price_str}\n  _{desc}_")
                 
         return "\n\n".join(lines)
     except Exception as e:
+        print(f"[ERROR] Catalog formatting error: {e}")
         return "Catalog temporarily unavailable."
 
 def update_customer_ledger(tenant_id: str, customer_phone: str, ledger_type: str, data_dict: dict) -> bool:
@@ -98,7 +97,7 @@ def update_customer_ledger(tenant_id: str, customer_phone: str, ledger_type: str
         }).execute()
         return True
     except Exception as e:
-        print(f"❌ Error updating customer ledger: {e}")
+        print(f"[ERROR] Error updating customer ledger: {e}")
         return False
 
 def get_tenant_customer_phones(tenant_id: str) -> list:
@@ -132,7 +131,7 @@ def get_customer_ledger(tenant_id: str, customer_phone: str) -> str:
 def get_customer_profile(tenant_id: str, customer_phone: str) -> dict:
     """Fetches customer profile data."""
     try:
-        res = supabase.table("tenant_customers").select("*").eq("tenant_id", tenant_id).eq("phone_number", customer_phone).single().execute()
-        return res.data or {}
+        res = supabase.table("tenant_customers").select("*").eq("tenant_id", tenant_id).eq("phone_number", customer_phone).execute()
+        return res.data[0] if res.data else {}
     except Exception as e:
         return {}
