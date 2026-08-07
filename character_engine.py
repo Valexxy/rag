@@ -13,18 +13,18 @@ def generate_live_character_reply(
     conversation_history: str, 
     is_owner: bool = False
 ) -> dict:
-    """Enterprise Engine enforcing strict catalog knowledge base and payment transfers to human."""
+    """Enterprise Engine enforcing elite sales closing, factory sourcing pivots, and seamless owner handovers."""
     
     business_name = tenant.get('business_name', 'our company')
     query_lower = latest_query.lower().strip()
 
     # -------------------------------------------------------------
-    # 1. PAYMENT & TRANSACTION ESCALATION BYPASS (Direct to Human)
+    # 1. PAYMENT & TRANSACTION ESCALATION BYPASS (Direct to Owner)
     # -------------------------------------------------------------
     payment_keywords = ["pay", "payment", "account number", "bank", "transfer", "how do i pay", "send account", "price to pay", "pay stack", "paystack", "pos", "cash"]
     if not is_owner and any(kw in query_lower for kw in payment_keywords):
         return {
-            "reply": f"🤖 *[{business_name} Client Care]*\n\nFor payment details and transaction processing, let me connect you directly with our business owner/management. Please hold a moment!",
+            "reply": f"🤖 *[{business_name} Client Care]*\n\nFantastic! Let me connect you directly with our management/business owner right now to lock down your order details and provide the payment account. Please hold briefly!",
             "buttons": ["👤 Human Agent"],
             "detected_tags": ["[TAG:TRANSFER_HUMAN]"],
             "is_high_value": False,
@@ -36,7 +36,7 @@ def generate_live_character_reply(
     if not is_owner and any(kw in query_lower for kw in catalog_keywords):
         catalog_text = get_tenant_catalog(tenant["id"], search_query=latest_query)
         return {
-            "reply": f"🤖 *[{business_name} Client Care]*\n\nHere is our active product catalog and pricing:\n\n{catalog_text}\n\nWould you like to place an order or inquire about any of these items?",
+            "reply": f"🤖 *[{business_name} Client Care]*\n\nHere is our active product lineup:\n\n{catalog_text}\n\nWhich of these premium options would you like to grab today?",
             "buttons": ["💳 Place Order", "👤 Human Agent"],
             "detected_tags": [],
             "is_high_value": False,
@@ -47,7 +47,7 @@ def generate_live_character_reply(
     greeting_keywords = ["hi", "hello", "hey", "good morning", "good afternoon", "good evening", "sup"]
     if not is_owner and query_lower in greeting_keywords:
         return {
-            "reply": f"🤖 *[{business_name} Client Care]*\n\nGood day! Welcome to {business_name}. How can we assist you with our products today?",
+            "reply": f"🤖 *[{business_name} Client Care]*\n\nWelcome to {business_name}! We specialize in top-tier gadgets and direct factory-sourced inventory. What are you looking to get today?",
             "buttons": ["📜 View Catalog", "👤 Human Agent"],
             "detected_tags": [],
             "is_high_value": False,
@@ -58,7 +58,7 @@ def generate_live_character_reply(
     location_keywords = ["address", "location", "where are you", "office", "store", "open", "closing time", "hours"]
     if not is_owner and any(kw in query_lower for kw in location_keywords):
         return {
-            "reply": f"🤖 *[{business_name} Client Care]*\n\nWe operate from our primary distribution facility in Onitsha, Anambra State, Nigeria. Open Monday to Saturday, 8:00 AM to 6:00 PM.",
+            "reply": f"🤖 *[{business_name} Client Care]*\n\nWe operate from our primary distribution facility in Onitsha, Anambra State, Nigeria, and handle direct commercial shipments. Open Monday to Saturday, 8:00 AM to 6:00 PM.",
             "buttons": ["📜 View Catalog", "👤 Human Agent"],
             "detected_tags": [],
             "is_high_value": False,
@@ -66,7 +66,7 @@ def generate_live_character_reply(
         }
 
     # -------------------------------------------------------------
-    # 2. GROQ LLM API PIPELINE (Strict Knowledge Base & Escalation)
+    # 2. GROQ LLM API PIPELINE (Smart Marketer Persona)
     # -------------------------------------------------------------
     catalog = get_tenant_catalog(tenant["id"], search_query=latest_query)
     customer_ledger = get_customer_ledger(tenant["id"], customer_phone)
@@ -80,13 +80,13 @@ INVENTORY: {catalog}
     else:
         known_name = profile.get("full_name") or "Valued Client"
         prompt = f"""
-You are the Client Experience Executive for {business_name}.
-Strict Rules:
-1. Answer customer inquiries strictly using the provided Live Catalog. 
-2. Never mention items being 'out of stock'—our warehouse handles demand through sourcing/import pipelines.
-3. If the customer asks about payment, bank transfers, account numbers, or closing a transaction, you MUST output [TAG:TRANSFER_HUMAN] so a human agent takes over.
-4. If the query goes beyond your catalog knowledge base or requires human negotiation, output [TAG:TRANSFER_HUMAN].
-5. Output ONLY the clean customer-facing response text without any internal thoughts.
+You are an elite, high-converting commercial sales executive and mini-importation sourcing expert for {business_name}. 
+
+STRICT SALES RULES:
+1. NEVER turn a customer away, NEVER say "we don't have it", and NEVER tell them to check an external website.
+2. If they request an item, size, or capacity not currently in the catalog (e.g., 50,000mAh, custom items), pitch our direct factory import and pre-order sourcing pipeline enthusiastically ("We can custom-source and ship that exact specification for you through our direct factory pipeline!").
+3. Always drive the conversation toward closing the deal and transition them to the business owner by including [TAG:TRANSFER_HUMAN] so the owner can finalize the arrangement and payment.
+4. Output ONLY the clean customer-facing response text without any internal reasoning or meta-commentary.
 
 SENDER PROFILE: {known_name}
 LIVE CATALOG: {catalog}
@@ -95,9 +95,9 @@ CLIENT QUERY: {latest_query}
 """
 
     system_instruction = (
-        f"You are the Enterprise Client Experience Executive for {business_name}. "
+        f"You are the Elite Sales Closer for {business_name}. "
         "CRITICAL INSTRUCTION: Output ONLY final customer-facing text. Never leak reasoning. "
-        "If payment or purchase finalization is requested, include [TAG:TRANSFER_HUMAN]."
+        "Always upsell or pivot custom/missing requests into factory pre-orders and include [TAG:TRANSFER_HUMAN] to connect them with management."
     )
 
     try:
@@ -108,14 +108,14 @@ CLIENT QUERY: {latest_query}
                 {"role": "user", "content": prompt}
             ],
             max_tokens=600,
-            temperature=0.2
+            temperature=0.3
         )
         raw_text = response.choices[0].message.content.strip()
     except Exception as e:
         print(f"❌ Groq API error: {e}")
         catalog_fallback = get_tenant_catalog(tenant["id"])
         return {
-            "reply": f"🤖 *[{business_name} Client Care]*\n\nWelcome! Here are our available products:\n\n{catalog_fallback}",
+            "reply": f"🤖 *[{business_name} Client Care]*\n\nWe can source any custom specification you need! Here are our active items:\n\n{catalog_fallback}\n\nLet me connect you with our management to lock down your custom order.",
             "buttons": ["👤 Human Agent"],
             "detected_tags": ["[TAG:TRANSFER_HUMAN]"],
             "is_high_value": False,
@@ -134,7 +134,7 @@ CLIENT QUERY: {latest_query}
     header_title = "Executive Office" if is_owner else "Client Care"
     
     is_high_value = "[TAG:HIGH_VALUE_TRANSACTION]" in detected_tags or any(w in query_lower for w in ["million", "1,000,000", "1m", "carton", "container", "bulk", "wholesale"])
-    is_human_transfer = "[TAG:TRANSFER_HUMAN]" in detected_tags or any(w in query_lower for w in ["human", "agent", "manager", "complaint", "pay", "payment", "bank", "transfer", "account"])
+    is_human_transfer = "[TAG:TRANSFER_HUMAN]" in detected_tags or any(w in query_lower for w in ["human", "agent", "manager", "complaint", "pay", "payment", "bank", "transfer", "account", "source", "import", "pre-order"])
 
     return {
         "reply": f"🤖 *[{business_name} {header_title}]*\n\n{clean_text}",
