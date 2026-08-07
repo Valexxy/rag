@@ -1,10 +1,18 @@
 import os
 import re
-from groq import Groq
 from database import get_tenant_catalog, get_customer_ledger, get_customer_profile
 
-client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 MODEL_ID = 'llama-3.1-8b-instant'
+
+def get_groq_client():
+    api_key = os.environ.get("GROQ_API_KEY")
+    if not api_key:
+        return None
+    try:
+        from groq import Groq
+        return Groq(api_key=api_key)
+    except Exception:
+        return None
 
 def get_niche_config(niche: str) -> dict:
     """Maps dynamic business niches to specific triggers and vocabulary."""
@@ -103,6 +111,16 @@ def generate_live_character_reply(
         "CRITICAL: Be extremely concise (1 sentence max). Instantly route any purchase, payment, or custom request to the owner using [TAG:TRANSFER_HUMAN]."
     )
 
+    client = get_groq_client()
+    if not client:
+        return {
+            "reply": f"🤖 *[{business_name} Automated System]*\n\nConnecting you directly with management now. Please hold!",
+            "buttons": ["👤 Human Agent"],
+            "detected_tags": ["[TAG:TRANSFER_HUMAN]"],
+            "is_high_value": False,
+            "is_human_transfer": True
+        }
+
     try:
         response = client.chat.completions.create(
             model=MODEL_ID,
@@ -115,7 +133,7 @@ def generate_live_character_reply(
         )
         raw_text = response.choices[0].message.content.strip()
     except Exception as e:
-        print(f"❌ Groq API error: {e}")
+        print(f"[ERROR] Groq API error: {e}")
         return {
             "reply": f"🤖 *[{business_name} Automated System]*\n\nConnecting you directly with management now. Please hold!",
             "buttons": ["👤 Human Agent"],
