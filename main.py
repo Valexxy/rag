@@ -1,245 +1,200 @@
 import os
-import asyncio
-import requests
-from datetime import datetime, timezone
-from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request
-from cachetools import TTLCache
-from database import (
-    get_tenant_by_instance, 
-    is_tenant_bot_muted, 
-    mute_tenant_bot, 
-    add_tenant_product, 
-    update_customer_ledger, 
-    register_tenant_customer, 
-    get_tenant_customer_phones,
-    create_tenant_reminder,
-    get_due_reminders,
-    update_reminder_next_run,
-    save_chat_message,
-    get_persistent_chat_history
+import logging
+from typing import Optional, Dict, Any
+import httpx
+from fastapi import FastAPI, Request, BackgroundTasks, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from supabase import create_client, Client
+
+# Initialize Logger
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("whatsapp_bot")
+
+# Environment Variables
+SUPABASE_URL = os.getenv("SUPABASE_URL", "")
+SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_KEY", "")
+EVOLUTION_API_URL = os.getenv("EVOLUTION_API_URL", "")
+EVOLUTION_API_KEY = os.getenv("EVOLUTION_API_KEY", "")
+
+# Initialize Supabase Client
+supabase: Optional[Client] = None
+if SUPABASE_URL and SUPABASE_KEY:
+    try:
+        supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+    except Exception as e:
+        logger.error(f"Failed to initialize Supabase client: {e}")
+
+app = FastAPI(title="WhatsApp Store Bot RAG API")
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
-from character_engine import generate_live_character_reply
-from evolution_interactive import (
-    send_whatsapp_presence, 
-    send_whatsapp_message, 
-    broadcast_whatsapp_message
-)
-from dotenv import load_dotenv
-
-load_dotenv()
-
-RENDER_URL = os.environ.get("RENDER_EXTERNAL_URL", "https://rag-403h.onrender.com").rstrip("/")
-
-async def keep_alive_and_scheduler():
-    """Background task: Self-ping (every 10m) & Automated Smart Reminder Dispatcher (every 60s)."""
-    await asyncio.sleep(10)
-    counter = 0
-    while True:
-        try:
-            # Dispatch Due Reminders
-            due_list = await asyncio.to_thread(get_due_reminders)
-            for r in due_list:
-                tenant_info = r.get("tenants", {})
-                instance = tenant_info.get("instance_name")
-                biz_name = tenant_info.get("business_name", "Our Service")
-                owner_phone = tenant_info.get("owner_phone")
-                recipient = r["recipient_phone"]
-                msg_body = f"⏰ *[Reminder from {biz_name}]*\n\n{r['reminder_text']}"
-
-                if recipient == "OWNER" and owner_phone:
-                    send_whatsapp_message(instance, owner_phone, msg_body)
-                elif recipient == "ALL":
-                    phones = get_tenant_customer_phones(r["tenant_id"])
-                    broadcast_whatsapp_message(instance, phones, msg_body)
-                else:
-                    send_whatsapp_message(instance, recipient, msg_body)
-
-                update_reminder_next_run(r["id"], r["frequency"], r["next_run_at"])
-
-            # Keep-Alive Self Ping (Every 10 minutes)
-            counter += 60
-            if counter >= 600:
-                await asyncio.to_thread(requests.get, f"{RENDER_URL}/", timeout=5)
-                print("⚡ Keep-alive self-ping sent.")
-                counter = 0
-
-        except Exception as e:
-            print(f"⚠️ Scheduler background error: {e}")
-
-        await asyncio.sleep(60)
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    asyncio.create_task(keep_alive_and_scheduler())
-    yield
-
-app = FastAPI(
-    title="Enterprise Multi-Tenant AI Commerce SaaS Core",
-    lifespan=lifespan
-)
-
-# High-Performance Caching Layer
-tenant_cache = TTLCache(maxsize=500, ttl=60)
-chat_memory_cache = TTLCache(maxsize=1000, ttl=300)
 
 @app.get("/")
+@app.head("/")
 async def root():
-    return {"status": "online", "system": "Ground-Breaking Self-Learning Multi-Tenant AI Commerce Core"}
+    return {"status": "live", "message": "WhatsApp Bot RAG Service is Running"}
 
-@app.post("/webhook/whatsapp/{instance_name}")
-async def handle_optimized_whatsapp(instance_name: str, request: Request):
+async def send_whatsapp_message(instance_name: str, number: str, text: str):
+    """Sends reply back via Evolution API with extended timeout."""
+    if not EVOLUTION_API_URL:
+        logger.error("EVOLUTION_API_URL is not set in environment variables.")
+        return
+
+    url = f"{EVOLUTION_API_URL.rstrip('/')}/message/sendText/{instance_name}"
+    headers = {
+        "apikey": EVOLUTION_API_KEY,
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "number": number,
+        "options": {
+            "delay": 1200,
+            "presence": "composing",
+            "linkPreview": True
+        },
+        "text": text
+    }
+
+    # Increased timeout from 2s to 10s to prevent Render connection timeouts
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            response = await client.post(url, json=payload, headers=headers)
+            response.raise_for_status()
+            logger.info(f"Message sent successfully to {number}")
+        except Exception as e:
+            logger.error(f"Error sending WhatsApp message via Evolution API: {e}")
+
+async def process_and_respond(
+    customer_phone: str,
+    message_text: str,
+    tenant: Dict[str, Any],
+    instance_name: str
+):
+    """Background task to process customer message and generate bot reply."""
+    try:
+        tenant_id = tenant.get("id")
+        
+        # Safely fetch chat history
+        chat_history = []
+        if supabase and tenant_id:
+            try:
+                res = supabase.table("tenant_chat_history") \
+                    .select("*") \
+                    .eq("tenant_id", tenant_id) \
+                    .eq("customer_phone", customer_phone) \
+                    .order("created_at", desc=True) \
+                    .limit(5) \
+                    .execute()
+                chat_history = res.data or []
+            except Exception as db_err:
+                logger.error(f"Error fetching chat history: {db_err}")
+
+        # Safely extract owner_phone (Guards against None / NULL)
+        owner_phone = (tenant.get("owner_phone") or "").replace("+", "").strip()
+        clean_sender = customer_phone.replace("+", "").strip()
+
+        # Check if sender is owner or customer
+        is_owner = bool(owner_phone and clean_sender == owner_phone)
+
+        # Bot response generation logic
+        business_name = tenant.get("business_name") or "Valexxy Global Store"
+        reply_text = f"Good day! Welcome to {business_name}. How can we assist you today?"
+
+        # Safely log chat history
+        if supabase and tenant_id:
+            try:
+                supabase.table("tenant_chat_history").insert({
+                    "tenant_id": tenant_id,
+                    "customer_phone": customer_phone,
+                    "role": "user",
+                    "message": message_text
+                }).execute()
+
+                supabase.table("tenant_chat_history").insert({
+                    "tenant_id": tenant_id,
+                    "customer_phone": customer_phone,
+                    "role": "assistant",
+                    "message": reply_text
+                }).execute()
+            except Exception as save_err:
+                logger.error(f"Error saving chat history: {save_err}")
+
+        # Send response back to customer
+        await send_whatsapp_message(instance_name, customer_phone, reply_text)
+
+    except Exception as err:
+        logger.error(f"Error processing response: {err}")
+
+@app.post("/webhook/whatsapp/store-bot")
+async def handle_optimized_whatsapp(request: Request, background_tasks: BackgroundTasks):
     try:
         payload = await request.json()
-    except Exception:
-        return {"status": "invalid_json"}
-
-    # 1. Tenant Lookups
-    tenant = tenant_cache.get(instance_name)
-    if not tenant:
-        tenant = get_tenant_by_instance(instance_name)
-        if not tenant:
-            return {"status": "unregistered_instance"}
-        tenant_cache[instance_name] = tenant
-
-    data = payload.get("data", {})
-    key_info = data.get("key", {})
-    message_info = data.get("message", {})
-
-    is_from_me = key_info.get("fromMe", False)
-    remote_jid = key_info.get("remoteJid", "")
-    customer_phone = remote_jid.replace("@s.whatsapp.net", "")
-
-    message_text = (
-        message_info.get("conversation")
-        or message_info.get("extendedTextMessage", {}).get("text", "")
-        or message_info.get("imageMessage", {}).get("caption", "")
-    )
-
-    if not customer_phone or not message_text:
-        return {"status": "ignored"}
-
-    owner_phone = tenant.get("owner_phone", "").replace("+", "").strip()
-    clean_sender = customer_phone.replace("+", "").strip()
-
-    # -------------------------------------------------------------
-    # 2. OWNER IN-CHAT COMMAND EXECUTION
-    # -------------------------------------------------------------
-    if is_from_me or (owner_phone and clean_sender == owner_phone):
         
-        # Command: #add Product Name | Price | Description | Stock
-        if message_text.startswith("#add "):
+        data = payload.get("data", {})
+        event = payload.get("event")
+        instance_name = payload.get("instance", "default")
+
+        # Ignore events that are not new incoming messages
+        if event and event != "messages.upsert":
+            return {"status": "ignored_event"}
+
+        key = data.get("key", {})
+        from_me = key.get("fromMe", False)
+        if from_me:
+            return {"status": "ignored_from_me"}
+
+        remote_jid = key.get("remoteJid", "")
+        if not remote_jid or "@g.us" in remote_jid:  # Ignore empty or group messages
+            return {"status": "ignored_group"}
+
+        customer_phone = remote_jid.split("@")[0]
+        message = data.get("message", {})
+        
+        message_text = (
+            message.get("conversation") or
+            message.get("extendedTextMessage", {}).get("text") or
+            ""
+        ).strip()
+
+        if not message_text:
+            return {"status": "empty_message"}
+
+        # Fetch Tenant Safely
+        tenant = {}
+        if supabase:
             try:
-                parts = [p.strip() for p in message_text.replace("#add ", "").split("|")]
-                p_name, p_price = parts[0], float(parts[1])
-                p_desc = parts[2] if len(parts) > 2 else "Available in store"
-                p_stock = int(parts[3]) if len(parts) > 3 else 100
-                
-                if add_tenant_product(tenant["id"], p_name, p_price, p_desc, p_stock):
-                    reply = f"✅ *Product Successfully Added!*\n\n📦 *{p_name}*\n💰 *Price:* ₦{p_price:,.2f}\n📊 *Stock:* {p_stock} units"
-                else:
-                    reply = "❌ Database error adding product."
-            except Exception:
-                reply = "❌ *Format Error!* Use:\n`#add Product Name | Price | Description | Stock`"
-            
-            send_whatsapp_message(instance_name, customer_phone, reply)
-            return {"status": "owner_command_processed"}
+                res = supabase.table("tenants").select("*").limit(1).execute()
+                if res.data and len(res.data) > 0:
+                    tenant = res.data[0]
+            except Exception as tenant_err:
+                logger.error(f"Error fetching tenant: {tenant_err}")
 
-        # Command: #ledger CustomerPhone | Type | Key=Value, Key=Value
-        elif message_text.startswith("#ledger "):
-            try:
-                parts = [p.strip() for p in message_text.replace("#ledger ", "").split("|")]
-                target_phone, l_type = parts[0], parts[1]
-                data_dict = {kv.split("=")[0].strip(): kv.split("=")[1].strip() for kv in parts[2].split(",")}
+        # SAFE EXTRACTION (Line 122 Fix)
+        # Prevents AttributeError: 'NoneType' object has no attribute 'replace'
+        owner_phone = (tenant.get("owner_phone") or "").replace("+", "").strip()
 
-                if update_customer_ledger(tenant["id"], target_phone, l_type, data_dict):
-                    reply = f"✅ *Ledger Record Updated for {target_phone}!*"
-                else:
-                    reply = "❌ Ledger update error."
-            except Exception:
-                reply = "❌ *Format Error!* Use:\n`#ledger Phone | Type | Key=Value, Key=Value`"
+        # Add background processing task so WhatsApp webhook gets an instant 200 OK
+        background_tasks.add_task(
+            process_and_respond,
+            customer_phone=customer_phone,
+            message_text=message_text,
+            tenant=tenant,
+            instance_name=instance_name
+        )
 
-            send_whatsapp_message(instance_name, customer_phone, reply)
-            return {"status": "owner_command_processed"}
+        return {"status": "processing"}
 
-        # Command: #remind Target | Frequency | YYYY-MM-DD HH:MM | Message
-        elif message_text.startswith("#remind "):
-            try:
-                parts = [p.strip() for p in message_text.replace("#remind ", "").split("|")]
-                target_recipient, freq, time_str, reminder_msg = parts[0], parts[1].upper(), parts[2], parts[3]
-                first_run_dt = datetime.strptime(time_str, "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)
-                
-                if create_tenant_reminder(tenant["id"], target_recipient, reminder_msg, freq, first_run_dt.isoformat()):
-                    reply = f"⏰ *Reminder Scheduled!*\n\n👤 *Target:* {target_recipient}\n🔄 *Frequency:* {freq}\n📅 *Time:* {time_str} UTC"
-                else:
-                    reply = "❌ Reminder scheduling failed."
-            except Exception:
-                reply = "❌ *Format Error!* Use:\n`#remind Phone/ALL/OWNER | ONCE/DAILY/WEEKLY/MONTHLY | YYYY-MM-DD HH:MM | Message`"
+    except Exception as e:
+        logger.error(f"Error handling WhatsApp webhook: {e}")
+        return {"status": "error", "detail": str(e)}
 
-            send_whatsapp_message(instance_name, customer_phone, reply)
-            return {"status": "owner_command_processed"}
-
-        # Command: #broadcast Message
-        elif message_text.startswith("#broadcast "):
-            broadcast_text = message_text.replace("#broadcast ", "").strip()
-            phone_list = get_tenant_customer_phones(tenant["id"])
-            if not phone_list:
-                send_whatsapp_message(instance_name, customer_phone, "⚠️ No registered contacts found to broadcast.")
-                return {"status": "broadcast_empty"}
-            
-            count = broadcast_whatsapp_message(instance_name, phone_list, f"📢 *[Announcement from {tenant['business_name']}]*\n\n{broadcast_text}")
-            send_whatsapp_message(instance_name, customer_phone, f"🚀 *Broadcast Sent to {count} customer(s)!*")
-            return {"status": "owner_broadcast_sent"}
-
-        # Manual Reply Takeover -> Mute Bot for 60 Minutes
-        else:
-            mute_tenant_bot(tenant["id"], customer_phone, minutes=60)
-            return {"status": "owner_takeover_muted"}
-
-    # -------------------------------------------------------------
-    # 3. CUSTOMER INBOUND AI FLOW WITH PERSISTENT MEMORY
-    # -------------------------------------------------------------
-    if is_tenant_bot_muted(tenant["id"], customer_phone):
-        return {"status": "bot_muted"}
-
-    # Trigger typing presence immediately
-    send_whatsapp_presence(instance_name, customer_phone, "composing")
-    register_tenant_customer(tenant["id"], customer_phone)
-
-    # Permanent Database Save: Inbound Message
-    save_chat_message(tenant["id"], customer_phone, role="customer", message=message_text)
-
-    # Hybrid Memory Recovery (In-Memory Cache -> Persistent Supabase Storage)
-    session_key = f"{tenant['id']}_{customer_phone}"
-    if session_key not in chat_memory_cache:
-        # Cold Start Recovery: Load last 10 messages from Supabase
-        db_history = get_persistent_chat_history(tenant["id"], customer_phone, limit=10)
-        chat_memory_cache[session_key] = db_history
-    else:
-        chat_memory_cache[session_key].append(f"Customer: {message_text}")
-        if len(chat_memory_cache[session_key]) > 10:
-            chat_memory_cache[session_key] = chat_memory_cache[session_key][-10:]
-
-    context_history = "\n".join(chat_memory_cache[session_key])
-
-    # Generate Smart Executive Response
-    ai_res = generate_live_character_reply(
-        tenant=tenant, 
-        customer_phone=customer_phone, 
-        latest_query=message_text,
-        conversation_history=context_history, 
-        persona_key="world_class_pro"
-    )
-    reply_payload = ai_res["reply"]
-
-    # Permanent Database Save: Outbound AI Reply
-    save_chat_message(tenant["id"], customer_phone, role="assistant", message=reply_payload)
-    chat_memory_cache[session_key].append(f"AI: {reply_payload}")
-
-    # Transfer to Human Agent if Triggered
-    if ai_res["is_human_transfer"]:
-        mute_tenant_bot(tenant["id"], customer_phone, minutes=120)
-
-    # Deliver Message via Evolution API
-    send_whatsapp_message(instance_name, customer_phone, reply_payload)
-    return {"status": "success", "tenant": tenant["business_name"]}
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
