@@ -21,6 +21,7 @@ tenant_cache = TTLCache(maxsize=500, ttl=60)
 chat_memory = {}
 
 @app.get("/")
+@app.head("/")
 async def root():
     return {"status": "online", "system": "Enterprise Multi-Tenant AI Operations Engine"}
 
@@ -144,15 +145,12 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
     if session_key not in chat_memory:
         chat_memory[session_key] = []
     
-    # Extract prior history before appending the new message
     history_str = "\n".join(chat_memory[session_key])
 
-    # Append current turn to memory buffer
     chat_memory[session_key].append(f"Customer: {message_text}")
     if len(chat_memory[session_key]) > 10:
         chat_memory[session_key] = chat_memory[session_key][-10:]
 
-    # Generate clean Groq AI reply using correct parameter mapping
     ai_res = generate_live_character_reply(
         tenant=tenant,
         customer_phone=customer_phone,
@@ -163,13 +161,10 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
     
     reply_payload = ai_res["reply"]
     
-    # Save AI response into session memory
     chat_memory[session_key].append(f"AI: {reply_payload}")
 
-    # Mute bot if customer requests human transfer
     if ai_res["is_human_transfer"]:
         mute_tenant_bot(tenant["id"], customer_phone, minutes=120)
 
-    # Dispatch response back via Evolution API
     send_whatsapp_message(instance_name, customer_phone, reply_payload)
     return {"status": "success", "tenant": tenant["business_name"]}
