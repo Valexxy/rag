@@ -1,6 +1,7 @@
 import os
 import re
 from database import get_tenant_catalog, get_customer_ledger, get_customer_profile
+from rag_engine import rag_engine
 
 MODEL_ID = 'llama-3.1-8b-instant'
 
@@ -43,7 +44,7 @@ def generate_live_character_reply(
     conversation_history: str, 
     is_owner: bool = False
 ) -> dict:
-    """Deterministic routing engine that leans less on AI for core logic."""
+    """100% Production RAG Engine Pipeline."""
     
     business_name = tenant.get('business_name', 'our company')
     niche = tenant.get('business_niche', 'retail')
@@ -63,13 +64,14 @@ def generate_live_character_reply(
         }
 
     # -------------------------------------------------------------
-    # 2. DETERMINISTIC CATALOG DISCOVERY (Zero AI Cost, Instant)
+    # 2. RAG RETRIEVAL PHASE (Vector Cosine Similarity & Knowledge Ranking)
     # -------------------------------------------------------------
+    rag_context = rag_engine.retrieve_relevant_context(tenant, customer_phone, latest_query)
+    
     discovery_keywords = ["catalog", "price", "list", "what do you", "how much", "offer", "options", "services", "properties", "items", "types", "power bank"]
     if not is_owner and any(kw in query_lower for kw in discovery_keywords):
-        catalog_text = get_tenant_catalog(tenant)
         return {
-            "reply": f"🤖 *[{business_name} Automated System]*\n\nHere is our active {config['offerings_name']}:\n\n{catalog_text}\n\nWould you like to {config['action_verb']}?",
+            "reply": f"🤖 *[{business_name} Automated System]*\n\nHere is our active {config['offerings_name']}:\n\n{rag_context['retrieved_catalog_context']}\n\nWould you like to {config['action_verb']}?",
             "buttons": ["👤 Human Agent"],
             "detected_tags": [],
             "is_high_value": False,
@@ -88,23 +90,9 @@ def generate_live_character_reply(
         }
 
     # -------------------------------------------------------------
-    # 3. LLM CONVERSATIONAL FALLBACK (For everything else)
+    # 3. RAG AUGMENTATION & GENERATION PHASE
     # -------------------------------------------------------------
-    catalog = get_tenant_catalog(tenant)
-    profile = get_customer_profile(tenant["id"], customer_phone)
-
-    if is_owner:
-        prompt = f"OWNER QUERY: {latest_query}\nINVENTORY: {catalog}"
-    else:
-        known_name = profile.get("full_name") or "Valued Client"
-        prompt = f"""
-        You are the front-desk router for {business_name}, a {niche} business.
-        If the user's intent is to {config['action_verb']} or request something outside the catalog, output [TAG:TRANSFER_HUMAN].
-        Otherwise, answer their basic question politely using this data: {catalog}.
-        Keep it strictly to 1 short sentence.
-        
-        USER: {latest_query}
-        """
+    prompt = rag_engine.augment_prompt(tenant, latest_query, rag_context)
 
     system_instruction = (
         f"You are the Assistant for {business_name}. "
