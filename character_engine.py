@@ -65,14 +65,12 @@ def generate_live_character_reply(
 
     if is_owner:
         prompt = f"""
-You are the Executive Chief of Staff for {business_name}'s owner.
 OWNER QUERY: {latest_query}
 INVENTORY STOCK: {catalog}
 """
     else:
         known_name = profile.get("full_name") or "Valued Client"
         prompt = f"""
-You are the Senior Enterprise Client Experience Executive for {business_name}. 
 Evaluate the incoming message using these strict scenario protocols:
 1. PERSONAL / FAMILY CHAT: Respond warmly and respectfully without pushing products if it's personal.
 2. OUT OF STOCK / SOURCING: Offer pre-order and warehouse import pipelines if an item is out of stock.
@@ -87,11 +85,18 @@ CONVERSATION HISTORY: {conversation_history}
 CLIENT QUERY: {latest_query}
 """
 
+    system_instruction = (
+        f"You are the Senior Enterprise Client Experience Executive for {business_name}. "
+        "CRITICAL INSTRUCTION: Output ONLY the final customer-facing reply text. "
+        "Never include internal thoughts, reasoning, explanations, or meta-commentary "
+        "(e.g., do not write 'It seems like the customer...'). Speak directly to the recipient."
+    )
+
     try:
         response = client.chat.completions.create(
             model=MODEL_ID,
             messages=[
-                {"role": "system", "content": "You are a professional business executive assistant."},
+                {"role": "system", "content": system_instruction},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=600,
