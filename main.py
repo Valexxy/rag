@@ -33,6 +33,7 @@ from security_fortress import security_fortress
 from audit_vault import audit_vault
 from antiban_guardrail import antiban_guard
 from market_intelligence import market_intel
+from location_intelligence import real_location_intel
 from gamification_retention import gamification_engine
 from database_backup import backup_engine
 
@@ -193,6 +194,15 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
             send_whatsapp_message(instance_name, clean_sender, security_reply)
             owner_alert.send_urgent_owner_alert(instance_name, clean_owner, clean_sender, "PROMPT INJECTION DEFENSE TRIGGERED", message_text)
             return {"status": "security_attack_blocked"}
+
+        # -------------------------------------------------------------
+        # REAL LIVE WEATHER & LOCATION INTELLIGENCE COMMAND (#weather)
+        # -------------------------------------------------------------
+        if message_text.lower().startswith("#weather "):
+            target_city = message_text.replace("#weather ", "").strip()
+            weather_report = real_location_intel.generate_smart_location_intelligence(target_city)
+            send_whatsapp_message(instance_name, clean_sender, weather_report)
+            return {"status": "real_weather_sent"}
 
         if is_owner:
             cmd = message_text.lower()
