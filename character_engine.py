@@ -12,125 +12,125 @@ from database import (
 client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 MODEL_ID = 'gemini-2.5-flash'
 
-CHARACTERS = {
-    "world_class_pro": (
-        "You are the Lead Client Experience Executive for {business_name}. "
-        "Your tone is immaculate, highly articulate, polite, calm, and exceptionally efficient. "
-        "You treat every customer as a valued VIP, offering concise, precise, and sophisticated assistance."
-    )
-}
-
 def generate_live_character_reply(
     tenant: dict, 
     customer_phone: str, 
     latest_query: str,
     conversation_history: str, 
-    persona_key: str = "world_class_pro"
+    is_owner: bool = False
 ) -> dict:
-    """Smart Memory-Grounded Intelligence Engine with Self-Learning and Direct Answers."""
+    """Generates dual-engine AI responses for either Business Owner or Client."""
     
-    # 1. Fetch Targeted Catalog & Ledger
     catalog = get_tenant_catalog(tenant["id"], search_query=latest_query)
     customer_ledger = get_customer_ledger(tenant["id"], customer_phone)
     profile = get_customer_profile(tenant["id"], customer_phone)
-    
     business_name = tenant.get('business_name', 'our company')
-    
-    # 2. Build Profile Context
-    known_name = profile.get("full_name") or "Valued Customer"
-    profile_notes = profile.get("notes") or "None on file"
 
-    tenant_persona = tenant.get('ai_persona')
-    if tenant_persona and tenant_persona.strip():
-        persona_instruction = f"You represent {business_name}. {tenant_persona}"
-    else:
-        persona_template = CHARACTERS.get(persona_key, CHARACTERS["world_class_pro"])
-        persona_instruction = persona_template.format(business_name=business_name)
+    # -------------------------------------------------------------
+    # A. BUSINESS OWNER PERSONAL ASSISTANT PROMPT
+    # -------------------------------------------------------------
+    if is_owner:
+        prompt = f"""
+You are the Executive Chief of Staff and Operations Director for {business_name}'s owner.
+Your duty is to assist the business owner with inventory management, customer reminders, broadcasts, and operational insights.
 
-    prompt = f"""
-{persona_instruction}
+OWNER QUERY: {latest_query}
 
-BUSINESS NAME: {business_name}
-INDUSTRY NICHE: {tenant.get('niche', 'Operations')}
-
-KNOWN CUSTOMER MEMORY & PROFILE:
-- Customer Name: {known_name}
-- Saved Customer Notes/Preferences: {profile_notes}
-
-LIVE CATALOG STOCK & SERVICES:
+CURRENT STORE INVENTORY:
 {catalog}
 
-CUSTOMER ACCOUNT LEDGER & BALANCE RECORDS:
-{customer_ledger}
-
-CONVERSATION HISTORY (PAST TURNS):
+CONVERSATION HISTORY:
 {conversation_history}
 
-CRITICAL EXECUTION INSTRUCTIONS:
-1. COMPLETE, DIRECT ANSWERS: When asked "what do you sell" or "what are your prices", IMMEDIATELY provide the full list of products, prices, and stock levels directly in your response. Never send incomplete intros.
-2. CONTINUITY & CONTEXT: Use the past conversation history and customer profile memory above. If the customer mentions their name or preference, acknowledge it naturally.
-3. EXECUTIVE TONE: Communicate in immaculate, formal English. Do NOT use Pidgin or slang.
-4. NO HEADER BADGES IN TEXT: Do NOT output any header badges starting with '🤖' or '[... Client Care]'. Python attaches this automatically.
-5. SELF-LEARNING FACT EXTRACTION: If the customer reveals their name or a crucial preference in this turn, append memory extraction tags at the very end:
-   - `[EXTRACT_NAME: Customer Full Name]` (if customer states their name)
-   - `[EXTRACT_NOTE: Preferred item, budget, or key detail]` (if customer shares preferences)
-6. ACTION TAGS & BUTTONS:
-   - Append `[TAG:PAYMENT_TRIGGER]` if user expresses buying intent.
-   - Append `[TAG:TRANSFER_HUMAN]` if user requests human support or call.
-   - Append `[BUTTONS: Option 1 | Option 2 | Option 3]` at the absolute end.
+INSTRUCTIONS FOR OWNER ASSISTANT:
+1. Executive Tone: Address the user as "Chief", "Boss", or "Director". Be brief, hyper-efficient, and analytical.
+2. Action Tag Extraction:
+   - If the owner wants to add a product, format response and append `[ACTION:ADD_PRODUCT]`
+   - If the owner wants to set a reminder, format response and append `[ACTION:SET_REMINDER]`
+   - If the owner wants a broadcast, format response and append `[ACTION:BROADCAST]`
+3. Always supply 3 clear interactive buttons at the end using `[BUTTONS: Option 1 | Option 2 | Option 3]`.
+   Default Buttons: `[BUTTONS: 📊 Daily Audit | ⏰ Add Reminder | 📦 View Stock]`
+"""
+    # -------------------------------------------------------------
+    # B. CLIENT CONCIERGE PROMPT
+    # -------------------------------------------------------------
+    else:
+        known_name = profile.get("full_name") or "Valued Client"
+        profile_notes = profile.get("notes") or "None on file"
+
+        prompt = f"""
+You are the Lead Client Experience Executive for {business_name}.
+Your tone is immaculate, articulate, polite, and exceptionally efficient.
+
+CLIENT NAME: {known_name}
+SAVED CLIENT PREFERENCES: {profile_notes}
+
+LIVE STORE CATALOG:
+{catalog}
+
+CLIENT ACCOUNT BALANCES & LEDGER:
+{customer_ledger}
+
+CONVERSATION HISTORY:
+{conversation_history}
+
+INSTRUCTIONS FOR CLIENT CONCIERGE:
+1. Complete Answers: Always answer questions directly with complete pricing and stock.
+2. Executive English: Speak in pristine English without street slang unless configured otherwise.
+3. Interactive Navigation: Suggest quick option shortcuts at the bottom.
+4. Append interactive buttons at the very end: `[BUTTONS: 📜 View Catalog | 💳 Place Order | 👤 Human Agent]`
+5. Self-Learning Memory: Append `[EXTRACT_NAME: Name]` or `[EXTRACT_NOTE: Preference]` if user shares personal facts.
+6. Trigger Action Tags:
+   - Append `[TAG:PAYMENT_TRIGGER]` if user wants to buy/pay.
+   - Append `[TAG:TRANSFER_HUMAN]` if user requests a human call.
 """
 
     response = client.models.generate_content(
         model=MODEL_ID,
         contents=prompt,
-        config=types.GenerateContentConfig(
-            max_output_tokens=700,
-            temperature=0.2
-        )
+        config=types.GenerateContentConfig(max_output_tokens=700, temperature=0.2)
     )
     
     raw_text = response.text.strip()
-    
-    # Extract & Store Self-Learned Customer Memory Facts
-    name_match = re.search(r"\[EXTRACT_NAME:\s*(.*?)\]", raw_text)
-    note_match = re.search(r"\[EXTRACT_NOTE:\s*(.*?)\]", raw_text)
-    
-    extracted_name = name_match.group(1).strip() if name_match else None
-    extracted_note = note_match.group(1).strip() if note_match else None
 
-    if extracted_name or extracted_note:
-        upsert_customer_profile(tenant["id"], customer_phone, full_name=extracted_name, notes=extracted_note)
-
-    # Clean Memory Extraction Tags from Visible Text
-    raw_text = re.sub(r"\[EXTRACT_NAME:\s*.*?\]", "", raw_text)
-    raw_text = re.sub(r"\[EXTRACT_NOTE:\s*.*?\]", "", raw_text).strip()
+    # Memory Fact Extraction
+    if not is_owner:
+        name_match = re.search(r"\[EXTRACT_NAME:\s*(.*?)\]", raw_text)
+        note_match = re.search(r"\[EXTRACT_NOTE:\s*(.*?)\]", raw_text)
+        ex_name = name_match.group(1).strip() if name_match else None
+        ex_note = note_match.group(1).strip() if note_match else None
+        if ex_name or ex_note:
+            upsert_customer_profile(tenant["id"], customer_phone, full_name=ex_name, notes=ex_note)
+        
+        raw_text = re.sub(r"\[EXTRACT_NAME:\s*.*?\]", "", raw_text)
+        raw_text = re.sub(r"\[EXTRACT_NOTE:\s*.*?\]", "", raw_text).strip()
 
     # Extract Interactive Buttons
-    buttons = ["💳 Complete Purchase", "📜 Product Catalog", "👤 Speak with Agent"]
+    default_buttons = ["📊 Daily Audit", "⏰ Add Reminder", "📦 View Stock"] if is_owner else ["📜 View Catalog", "💳 Place Order", "👤 Human Agent"]
     button_match = re.search(r"\[BUTTONS:\s*(.*?)\]", raw_text)
     if button_match:
         button_str = button_match.group(1)
         buttons = [b.strip() for b in button_str.split("|") if b.strip()]
         raw_text = re.sub(r"\[BUTTONS:\s*.*?\]", "", raw_text).strip()
+    else:
+        buttons = default_buttons
 
     # Extract Action Tags
-    detected_tags = re.findall(r"\[TAG:[A-Z_]+\]", raw_text)
-    clean_text = re.sub(r"\[TAG:[A-Z_]+\]", "", raw_text).strip()
+    detected_tags = re.findall(r"\[(?:TAG|ACTION):[A-Z_]+\]", raw_text)
+    clean_text = re.sub(r"\[(?:TAG|ACTION):[A-Z_]+\]", "", raw_text).strip()
 
-    # Remove Hallucinated Badges
+    # Clean Hallucinated Badges
     lines = clean_text.split("\n")
-    filtered_lines = [line for line in lines if not (re.search(r"🤖|AI Assistant|Client Care", line, re.IGNORECASE) and len(line.strip()) < 50)]
-    clean_text = "\n".join(filtered_lines).strip()
+    filtered = [l for l in lines if not (re.search(r"🤖|AI Assistant|Client Care|Executive OS", l, re.IGNORECASE) and len(l.strip()) < 50)]
+    clean_text = "\n".join(filtered).strip()
 
-    # Prepend Official Executive Badge
-    ai_badge = f"🤖 *[{business_name} Client Care]*\n\n"
-    final_reply = f"{ai_badge}{clean_text}"
+    header_title = "Executive Assistant" if is_owner else "Client Care"
+    final_reply = f"🤖 *[{business_name} {header_title}]*\n\n{clean_text}"
 
     return {
         "reply": final_reply,
         "buttons": buttons,
         "detected_tags": detected_tags,
         "is_buy_intent": "[TAG:PAYMENT_TRIGGER]" in detected_tags,
-        "is_human_transfer": "[TAG:TRANSFER_HUMAN]" in detected_tags,
-        "is_booking": "[TAG:BOOKING_SLOT]" in detected_tags
+        "is_human_transfer": "[TAG:TRANSFER_HUMAN]" in detected_tags
     }
