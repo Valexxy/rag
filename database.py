@@ -3,7 +3,6 @@ from datetime import datetime, timedelta, timezone
 from supabase import create_client, Client
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
-# Accept either variable name to prevent configuration crashes
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY") or os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
@@ -16,35 +15,43 @@ def get_tenant_by_instance(instance_name: str) -> dict:
     """Retrieves tenant settings, API credentials, and owner info by Evolution instance."""
     try:
         res = supabase.table("tenants").select("*").eq("instance_name", instance_name).eq("is_active", True).execute()
-        if res.data:
-            return res.data[0]
-        return None
+        return res.data[0] if res.data else None
     except Exception as e:
         print(f"❌ Error fetching tenant profile: {e}")
         return None
 
-def get_tenant_catalog(tenant_id: str) -> str:
-    """Fetches real-time products/services inventory for a tenant from Supabase."""
+def get_tenant_catalog(tenant_id: str, search_query: str = None) -> str:
+    """Fetches real-time products/services inventory for a tenant with optional keyword filtering."""
     try:
-        res = supabase.table("tenant_products").select("name, description, price, stock_quantity").eq("tenant_id", tenant_id).execute()
+        query = supabase.table("tenant_products").select("name, description, price, stock_quantity").eq("tenant_id", tenant_id)
+        
+        if search_query and len(search_query.strip()) > 2:
+            query = query.ilike("name", f"%{search_query.strip()}%")
+            
+        res = query.execute()
         products = res.data
         if not products:
-            return "No inventory listed."
+            # Fallback to full catalog if specific search yields empty
+            res = supabase.table("tenant_products").select("name, description, price, stock_quantity").eq("tenant_id", tenant_id).execute()
+            products = res.data
+
+        if not products:
+            return "No inventory currently listed in database."
         
         catalog = []
         for p in products:
-            catalog.append(f"- {p['name']}: ₦{p['price']:,.2f} | Stock: {p['stock_quantity']} units | Info: {p.get('description', 'N/A')}")
+            catalog.append(f"- *{p['name']}*: ₦{p['price']:,.2f} | Stock: {p['stock_quantity']} units | Info: {p.get('description', 'N/A')}")
         return "\n".join(catalog)
     except Exception as e:
         print(f"❌ Error fetching catalog: {e}")
         return "Catalog details currently unavailable."
 
 def get_customer_ledger(tenant_id: str, customer_phone: str) -> str:
-    """Retrieves custom dynamic parameters (savings balances, dues, appointments) for a specific customer."""
+    """Retrieves dynamic customer account metadata (savings balances, dues, appointments)."""
     try:
         res = supabase.table("tenant_custom_ledgers").select("ledger_type, data").eq("tenant_id", tenant_id).eq("customer_phone", customer_phone).execute()
         if not res.data:
-            return "No custom account records found for this user."
+            return "No specific account balances or ledger records on file."
         
         records = []
         for r in res.data:
@@ -55,11 +62,85 @@ def get_customer_ledger(tenant_id: str, customer_phone: str) -> str:
         return "Custom ledger records unavailable."
 
 # -----------------------------------------------------------------------------
-# 2. IN-CHAT OWNER DATABASE OPERATIONS
+# 2. PERSISTENT CONVERSATION MEMORY (Survives Restarts)
+# -----------------------------------------------------------------------------
+
+def save_chat_message(tenant_id: str, customer_phone: str, role: str, message: str):
+    """Saves every inbound customer message and outbound AI reply permanently in Supabase."""
+    try:
+        supabase.table("tenant_chat_history").insert({
+            "tenant_id": tenant_id,
+            "customer_phone": customer_phone.strip(),
+            "role": role,  # 'customer' or 'assistant'
+            "message": message.strip()
+        }).execute()
+    except Exception as e:
+        print(f"❌ Error saving chat history: {e}")
+
+def get_persistent_chat_history(tenant_id: str, customer_phone: str, limit: int = 10) -> list:
+    """Retrieves last N turns from Supabase to rebuild memory after server restarts."""
+    try:
+        res = supabase.table("tenant_chat_history") \
+            .select("role, message, created_at") \
+            .eq("tenant_id", tenant_id) \
+            .eq("customer_phone", customer_phone.strip()) \
+            .order("created_at", desc=True) \
+            .limit(limit) \
+            .execute()
+        
+        if not res.data:
+            return []
+        
+        # Chronological order
+        history = list(reversed(res.data))
+        formatted = []
+        for h in history:
+            prefix = "Customer" if h["role"] == "customer" else "AI"
+            formatted.append(f"{prefix}: {h['message']}")
+        return formatted
+    except Exception as e:
+        print(f"❌ Error retrieving persistent chat history: {e}")
+        return []
+
+# -----------------------------------------------------------------------------
+# 3. SELF-LEARNING CUSTOMER PROFILE MEMORY
+# -----------------------------------------------------------------------------
+
+def get_customer_profile(tenant_id: str, customer_phone: str) -> dict:
+    """Fetches long-term customer profile memory (name, preferences, notes)."""
+    try:
+        res = supabase.table("tenant_customer_profiles") \
+            .select("*") \
+            .eq("tenant_id", tenant_id) \
+            .eq("customer_phone", customer_phone.strip()) \
+            .execute()
+        return res.data[0] if res.data else {}
+    except Exception as e:
+        print(f"❌ Error fetching customer profile memory: {e}")
+        return {}
+
+def upsert_customer_profile(tenant_id: str, customer_phone: str, full_name: str = None, notes: str = None):
+    """Updates customer profile facts learned during conversation."""
+    try:
+        data = {
+            "tenant_id": tenant_id,
+            "customer_phone": customer_phone.strip(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        if full_name:
+            data["full_name"] = full_name.strip()
+        if notes:
+            data["notes"] = notes.strip()
+
+        supabase.table("tenant_customer_profiles").upsert(data, on_conflict="tenant_id,customer_phone").execute()
+    except Exception as e:
+        print(f"❌ Error updating customer profile memory: {e}")
+
+# -----------------------------------------------------------------------------
+# 4. IN-CHAT OWNER COMMANDS
 # -----------------------------------------------------------------------------
 
 def add_tenant_product(tenant_id: str, name: str, price: float, description: str, stock: int = 100) -> bool:
-    """Allows business owners to insert new catalog items via WhatsApp commands."""
     try:
         supabase.table("tenant_products").insert({
             "tenant_id": tenant_id,
@@ -74,7 +155,6 @@ def add_tenant_product(tenant_id: str, name: str, price: float, description: str
         return False
 
 def update_customer_ledger(tenant_id: str, customer_phone: str, ledger_type: str, data_dict: dict) -> bool:
-    """Upserts dynamic customer account metadata (savings targets, contributions, dues)."""
     try:
         supabase.table("tenant_custom_ledgers").upsert({
             "tenant_id": tenant_id,
@@ -85,15 +165,14 @@ def update_customer_ledger(tenant_id: str, customer_phone: str, ledger_type: str
         }, on_conflict="tenant_id,customer_phone,ledger_type").execute()
         return True
     except Exception as e:
-        print(f"❌ Error updating customer ledger: {e}")
+        print(f"❌ Error updating ledger: {e}")
         return False
 
 # -----------------------------------------------------------------------------
-# 3. CONTACT DIRECTORY & BROADCASTING
+# 5. CONTACT DIRECTORY & BOT MUTES
 # -----------------------------------------------------------------------------
 
 def register_tenant_customer(tenant_id: str, customer_phone: str):
-    """Registers or updates customer phone numbers for broadcast delivery."""
     try:
         supabase.table("tenant_customers").upsert({
             "tenant_id": tenant_id,
@@ -101,10 +180,9 @@ def register_tenant_customer(tenant_id: str, customer_phone: str):
             "last_active": datetime.now(timezone.utc).isoformat()
         }, on_conflict="tenant_id,customer_phone").execute()
     except Exception as e:
-        print(f"❌ Error registering customer contact: {e}")
+        print(f"❌ Error registering customer: {e}")
 
 def get_tenant_customer_phones(tenant_id: str) -> list:
-    """Retrieves all registered customer phone numbers for broadcast dispatch."""
     try:
         res = supabase.table("tenant_customers").select("customer_phone").eq("tenant_id", tenant_id).execute()
         return [c["customer_phone"] for c in res.data] if res.data else []
@@ -112,12 +190,7 @@ def get_tenant_customer_phones(tenant_id: str) -> list:
         print(f"❌ Error fetching customer phone list: {e}")
         return []
 
-# -----------------------------------------------------------------------------
-# 4. BOT MUTE & HUMAN TAKEOVER CONTROLS
-# -----------------------------------------------------------------------------
-
 def is_tenant_bot_muted(tenant_id: str, customer_phone: str) -> bool:
-    """Checks if the AI bot is currently muted for a specific customer on a business instance."""
     try:
         now = datetime.now(timezone.utc).isoformat()
         res = supabase.table("tenant_bot_mutes") \
@@ -132,7 +205,6 @@ def is_tenant_bot_muted(tenant_id: str, customer_phone: str) -> bool:
         return False
 
 def mute_tenant_bot(tenant_id: str, customer_phone: str, minutes: int = 60):
-    """Mutes the AI bot for human agent takeover."""
     try:
         muted_until = (datetime.now(timezone.utc) + timedelta(minutes=minutes)).isoformat()
         supabase.table("tenant_bot_mutes").upsert({
@@ -141,14 +213,13 @@ def mute_tenant_bot(tenant_id: str, customer_phone: str, minutes: int = 60):
             "muted_until": muted_until
         }, on_conflict="tenant_id,customer_phone").execute()
     except Exception as e:
-        print(f"❌ Error setting mute: {e}")
+        print(f"❌ Error muting bot: {e}")
 
 # -----------------------------------------------------------------------------
-# 5. SMART AUTOMATED REMINDER ENGINE
+# 6. SMART AUTOMATED REMINDER ENGINE
 # -----------------------------------------------------------------------------
 
 def create_tenant_reminder(tenant_id: str, recipient_phone: str, reminder_text: str, frequency: str, first_run_iso: str) -> bool:
-    """Schedules a new recurring or one-time reminder in Supabase."""
     try:
         supabase.table("tenant_reminders").insert({
             "tenant_id": tenant_id,
@@ -164,7 +235,6 @@ def create_tenant_reminder(tenant_id: str, recipient_phone: str, reminder_text: 
         return False
 
 def get_due_reminders() -> list:
-    """Fetches all active reminders that are due for dispatch."""
     try:
         now_iso = datetime.now(timezone.utc).isoformat()
         res = supabase.table("tenant_reminders") \
@@ -178,7 +248,6 @@ def get_due_reminders() -> list:
         return []
 
 def update_reminder_next_run(reminder_id: str, frequency: str, current_run_iso: str):
-    """Recalculates and updates the next trigger time for recurring reminders (DAILY, WEEKLY, MONTHLY)."""
     try:
         if frequency == "ONCE":
             supabase.table("tenant_reminders").update({"is_active": False}).eq("id", reminder_id).execute()
