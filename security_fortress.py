@@ -4,7 +4,6 @@ import hashlib
 import base64
 from cryptography.fernet import Fernet
 
-# Master system key derivation for tenant credentials encryption
 MASTER_SECRET = "SovereignSaaS2030MasterSecretKey32BytesLong!"
 _fernet_key = base64.urlsafe_b64encode(hashlib.sha256(MASTER_SECRET.encode()).digest())
 cipher_suite = Fernet(_fernet_key)
@@ -16,7 +15,7 @@ class SecurityFortress:
     def inspect_prompt_injection(user_input: str) -> tuple:
         """Scans input text for AI prompt injection attacks, system overrides, or unauthorized discount attempts."""
         malicious_patterns = [
-            r"ignore (all )?previous instructions",
+            r"ignore (all )?(previous )?instructions",
             r"system override",
             r"you are now (an? )?admin",
             r"grant (me )?99%",
@@ -54,7 +53,7 @@ class SecurityFortress:
     def verify_webhook_hmac(payload_body: bytes, signature: str, secret: str) -> bool:
         """Verifies HMAC-SHA256 signature for incoming webhooks."""
         if not signature or not secret:
-            return True  # Fallback if secret not configured
+            return True
         computed = hmac.new(secret.encode(), payload_body, hashlib.sha256).hexdigest()
         return hmac.compare_digest(computed, signature)
 
