@@ -88,7 +88,7 @@ def register_tenant_customer(tenant_id: str, customer_phone: str):
         pass
 
 def get_tenant_catalog(tenant_id: str, search_query: str = "") -> str:
-    """Fetches formatted tenant catalog string."""
+    """Fetches formatted tenant catalog string supporting both title and name columns."""
     try:
         res = supabase.table("tenant_products").select("*").eq("tenant_id", tenant_id).execute()
         products = res.data or []
@@ -97,7 +97,12 @@ def get_tenant_catalog(tenant_id: str, search_query: str = "") -> str:
         
         catalog_lines = []
         for p in products:
-            catalog_lines.append(f"• *{p.get('title')}* - ₦{p.get('price', 0):,.2f} (Stock: {p.get('stock', 0)})\n  _{p.get('description', '')}_")
+            # Check both 'title' and 'name' columns to prevent None display
+            p_name = p.get('title') or p.get('name') or 'Product Item'
+            p_price = p.get('price', 0)
+            p_stock = p.get('stock', 0)
+            p_desc = p.get('description', '')
+            catalog_lines.append(f"• *{p_name}* - ₦{p_price:,.2f} (Stock: {p_stock})\n  _{p_desc}_")
         return "\n\n".join(catalog_lines)
     except Exception as e:
         return "Catalog temporarily unavailable."
