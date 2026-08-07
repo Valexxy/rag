@@ -28,7 +28,7 @@ def is_tenant_bot_muted(tenant_id: str, customer_phone: str) -> bool:
     except Exception as e:
         return False
 
-def mute_tenant_bot(tenant_id: str, customer_phone: str, minutes: int = 60):
+def mute_tenant_bot(tenant_id: str, customer_phone: str, minutes: int = 120):
     """Mutes the bot for a specific customer."""
     try:
         supabase.table("bot_mutes").upsert({
@@ -88,7 +88,7 @@ def register_tenant_customer(tenant_id: str, customer_phone: str):
         pass
 
 def get_tenant_catalog(tenant_id: str, search_query: str = "") -> str:
-    """Fetches formatted tenant catalog string supporting both title and name columns."""
+    """Fetches formatted tenant catalog string without stock constraints."""
     try:
         res = supabase.table("tenant_products").select("*").eq("tenant_id", tenant_id).execute()
         products = res.data or []
@@ -97,12 +97,11 @@ def get_tenant_catalog(tenant_id: str, search_query: str = "") -> str:
         
         catalog_lines = []
         for p in products:
-            # Check both 'title' and 'name' columns to prevent None display
             p_name = p.get('title') or p.get('name') or 'Product Item'
             p_price = p.get('price', 0)
-            p_stock = p.get('stock', 0)
             p_desc = p.get('description', '')
-            catalog_lines.append(f"• *{p_name}* - ₦{p_price:,.2f} (Stock: {p_stock})\n  _{p_desc}_")
+            # Stock is omitted as requested
+            catalog_lines.append(f"• *{p_name}* - ₦{p_price:,.2f}\n  _{p_desc}_")
         return "\n\n".join(catalog_lines)
     except Exception as e:
         return "Catalog temporarily unavailable."
@@ -120,7 +119,7 @@ def get_customer_ledger(tenant_id: str, customer_phone: str) -> str:
 def get_customer_profile(tenant_id: str, customer_phone: str) -> dict:
     """Fetches customer profile data."""
     try:
-        res = supabase.table("tenant_customers").select("*").eq("tenant_id", tenant_id).eq("phone_number", customer_phone).single().execute()
+        res = supabase.table("tenant_customers").select("*").eq("tenant_id", tenant_id).eq("phone_number=eq.{customer_phone}").single().execute()
         return res.data or {}
     except Exception as e:
         return {}
