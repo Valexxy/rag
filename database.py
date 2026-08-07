@@ -12,7 +12,7 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_URL and
 def get_tenant_by_instance(instance_name: str) -> dict:
     """Fetches tenant profile by WhatsApp instance name."""
     try:
-        res = supabase.table("tenants").select("*").eq("whatsapp_instance", instance_name).single().execute()
+        res = supabase.table("tenants").select("*").eq("instance_name", instance_name).single().execute()
         return res.data
     except Exception as e:
         print(f"❌ Error fetching tenant by instance: {e}")
