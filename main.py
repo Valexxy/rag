@@ -16,7 +16,7 @@ from evolution_interactive import (
     send_whatsapp_presence, send_whatsapp_message, broadcast_whatsapp_message
 )
 
-# World-Class Enterprise Modules
+# Enterprise SaaS Modules
 from local_ai_brain import local_brain
 from whatsapp_ui import render_executive_whatsapp_dashboard, render_role_based_menu, format_currency
 from logistics_department import logistics_dept
@@ -27,10 +27,14 @@ from owner_alert_protocol import owner_alert
 from reminder_scheduler import reminder_scheduler
 from loyalty_rewards import loyalty_engine
 
-# Sovereign Compliance & Security Fortress
+# Sovereign Compliance, Security Fortress & Market Intelligence
 from sovereign_compliance import sovereign_compliance
 from security_fortress import security_fortress
 from audit_vault import audit_vault
+from antiban_guardrail import antiban_guard
+from market_intelligence import market_intel
+from gamification_retention import gamification_engine
+from database_backup import backup_engine
 
 load_dotenv()
 
@@ -45,6 +49,8 @@ chat_memory = {}
 @app.on_event("startup")
 async def startup_event():
     asyncio.create_task(reminder_scheduler.start_background_loop())
+    # Create initial database persistence snapshot
+    backup_engine.create_database_snapshot()
 
 @app.get("/")
 @app.head("/")
@@ -116,7 +122,13 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
             send_whatsapp_message(instance_name, customer_phone, dashboard_text)
             return {"status": "owner_dashboard_sent"}
 
-        # B. Owner Quick Add Entity
+        # B. Owner Daily Streak Command: #streak
+        elif cmd in ["#streak", "#rank", "#tier"]:
+            streak_text = gamification_engine.format_daily_streak_card(customer_phone, 7, 48500.0)
+            send_whatsapp_message(instance_name, customer_phone, streak_text)
+            return {"status": "streak_sent"}
+
+        # C. Owner Quick Add Entity
         elif message_text.startswith("#add "):
             try:
                 raw_cmd = message_text.replace("#add ", "").strip()
@@ -137,7 +149,7 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
             send_whatsapp_message(instance_name, customer_phone, reply)
             return {"status": "owner_add_processed"}
 
-        # C. Compliance Data Export & Erase Commands (#data-export, #data-erase)
+        # D. Compliance Data Export & Erase Commands (#data-export, #data-erase)
         elif message_text.startswith("#data-export "):
             target_phone = message_text.replace("#data-export ", "").strip()
             export_data = sovereign_compliance.export_customer_data(tenant["id"], target_phone)
@@ -156,21 +168,26 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
             send_whatsapp_message(instance_name, customer_phone, reply)
             return {"status": "data_erased"}
 
-        # D. Owner Broadcast Command
+        # E. Owner Anti-Ban Safe Broadcast Command
         elif message_text.startswith("#broadcast "):
             broadcast_text = message_text.replace("#broadcast ", "").strip()
             phone_list = get_tenant_customer_phones(tenant["id"])
             if phone_list:
-                count = broadcast_whatsapp_message(instance_name, phone_list, f"📢 *[{tenant['business_name']}]*\n\n{broadcast_text}")
-                audit_vault.create_audit_record(tenant["id"], "OWNER", "BROADCAST_SENT", {"recipient_count": count})
-                reply = f"🚀 *Broadcast delivered to {count} customers!*"
+                # Use anti-ban safe broadcast with randomized human jitter templates
+                count = 0
+                for phone in phone_list:
+                    safe_msg = antiban_guard.randomize_broadcast_template(broadcast_text, phone)
+                    if send_whatsapp_message(instance_name, phone, safe_msg):
+                        count += 1
+                audit_vault.create_audit_record(tenant["id"], "OWNER", "SAFE_BROADCAST_SENT", {"recipient_count": count})
+                reply = f"🛡️ *[ANTI-BAN SAFE BROADCAST COMPLETED]*\n\nDelivered to *{count}* customers with randomized human jitter delay."
             else:
                 reply = "⚠️ No registered customers found for broadcast."
 
             send_whatsapp_message(instance_name, customer_phone, reply)
             return {"status": "broadcast_processed"}
 
-        # E. Regular owner manual reply -> Auto-mute bot for 120 mins
+        # F. Regular owner manual reply -> Auto-mute bot for 120 mins
         else:
             mute_tenant_bot(tenant["id"], customer_phone, minutes=120)
             return {"status": "owner_takeover_muted"}
@@ -183,6 +200,12 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
 
     send_whatsapp_presence(instance_name, customer_phone, "composing")
     register_tenant_customer(tenant["id"], customer_phone)
+
+    # Market Price Intelligence Command (#market)
+    if message_text.strip().lower().startswith("#market") or "market price" in message_text.lower():
+        report = market_intel.format_market_intelligence_report()
+        send_whatsapp_message(instance_name, customer_phone, report)
+        return {"status": "market_intel_sent"}
 
     intent, confidence = local_brain.classify_intent(message_text)
 
