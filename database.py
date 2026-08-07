@@ -56,7 +56,7 @@ def update_enterprise_ledger(tenant_id: str, customer_phone: str, ledger_type: s
     """
     try:
         precise_amount = Decimal(str(amount)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-        is_high_value = precise_amount >= Decimal('1000000.00') # 1 Million Naira threshold
+        is_high_value = precise_amount >= Decimal('1000000.00')
 
         payload = {
             "tenant_id": tenant_id,
@@ -89,6 +89,25 @@ def get_customer_ledger(tenant_id: str, customer_phone: str) -> str:
     except Exception as e:
         print(f"❌ Error fetching ledger: {e}")
         return "Ledger records unavailable."
+
+def get_customer_profile(tenant_id: str, customer_phone: str) -> dict:
+    """Fetches long-term customer profile memory."""
+    try:
+        res = supabase.table("tenant_customer_profiles").select("*").eq("tenant_id", tenant_id).eq("customer_phone", customer_phone.strip()).execute()
+        return res.data[0] if res.data else {}
+    except Exception as e:
+        print(f"❌ Error fetching customer profile: {e}")
+        return {}
+
+def upsert_customer_profile(tenant_id: str, customer_phone: str, full_name: str = None, notes: str = None):
+    """Updates customer profile facts learned during conversation."""
+    try:
+        data = {"tenant_id": tenant_id, "customer_phone": customer_phone.strip(), "updated_at": datetime.now(timezone.utc).isoformat()}
+        if full_name: data["full_name"] = full_name.strip()
+        if notes: data["notes"] = notes.strip()
+        supabase.table("tenant_customer_profiles").upsert(data, on_conflict="tenant_id,customer_phone").execute()
+    except Exception as e:
+        print(f"❌ Error updating customer profile: {e}")
 
 def save_chat_message(tenant_id: str, customer_phone: str, role: str, message: str):
     """Persists chat history to Supabase."""
@@ -141,7 +160,7 @@ def get_tenant_customer_phones(tenant_id: str) -> list:
         return []
 
 def is_tenant_bot_muted(tenant_id: str, customer_phone: str) -> bool:
-    """Checks if bot is muted for a contact (manual takeover or blacklist)."""
+    """Checks if bot is muted for a contact."""
     try:
         now = datetime.now(timezone.utc).isoformat()
         res = supabase.table("tenant_bot_mutes").select("*").eq("tenant_id", tenant_id).eq("customer_phone", customer_phone).gt("muted_until", now).execute()
