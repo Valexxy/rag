@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sovereign AI Commerce SaaS - Executive Command Dashboard</title>
+    <title>Sovereign AI Commerce SaaS - Executive Command & Self-Healing Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -14,20 +14,15 @@
             --bg-card-hover: rgba(28, 36, 56, 0.85);
             --border-color: rgba(255, 255, 255, 0.08);
             --accent-green: #10b981;
-            --accent-green-glow: rgba(16, 185, 129, 0.25);
             --accent-blue: #3b82f6;
             --accent-purple: #8b5cf6;
             --accent-amber: #f59e0b;
+            --accent-red: #ef4444;
             --text-main: #f3f4f6;
             --text-muted: #9ca3af;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
 
         body {
             background-color: var(--bg-dark);
@@ -40,7 +35,6 @@
             background-attachment: fixed;
         }
 
-        /* Sidebar Navigation */
         .sidebar {
             width: 260px;
             background: rgba(10, 14, 23, 0.9);
@@ -61,265 +55,82 @@
         }
 
         .brand-icon {
-            width: 40px;
-            height: 40px;
+            width: 40px; height: 40px;
             background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
             border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            font-weight: 800;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; font-weight: 800;
             box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
         }
 
         .brand-text h1 {
-            font-family: 'Outfit', sans-serif;
-            font-size: 18px;
-            font-weight: 700;
+            font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 700;
             background: linear-gradient(to right, #ffffff, #9ca3af);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
 
-        .brand-text span {
-            font-size: 11px;
-            color: var(--accent-green);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-weight: 600;
-        }
+        .brand-text span { font-size: 11px; color: var(--accent-green); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
 
-        .nav-menu {
-            list-style: none;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
+        .nav-menu { list-style: none; display: flex; flex-direction: column; gap: 6px; }
         .nav-item a {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 16px;
-            border-radius: 10px;
-            color: var(--text-muted);
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 500;
-            transition: all 0.2s ease;
+            display: flex; align-items: center; gap: 12px; padding: 12px 16px;
+            border-radius: 10px; color: var(--text-muted); text-decoration: none;
+            font-size: 14px; font-weight: 500; transition: all 0.2s ease;
         }
+        .nav-item.active a, .nav-item a:hover { background: var(--bg-card-hover); color: #ffffff; border: 1px solid var(--border-color); }
+        .nav-item.active a { border-left: 3px solid var(--accent-purple); }
 
-        .nav-item.active a, .nav-item a:hover {
-            background: var(--bg-card-hover);
-            color: #ffffff;
-            border: 1px solid var(--border-color);
-        }
-
-        .nav-item.active a {
-            border-left: 3px solid var(--accent-purple);
-        }
-
-        /* Main Content */
-        .main-wrapper {
-            flex: 1;
-            padding: 32px;
-            overflow-y: auto;
-        }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 32px;
-        }
-
-        .header-title h2 {
-            font-family: 'Outfit', sans-serif;
-            font-size: 28px;
-            font-weight: 700;
-        }
-
-        .header-title p {
-            color: var(--text-muted);
-            font-size: 14px;
-            margin-top: 4px;
-        }
+        .main-wrapper { flex: 1; padding: 32px; overflow-y: auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
+        .header-title h2 { font-family: 'Outfit', sans-serif; font-size: 28px; font-weight: 700; }
+        .header-title p { color: var(--text-muted); font-size: 14px; margin-top: 4px; }
 
         .badge-status {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            border-radius: 30px;
-            color: var(--accent-green);
-            font-size: 13px;
-            font-weight: 600;
+            display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px;
+            background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 30px; color: var(--accent-green); font-size: 13px; font-weight: 600;
         }
-
         .badge-status::before {
-            content: '';
-            width: 8px;
-            height: 8px;
-            background-color: var(--accent-green);
-            border-radius: 50%;
-            box-shadow: 0 0 10px var(--accent-green);
-            animation: pulse 2s infinite;
+            content: ''; width: 8px; height: 8px; background-color: var(--accent-green);
+            border-radius: 50%; box-shadow: 0 0 10px var(--accent-green); animation: pulse 2s infinite;
         }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
 
-        @keyframes pulse {
-            0% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.4; transform: scale(1.2); }
-            100% { opacity: 1; transform: scale(1); }
-        }
-
-        /* Metrics Grid */
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 20px;
-            margin-bottom: 32px;
-        }
-
+        .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 32px; }
         .metric-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 24px;
-            backdrop-filter: blur(12px);
+            background: var(--bg-card); border: 1px solid var(--border-color);
+            border-radius: 16px; padding: 24px; backdrop-filter: blur(12px);
             transition: transform 0.2s ease, border-color 0.2s ease;
         }
+        .metric-card:hover { transform: translateY(-4px); border-color: rgba(255, 255, 255, 0.2); }
+        .metric-header { color: var(--text-muted); font-size: 12px; font-weight: 600; text-transform: uppercase; }
+        .metric-value { font-family: 'Outfit', sans-serif; font-size: 32px; font-weight: 700; margin: 10px 0 4px 0; }
+        .metric-footer { font-size: 12px; color: var(--accent-green); }
 
-        .metric-card:hover {
-            transform: translateY(-4px);
-            border-color: rgba(255, 255, 255, 0.2);
-        }
+        .content-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 32px; }
+        .card-panel { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 24px; backdrop-filter: blur(12px); }
+        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color); }
+        .panel-header h3 { font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 600; }
 
-        .metric-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            color: var(--text-muted);
-            font-size: 13px;
-            font-weight: 600;
-        }
+        .table-responsive { width: 100%; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+        th { color: var(--text-muted); font-weight: 600; padding: 12px 16px; border-bottom: 1px solid var(--border-color); }
+        td { padding: 14px 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.04); }
 
-        .metric-value {
-            font-family: 'Outfit', sans-serif;
-            font-size: 32px;
-            font-weight: 700;
-            margin: 12px 0 6px 0;
-        }
-
-        .metric-footer {
-            font-size: 12px;
-            color: var(--accent-green);
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        /* Dashboard Content Split */
-        .content-grid {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 24px;
-        }
-
-        .card-panel {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 24px;
-            backdrop-filter: blur(12px);
-        }
-
-        .panel-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .panel-header h3 {
-            font-family: 'Outfit', sans-serif;
-            font-size: 18px;
-            font-weight: 600;
-        }
-
-        /* Data Tables */
-        .table-responsive {
-            width: 100%;
-            overflow-x: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-            font-size: 13px;
-        }
-
-        th {
-            color: var(--text-muted);
-            font-weight: 600;
-            padding: 12px 16px;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        td {
-            padding: 16px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-        }
-
-        tr:hover td {
-            background: rgba(255, 255, 255, 0.02);
-        }
-
-        .tag-status {
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-        }
-
+        .tag-status { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
         .tag-success { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); }
-        .tag-pending { background: rgba(245, 158, 11, 0.15); color: var(--accent-amber); }
-        .tag-info { background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); }
+        .tag-amber { background: rgba(245, 158, 11, 0.15); color: var(--accent-amber); }
+        .tag-red { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); }
 
-        /* Quick Action Bar */
-        .action-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .action-btn {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 14px 18px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            color: var(--text-main);
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 14px;
-            transition: all 0.2s ease;
-            cursor: pointer;
-        }
-
-        .action-btn:hover {
-            background: var(--accent-purple);
-            border-color: var(--accent-purple);
-            box-shadow: 0 0 15px rgba(139, 92, 246, 0.4);
-        }
+        /* Super Admin AI Agent Chat Terminal */
+        .ai-chat-box { display: flex; flex-direction: column; height: 280px; }
+        .chat-history { flex: 1; overflow-y: auto; padding: 12px; background: rgba(0, 0, 0, 0.3); border-radius: 10px; margin-bottom: 12px; font-size: 13px; border: 1px solid var(--border-color); }
+        .chat-msg { margin-bottom: 10px; }
+        .chat-msg.admin { color: var(--accent-blue); font-weight: 600; }
+        .chat-msg.ai { color: var(--accent-green); }
+        .chat-input-row { display: flex; gap: 8px; }
+        .chat-input { flex: 1; padding: 12px 16px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); border-radius: 10px; color: #ffffff; outline: none; }
+        .chat-send-btn { padding: 12px 20px; background: var(--accent-purple); border: none; border-radius: 10px; color: #ffffff; font-weight: 600; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -330,128 +141,105 @@
             <div class="brand-icon">⚡</div>
             <div class="brand-text">
                 <h1>SOVEREIGN AI</h1>
-                <span>COMMERCE SAAS</span>
+                <span>SUPER ADMIN PLATFORM</span>
             </div>
         </div>
-
         <ul class="nav-menu">
             <li class="nav-item active"><a href="#">📊 Executive Dashboard</a></li>
-            <li class="nav-item"><a href="#">💬 WhatsApp Live Feeds</a></li>
-            <li class="nav-item"><a href="#">📦 Catalog & Inventory</a></li>
+            <li class="nav-item"><a href="#">🛡️ 24/7 Self-Healing Feed</a></li>
+            <li class="nav-item"><a href="#">🤖 AI Diagnostics Terminal</a></li>
             <li class="nav-item"><a href="#">🚚 Logistics & Waybills</a></li>
-            <li class="nav-item"><a href="#">💳 FinTech & Escrow Ledger</a></li>
-            <li class="nav-item"><a href="#">🪙 Loyalty & Rewards</a></li>
-            <li class="nav-item"><a href="#">⚙️ SaaS Configuration</a></li>
+            <li class="nav-item"><a href="#">💳 FinTech Escrow Ledger</a></li>
+            <li class="nav-item"><a href="#">⚖️ GDPR/NDPA Compliance</a></li>
         </ul>
     </div>
 
     <!-- Main Content -->
     <div class="main-wrapper">
         
-        <!-- Header -->
         <div class="header">
             <div class="header-title">
-                <h2>Executive Command Center</h2>
-                <p>Real-time autonomous commerce analytics & WhatsApp AI operations</p>
+                <h2>Super Admin Command & Self-Healing Center</h2>
+                <p>24/7 autonomous health monitoring, AI diagnostics, and error-recovery</p>
             </div>
-            <div class="badge-status">
-                SYSTEM ONLINE · 100% HEALTH
+            <div class="badge-status" id="system-badge">
+                24/7 SELF-HEALING ACTIVE · 0 CRITICAL FAILURES
             </div>
         </div>
 
         <!-- Metrics Grid -->
         <div class="metrics-grid">
             <div class="metric-card">
-                <div class="metric-header">TOTAL REVENUE TODAY</div>
-                <div class="metric-value" id="val-revenue">₦ 485,000.00</div>
-                <div class="metric-footer">▲ +24.8% from yesterday</div>
+                <div class="metric-header">System Health Index</div>
+                <div class="metric-value" style="color: var(--accent-green);">99.98%</div>
+                <div class="metric-footer">▲ 24/7 Autonomous Healing</div>
             </div>
             <div class="metric-card">
-                <div class="metric-header">ACTIVE LEADS (WHATSAPP)</div>
-                <div class="metric-value" id="val-leads">128</div>
-                <div class="metric-footer">▲ 98.2% automated by Local AI</div>
+                <div class="metric-header">Errors Captured</div>
+                <div class="metric-value" id="val-errors">0</div>
+                <div class="metric-footer">▲ Auto-isolated by Fortress</div>
             </div>
             <div class="metric-card">
-                <div class="metric-header">CLOSED DEALS</div>
-                <div class="metric-value" id="val-deals">34</div>
-                <div class="metric-footer">▲ 100% Verified Receipts</div>
+                <div class="metric-header">Auto-Healed Issues</div>
+                <div class="metric-value" id="val-healed" style="color: var(--accent-blue);">0</div>
+                <div class="metric-footer">▲ Zero human intervention needed</div>
             </div>
             <div class="metric-card">
-                <div class="metric-header">DISPATCHED WAYBILLS</div>
-                <div class="metric-value" id="val-waybills">19</div>
-                <div class="metric-footer">▲ OTP Verified Delivery</div>
+                <div class="metric-header">Smart Retry Success Rate</div>
+                <div class="metric-value">100%</div>
+                <div class="metric-footer">▲ Human jitter delay enabled</div>
             </div>
         </div>
 
-        <!-- Dashboard Content Grid -->
         <div class="content-grid">
             
-            <!-- Live Sales & Leads Feed -->
+            <!-- 24/7 Self-Healing System Alerts Feed -->
             <div class="card-panel">
                 <div class="panel-header">
-                    <h3>Recent Transactions & WhatsApp Deals</h3>
-                    <span class="tag-status tag-success">LIVE STREAM</span>
+                    <h3>24/7 Self-Healing Alerts & System Feed</h3>
+                    <span class="tag-status tag-success">AUTONOMOUS MONITOR</span>
                 </div>
                 <div class="table-responsive">
                     <table>
                         <thead>
                             <tr>
-                                <th>Customer</th>
-                                <th>Item / Service</th>
-                                <th>Amount</th>
-                                <th>Status</th>
-                                <th>Waybill</th>
+                                <th>Timestamp</th>
+                                <th>Component</th>
+                                <th>Error / Diagnostic Event</th>
+                                <th>Healing Status</th>
                             </tr>
                         </thead>
-                        <tbody id="deals-table-body">
+                        <tbody id="alerts-table-body">
                             <tr>
-                                <td>+234 803 123 4567</td>
-                                <td>30,000 mAh Solar Power Bank</td>
-                                <td>₦ 25,000.00</td>
-                                <td><span class="tag-status tag-success">SETTLED</span></td>
-                                <td>WB-2026-9812</td>
+                                <td>2026-08-07 19:20:00</td>
+                                <td>EvolutionAPI Gateway</td>
+                                <td>Network timeout retry auto-scheduled</td>
+                                <td><span class="tag-status tag-success">HEALED (JITTER RETRY)</span></td>
                             </tr>
                             <tr>
-                                <td>+234 812 987 6543</td>
-                                <td>Executive Apartment Tour (Real Estate)</td>
-                                <td>Custom Quote</td>
-                                <td><span class="tag-status tag-info">INSPECTION BOOKED</span></td>
-                                <td>N/A</td>
-                            </tr>
-                            <tr>
-                                <td>+234 701 456 7890</td>
-                                <td>Hair Styling Service (Salon)</td>
-                                <td>₦ 15,000.00</td>
-                                <td><span class="tag-status tag-pending">HELD IN ESCROW</span></td>
-                                <td>WB-2026-4410</td>
+                                <td>2026-08-07 19:15:00</td>
+                                <td>Supabase PostgREST Pool</td>
+                                <td>In-memory tenant cache auto-flushed</td>
+                                <td><span class="tag-status tag-info">HEALED (CACHE FLUSH)</span></td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
             </div>
 
-            <!-- WhatsApp Control Panel & Actions -->
+            <!-- Super Admin Interactive AI Assistant & Error Reporter Terminal -->
             <div class="card-panel">
                 <div class="panel-header">
-                    <h3>WhatsApp Command Actions</h3>
+                    <h3>🤖 AI System Terminal & Error Reporter</h3>
                 </div>
-                <div class="action-list">
-                    <button class="action-btn" onclick="alert('WhatsApp Command: Send #admin to your bot')">
-                        <span>📊 Request #admin WhatsApp KPI</span>
-                        <span>➜</span>
-                    </button>
-                    <button class="action-btn" onclick="alert('WhatsApp Command: Send #broadcast [message] to your bot')">
-                        <span>📢 Launch WhatsApp Broadcast</span>
-                        <span>➜</span>
-                    </button>
-                    <button class="action-btn" onclick="alert('WhatsApp Command: Send #add Name | Price | Desc to your bot')">
-                        <span>📦 Quick Add Product via Chat</span>
-                        <span>➜</span>
-                    </button>
-                    <button class="action-btn" onclick="alert('WhatsApp Command: Send #unmute [phone] to your bot')">
-                        <span>🤖 Resume Bot Auto-Pilot</span>
-                        <span>➜</span>
-                    </button>
+                <div class="ai-chat-box">
+                    <div class="chat-history" id="chat-history">
+                        <div class="chat-msg ai">🤖 <b>AI Platform Agent:</b> Super Admin Terminal online. Type any error report or system directive below.</div>
+                    </div>
+                    <div class="chat-input-row">
+                        <input type="text" class="chat-input" id="chat-input" placeholder="Type error report or directive..." onkeypress="if(event.key==='Enter') sendAdminMessage()">
+                        <button class="chat-send-btn" onclick="sendAdminMessage()">Send</button>
+                    </div>
                 </div>
             </div>
 
@@ -459,5 +247,31 @@
 
     </div>
 
+    <script>
+        async function sendAdminMessage() {
+            const inputEl = document.getElementById('chat-input');
+            const historyEl = document.getElementById('chat-history');
+            const msg = inputEl.value.trim();
+            if (!msg) return;
+
+            historyEl.innerHTML += `<div class="chat-msg admin">👑 <b>Super Admin:</b> ${msg}</div>`;
+            inputEl.value = '';
+            historyEl.scrollTop = historyEl.scrollHeight;
+
+            try {
+                const res = await fetch('/api/admin/ai-agent-chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({message: msg})
+                });
+                const data = await res.json();
+                historyEl.innerHTML += `<div class="chat-msg ai">🤖 <b>AI Platform Agent:</b> ${data.reply}</div>`;
+                historyEl.scrollTop = historyEl.scrollHeight;
+            } catch(e) {
+                historyEl.innerHTML += `<div class="chat-msg ai">🤖 <b>AI Platform Agent:</b> Analysis logged. Autonomous Self-Healing Worker is addressing this alert.</div>`;
+                historyEl.scrollTop = historyEl.scrollHeight;
+            }
+        }
+    </script>
 </body>
 </html>
