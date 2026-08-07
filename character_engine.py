@@ -12,7 +12,7 @@ CHARACTERS = {
 }
 
 def generate_live_character_reply(tenant: dict, conversation_history: str, persona_key: str = "street_smart") -> dict:
-    """Generates an immersive, character-driven response with glassmorphic layout styling and action hooks."""
+    """Generates an immersive, character-driven response with clean WhatsApp formatting and action hooks."""
     catalog = get_tenant_catalog(tenant["id"])
     persona_instruction = CHARACTERS.get(persona_key, CHARACTERS["street_smart"])
 
@@ -31,10 +31,11 @@ CONVERSATION HISTORY:
 RULES & INSTRUCTIONS:
 1. Stay strictly in character.
 2. Incorporate exact pricing and stock levels from the live catalog accurately.
-3. Structure your response with a clean, glassmorphic layout using borders (╭─ ╮, │, ╰─ ╯) and engaging emojis.
-4. Append 3 quick action buttons at the very bottom using format: `[BUTTONS: Option 1 | Option 2 | Option 3]`
-5. If the customer expresses clear purchase intent, include the action tag `[TAG:BUY_INTENT]`.
-6. If the customer asks for a human agent or complains, include the action tag `[TAG:TRANSFER_HUMAN]`.
+3. FORMATTING FOR WHATSAPP: Use ONLY native WhatsApp formatting (*bold* for titles/prices, emojis, clean line breaks). NEVER use ASCII borders, box art frames, or decorative lines (e.g. ╭, ─, │, ╰) as they break on mobile.
+4. Keep messages structured, punchy, and easy to read on mobile screens.
+5. Append 3 quick action buttons at the very bottom using format: `[BUTTONS: Option 1 | Option 2 | Option 3]`
+6. If the customer expresses clear purchase intent, include the action tag `[TAG:BUY_INTENT]`.
+7. If the customer asks for a human agent or complains, include the action tag `[TAG:TRANSFER_HUMAN]`.
 """
 
     response = client.models.generate_content(
