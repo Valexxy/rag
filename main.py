@@ -1,5 +1,7 @@
 import os
+import asyncio
 import requests
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from cachetools import TTLCache
 from database import get_tenant_by_instance, is_tenant_bot_muted, mute_tenant_bot, supabase
@@ -8,7 +10,31 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-app = FastAPI(title="Enterprise Multi-Tenant AI Commerce SaaS Core")
+# App URL detection (Uses Render's environment variable or defaults to your app domain)
+RENDER_URL = os.environ.get("RENDER_EXTERNAL_URL", "https://rag-403h.onrender.com").rstrip("/")
+
+async def keep_alive():
+    """Background task: Pings self every 10 minutes to prevent Render free tier spin-down."""
+    await asyncio.sleep(10)  # Wait for server to finish booting
+    while True:
+        try:
+            # Runs blocking requests in a thread pool to avoid blocking the FastAPI event loop
+            await asyncio.to_thread(requests.get, f"{RENDER_URL}/", timeout=5)
+            print("⚡ Keep-alive self-ping sent to maintain warm server status.")
+        except Exception as e:
+            print(f"⚠️ Keep-alive ping skipped: {e}")
+        await asyncio.sleep(600)  # Repeat every 10 minutes (600 seconds)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Start background keep-alive task on server startup
+    asyncio.create_task(keep_alive())
+    yield
+
+app = FastAPI(
+    title="Enterprise Multi-Tenant AI Commerce SaaS Core",
+    lifespan=lifespan
+)
 
 EVOLUTION_URL = os.environ.get("EVOLUTION_API_URL", "").rstrip("/")
 EVOLUTION_KEY = os.environ.get("EVOLUTION_API_KEY", "")
