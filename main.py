@@ -10,24 +10,21 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# App URL detection (Uses Render's environment variable or defaults to your app domain)
 RENDER_URL = os.environ.get("RENDER_EXTERNAL_URL", "https://rag-403h.onrender.com").rstrip("/")
 
 async def keep_alive():
     """Background task: Pings self every 10 minutes to prevent Render free tier spin-down."""
-    await asyncio.sleep(10)  # Wait for server to finish booting
+    await asyncio.sleep(10)
     while True:
         try:
-            # Runs blocking requests in a thread pool to avoid blocking the FastAPI event loop
             await asyncio.to_thread(requests.get, f"{RENDER_URL}/", timeout=5)
             print("⚡ Keep-alive self-ping sent to maintain warm server status.")
         except Exception as e:
             print(f"⚠️ Keep-alive ping skipped: {e}")
-        await asyncio.sleep(600)  # Repeat every 10 minutes (600 seconds)
+        await asyncio.sleep(600)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Start background keep-alive task on server startup
     asyncio.create_task(keep_alive())
     yield
 
@@ -39,9 +36,8 @@ app = FastAPI(
 EVOLUTION_URL = os.environ.get("EVOLUTION_API_URL", "").rstrip("/")
 EVOLUTION_KEY = os.environ.get("EVOLUTION_API_KEY", "")
 
-# ⚡ High-Performance TTL Caching (Prevents database hammering - 60s expiration)
 tenant_cache = TTLCache(maxsize=500, ttl=60)
-chat_memory = {}  # Short-term sliding window memory per user session
+chat_memory = {}
 
 @app.get("/")
 async def root():
@@ -54,7 +50,7 @@ async def handle_optimized_whatsapp(instance_name: str, request: Request):
     except Exception:
         return {"status": "invalid_json"}
 
-    # 1. Fetch Tenant Profile with In-Memory Caching
+    # 1. Fetch Tenant Profile
     tenant = tenant_cache.get(instance_name)
     if not tenant:
         tenant = get_tenant_by_instance(instance_name)
@@ -79,16 +75,16 @@ async def handle_optimized_whatsapp(instance_name: str, request: Request):
     if not customer_phone or not message_text:
         return {"status": "ignored"}
 
-    # 2. Owner Mute & Takeover Control (mutes bot for 60 mins if owner replies)
+    # 2. Owner Mute
     if is_from_me:
         mute_tenant_bot(tenant["id"], customer_phone, minutes=60)
         return {"status": "owner_takeover_muted"}
 
-    # 3. Check Bot Mute Status
+    # 3. Check Mute Status
     if is_tenant_bot_muted(tenant["id"], customer_phone):
         return {"status": "bot_muted"}
 
-    # 4. Manage Short-Term Conversation Memory (Sliding window: last 10 messages / 5 turns)
+    # 4. Memory Sliding Window
     session_key = f"{tenant['id']}_{customer_phone}"
     if session_key not in chat_memory:
         chat_memory[session_key] = []
@@ -97,19 +93,18 @@ async def handle_optimized_whatsapp(instance_name: str, request: Request):
     if len(chat_memory[session_key]) > 10:
         chat_memory[session_key] = chat_memory[session_key][-10:]
 
-    # 5. Generate Live Character Response with Context History
+    # 5. Generate Live Response (Fixed positional argument match)
     context_history = "\n".join(chat_memory[session_key])
-    ai_res = generate_live_character_reply(tenant, context_history, persona_key="street_smart")
+    ai_res = generate_live_character_reply(tenant, customer_phone, context_history, persona_key="street_smart")
     reply_payload = ai_res["reply"]
     
-    # Save AI response into session memory history
     chat_memory[session_key].append(f"AI: {reply_payload}")
 
-    # 6. Handle Action Tags (e.g., Human Transfer Mute)
+    # 6. Action Tag Handling
     if ai_res["is_human_transfer"]:
         mute_tenant_bot(tenant["id"], customer_phone, minutes=120)
 
-    # 7. Send Outbound Response via Evolution API
+    # 7. Send Outbound WhatsApp Message
     send_whatsapp_message(instance_name, customer_phone, reply_payload)
     return {"status": "success", "tenant": tenant["business_name"]}
 
