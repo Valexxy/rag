@@ -57,13 +57,14 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
     if not customer_phone or not message_text:
         return {"status": "ignored"}
 
-    owner_phone = tenant.get("owner_phone", "").replace("+", "").strip()
+    # Safely handle potential None value from database for owner_phone
+    owner_phone = (tenant.get("owner_phone") or "").replace("+", "").strip()
     clean_sender = customer_phone.replace("+", "").strip()
 
     # -------------------------------------------------------------
     # 2. OWNER IN-CHAT ADMIN CONTROL FLOW
     # -------------------------------------------------------------
-    if is_from_me or clean_sender == owner_phone:
+    if is_from_me or (owner_phone and clean_sender == owner_phone):
         # A. Owner Add Product Command: #add Name | Price | Description | Stock
         if message_text.startswith("#add "):
             try:
