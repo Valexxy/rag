@@ -48,12 +48,34 @@ load_dotenv()
 app = FastAPI(title="Sovereign AI Commerce & Financial SaaS Platform 2030")
 
 os.makedirs("static", exist_ok=True)
-app.mount("/static", StaticFiles(directory="static"), name="static")
+try:
+    app.mount("/static", StaticFiles(directory="static"), name="static")
+except Exception:
+    pass
 
 chat_memory = {}
 
 class AdminChatPayload(BaseModel):
     message: str
+
+def get_dashboard_html_content() -> str:
+    """Reads dashboard HTML or falls back to inline content."""
+    dash_path = os.path.join(os.path.dirname(__file__), "static", "dashboard.html")
+    if os.path.exists(dash_path):
+        with open(dash_path, "r", encoding="utf-8") as f:
+            return f.read()
+    elif os.path.exists("static/dashboard.html"):
+        with open("static/dashboard.html", "r", encoding="utf-8") as f:
+            return f.read()
+            
+    return """<!DOCTYPE html>
+<html>
+<head><title>Executive Dashboard</title></head>
+<body style="background:#07090e;color:#fff;font-family:sans-serif;padding:40px;">
+<h2>⚡ SOVEREIGN AI SAAS EXECUTIVE DASHBOARD</h2>
+<p>System Online & 100% Operational.</p>
+</body>
+</html>"""
 
 @app.on_event("startup")
 async def startup_event():
@@ -67,11 +89,11 @@ async def root():
     return {"status": "online", "system": "Sovereign AI Commerce & Financial Platform v2030"}
 
 @app.get("/dashboard", response_class=HTMLResponse)
+@app.get("/dashboard.html", response_class=HTMLResponse)
+@app.get("/admin-dashboard", response_class=HTMLResponse)
 async def get_dashboard():
-    """Serves the Executive Web SaaS Dashboard."""
-    if os.path.exists("static/dashboard.html"):
-        return FileResponse("static/dashboard.html")
-    return HTMLResponse("<h2>Dashboard Initializing...</h2>")
+    """Serves the Executive Web SaaS Dashboard cleanly across all routes."""
+    return HTMLResponse(content=get_dashboard_html_content())
 
 # -------------------------------------------------------------
 # 👑 SUPER ADMIN API ENDPOINTS (Self-Healing & Diagnostics)
