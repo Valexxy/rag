@@ -27,7 +27,7 @@ from owner_alert_protocol import owner_alert
 from reminder_scheduler import reminder_scheduler
 from loyalty_rewards import loyalty_engine
 
-# Sovereign Compliance, Security Fortress & Market Intelligence
+# Sovereign Compliance, Security Fortress, Market & News Intelligence
 from sovereign_compliance import sovereign_compliance
 from security_fortress import security_fortress
 from audit_vault import audit_vault
@@ -35,6 +35,7 @@ from antiban_guardrail import antiban_guard
 from market_intelligence import market_intel
 from location_intelligence import real_location_intel
 from local_sovereign_tracker import sovereign_tracker
+from sovereign_news_engine import sovereign_news
 from gamification_retention import gamification_engine
 from database_backup import backup_engine
 
@@ -195,6 +196,18 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
             send_whatsapp_message(instance_name, clean_sender, security_reply)
             owner_alert.send_urgent_owner_alert(instance_name, clean_owner, clean_sender, "PROMPT INJECTION DEFENSE TRIGGERED", message_text)
             return {"status": "security_attack_blocked"}
+
+        # -------------------------------------------------------------
+        # 📰 MULTI-TIERED SOVEREIGN NEWS INTELLIGENCE COMMAND (#news)
+        # -------------------------------------------------------------
+        if message_text.lower().startswith("#news"):
+            raw_news = message_text.lower().replace("#news", "").strip()
+            parts = raw_news.split()
+            tier = parts[0] if len(parts) > 0 else "all"
+            loc = parts[1] if len(parts) > 1 else "onitsha"
+            news_bulletin = sovereign_news.get_news_bulletin(tier, loc)
+            send_whatsapp_message(instance_name, clean_sender, news_bulletin)
+            return {"status": "sovereign_news_sent"}
 
         # 100% Sovereign Zero-API Tracking Command (#track WB-XXXX)
         if message_text.lower().startswith("#track "):
