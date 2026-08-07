@@ -10,7 +10,7 @@ from database import (
     is_tenant_bot_muted, 
     mute_tenant_bot, 
     add_tenant_product, 
-    update_customer_ledger, 
+    update_enterprise_ledger, 
     register_tenant_customer, 
     get_tenant_customer_phones,
     create_tenant_reminder,
@@ -59,12 +59,9 @@ async def keep_alive_and_scheduler():
             counter += 60
             if counter >= 600:
                 await asyncio.to_thread(requests.get, f"{RENDER_URL}/", timeout=5)
-                print("⚡ Keep-alive self-ping sent.")
                 counter = 0
-
         except Exception as e:
             print(f"⚠️ Scheduler error: {e}")
-
         await asyncio.sleep(60)
 
 @asynccontextmanager
@@ -72,7 +69,7 @@ async def lifespan(app: FastAPI):
     asyncio.create_task(keep_alive_and_scheduler())
     yield
 
-app = FastAPI(title="World-Class AI Executive & Commerce OS Core", lifespan=lifespan)
+app = FastAPI(title="Enterprise Million-Naira AI Commerce OS", lifespan=lifespan)
 
 tenant_cache = TTLCache(maxsize=500, ttl=60)
 chat_memory_cache = TTLCache(maxsize=1000, ttl=300)
@@ -80,11 +77,11 @@ chat_memory_cache = TTLCache(maxsize=1000, ttl=300)
 @app.get("/")
 @app.head("/")
 async def root():
-    return {"status": "online", "system": "World-First Dual Engine AI Commerce OS"}
+    return {"status": "online", "system": "Enterprise Million-Naira Financial & Operations Core"}
 
 @app.post("/webhook/whatsapp/store-bot")
 @app.post("/webhook/whatsapp/{instance_name}")
-async def handle_optimized_whatsapp(request: Request, instance_name: str = "store-bot"):
+async def handle_enterprise_whatsapp(request: Request, instance_name: str = "store-bot"):
     try:
         payload = await request.json()
     except Exception:
@@ -120,55 +117,67 @@ async def handle_optimized_whatsapp(request: Request, instance_name: str = "stor
     is_owner = bool(is_from_me or (owner_phone and clean_sender == owner_phone))
 
     # -------------------------------------------------------------
-    # 1. IN-CHAT ADMIN COMMAND INTERCEPTOR
+    # 1. OWNER ADMIN COMMAND INTERCEPTOR
     # -------------------------------------------------------------
     if is_owner:
         if message_text.startswith("#add "):
             try:
                 parts = [p.strip() for p in message_text.replace("#add ", "").split("|")]
                 p_name, p_price = parts[0], float(parts[1])
-                p_desc = parts[2] if len(parts) > 2 else "Available in store"
+                p_desc = parts[2] if len(parts) > 2 else "Available in warehouse"
                 p_stock = int(parts[3]) if len(parts) > 3 else 100
                 
                 if add_tenant_product(tenant["id"], p_name, p_price, p_desc, p_stock):
-                    reply = f"✅ *Product Successfully Added!*\n\n📦 *Item:* {p_name}\n💰 *Price:* ₦{p_price:,.2f}\n📊 *Stock:* {p_stock} units"
+                    reply = f"✅ *Product Registered Successfully!*\n📦 *Item:* {p_name}\n💰 *Price:* ₦{p_price:,.2f}"
                 else:
                     reply = "❌ Database error."
             except Exception:
                 reply = "❌ *Format Error!* Use:\n`#add Product Name | Price | Description | Stock`"
             
-            send_whatsapp_message(instance_name, customer_phone, reply, buttons=["📦 Stock Check", "⏰ Set Reminder", "📊 Daily Audit"])
+            send_whatsapp_message(instance_name, customer_phone, reply)
             return {"status": "owner_command_processed"}
 
-        elif message_text.startswith("#remind "):
+        elif message_text.startswith("#ledger "):
             try:
-                parts = [p.strip() for p in message_text.replace("#remind ", "").split("|")]
-                target_recipient, freq, time_str, reminder_msg = parts[0], parts[1].upper(), parts[2], parts[3]
-                first_run_dt = datetime.strptime(time_str, "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)
+                parts = [p.strip() for p in message_text.replace("#ledger ", "").split("|")]
+                target_phone, l_type, raw_amount = parts[0], parts[1], float(parts[2])
                 
-                if create_tenant_reminder(tenant["id"], target_recipient, reminder_msg, freq, first_run_dt.isoformat()):
-                    reply = f"⏰ *Reminder Scheduled!*\n\n👤 *Target:* {target_recipient}\n🔄 *Frequency:* {freq}\n📅 *Time:* {time_str} UTC"
+                success, is_high_value = update_enterprise_ledger(tenant["id"], target_phone, l_type, raw_amount, {"entered_by": "owner"})
+                if success:
+                    reply = f"✅ *Enterprise Ledger Updated!*\n💰 *Amount:* ₦{raw_amount:,.2f}"
+                    if is_high_value:
+                        reply += "\n🚨 *VIP High-Value Threshold Crossed (≥ ₦1,000,000)!*"
                 else:
-                    reply = "❌ Reminder creation failed."
+                    reply = "❌ Ledger transaction failed."
             except Exception:
-                reply = "❌ *Format Error!* Use:\n`#remind Phone/ALL/OWNER | ONCE/DAILY/WEEKLY/MONTHLY | YYYY-MM-DD HH:MM | Message`"
+                reply = "❌ *Format Error!* Use:\n`#ledger Phone | LedgerType | Amount`"
 
-            send_whatsapp_message(instance_name, customer_phone, reply, buttons=["⏰ New Reminder", "📊 Daily Audit", "📦 View Stock"])
+            send_whatsapp_message(instance_name, customer_phone, reply)
+            return {"status": "owner_command_processed"}
+
+        elif message_text.startswith("#ignore "):
+            try:
+                target_phone = message_text.replace("#ignore ", "").strip().replace("+", "")
+                mute_tenant_bot(tenant["id"], target_phone, minutes=500000)
+                reply = f"✅ *Contact Muted!* AI will not reply to +{target_phone}."
+            except Exception:
+                reply = "❌ *Format Error!* Use: `#ignore 2348012345678`"
+            send_whatsapp_message(instance_name, customer_phone, reply)
             return {"status": "owner_command_processed"}
 
         elif message_text.startswith("#broadcast "):
             broadcast_text = message_text.replace("#broadcast ", "").strip()
             phone_list = get_tenant_customer_phones(tenant["id"])
             if not phone_list:
-                send_whatsapp_message(instance_name, customer_phone, "⚠️ No registered contacts found to broadcast.")
+                send_whatsapp_message(instance_name, customer_phone, "⚠️ No registered contacts found.")
                 return {"status": "broadcast_empty"}
             
             count = broadcast_whatsapp_message(instance_name, phone_list, f"📢 *[Announcement from {tenant['business_name']}]*\n\n{broadcast_text}")
-            send_whatsapp_message(instance_name, customer_phone, f"🚀 *Broadcast Sent to {count} customer(s)!*")
+            send_whatsapp_message(instance_name, customer_phone, f"🚀 *Broadcast Sent to {count} recipient(s)!*")
             return {"status": "owner_broadcast_sent"}
 
     # -------------------------------------------------------------
-    # 2. AI RESPONSE GENERATION & PERSISTENT MEMORY
+    # 2. CLIENT / CUSTOMER INTELLIGENT ROUTING
     # -------------------------------------------------------------
     if not is_owner and is_tenant_bot_muted(tenant["id"], customer_phone):
         return {"status": "bot_muted"}
@@ -200,8 +209,25 @@ async def handle_optimized_whatsapp(request: Request, instance_name: str = "stor
     save_chat_message(tenant["id"], customer_phone, role="assistant", message=reply_payload)
     chat_memory_cache[session_key].append(f"AI: {reply_payload}")
 
-    if not is_owner and ai_res["is_human_transfer"]:
+    # -------------------------------------------------------------
+    # 3. ESCALATION & EMERGENCY ALERTS TO OWNER
+    # -------------------------------------------------------------
+    if not is_owner and (ai_res["is_high_value"] or ai_res["is_human_transfer"]) and owner_phone:
         mute_tenant_bot(tenant["id"], customer_phone, minutes=120)
+        
+        alert_title = "💎 VIP MILLION-NAIRA INQUIRY" if ai_res["is_high_value"] else "🚨 HUMAN ASSISTANCE REQUESTED"
+        vip_alert = (
+            f"*{alert_title}!*\n\n"
+            f"📱 *Client Phone:* +{customer_phone}\n"
+            f"💬 *Query:* \"{message_text}\"\n\n"
+            f"🔒 *Action:* Bot muted for 2 hours. Take over chat directly."
+        )
+        send_whatsapp_message(instance_name, owner_phone, vip_alert)
 
     send_whatsapp_message(instance_name, customer_phone, reply_payload, buttons=buttons)
     return {"status": "success", "tenant": tenant["business_name"]}
+
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)

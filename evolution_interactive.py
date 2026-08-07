@@ -14,13 +14,12 @@ def send_whatsapp_presence(instance_name: str, phone: str, state: str = "composi
         print(f"⚠️ Presence signal skipped: {e}")
 
 def send_whatsapp_message(instance_name: str, phone: str, text: str, buttons: list = None) -> bool:
-    """Delivers clean, perfectly formatted WhatsApp messages with high reliability across all devices."""
+    """Delivers clean, perfectly formatted WhatsApp messages with quick option shortcuts."""
     headers = {"apikey": EVOLUTION_KEY, "Content-Type": "application/json"}
     url = f"{EVOLUTION_URL}/message/sendText/{instance_name}"
 
     final_text = text.strip()
 
-    # Append quick option shortcuts naturally if button options exist
     if buttons and len(buttons) > 0:
         button_options = "\n".join([f"👉 *Reply {idx+1}* for {btn.strip()}" for idx, btn in enumerate(buttons[:3])])
         final_text = f"{final_text}\n\n─────────────────\n{button_options}"
