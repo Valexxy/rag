@@ -1,12 +1,19 @@
--- 1. Tenants Table (Stores business profiles, credentials, and owner contact)
+-- =============================================================
+-- Enterprise Multi-Tenant AI Commerce SaaS - Supabase Schema
+-- =============================================================
+
+-- Enable UUID extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- 1. Tenants Table (Stores business profiles & instances)
 CREATE TABLE IF NOT EXISTS public.tenants (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     instance_name TEXT UNIQUE NOT NULL, -- Evolution API instance name
     business_name TEXT NOT NULL,
-    owner_phone TEXT NOT NULL,          -- WhatsApp number of business owner/admin
-    niche TEXT DEFAULT 'E-commerce',
+    owner_phone TEXT NOT NULL,          -- Business owner/admin WhatsApp number
+    business_niche TEXT DEFAULT 'retail',
     currency TEXT DEFAULT 'NGN',
-    ai_persona TEXT DEFAULT 'You are a professional, helpful operations manager.',
+    ai_persona TEXT DEFAULT 'You are a helpful customer service assistant.',
     monnify_api_key TEXT,
     monnify_secret_key TEXT,
     monnify_contract_code TEXT,
@@ -14,44 +21,43 @@ CREATE TABLE IF NOT EXISTS public.tenants (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 2. Multi-Tenant Products & Services Catalog
-CREATE TABLE IF NOT EXISTS public.tenant_products (
+-- 2. Universal Tenant Offerings / Products / Services Catalog
+CREATE TABLE IF NOT EXISTS public.tenant_entities (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID REFERENCES public.tenants(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
+    price NUMERIC(12, 2) NOT NULL DEFAULT 0,
     description TEXT,
-    price NUMERIC(12, 2) NOT NULL,
-    stock_quantity INT DEFAULT 0,
-    category TEXT DEFAULT 'General',
+    metadata JSONB DEFAULT '{}'::jsonb,  -- E.g. {"stock": 10, "duration": "30 mins", "location": "Lagos"}
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 3. Universal Flexible Customer Ledgers (For Savings, Bookings, Memberships, Custom Specs)
-CREATE TABLE IF NOT EXISTS public.tenant_custom_ledgers (
+-- 3. Customer Ledgers (Flexible JSON records per customer)
+CREATE TABLE IF NOT EXISTS public.customer_ledgers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID REFERENCES public.tenants(id) ON DELETE CASCADE,
-    customer_phone TEXT NOT NULL,
-    ledger_type TEXT DEFAULT 'GENERAL', -- e.g., SAVINGS_SCHEME, APPOINTMENT, MEMBERSHIP
-    data JSONB DEFAULT '{}'::jsonb,      -- E.g. {"contributed": 250000, "remaining": 350000}
+    phone_number TEXT NOT NULL,
+    ledger_type TEXT DEFAULT 'GENERAL',
+    data JSONB DEFAULT '{}'::jsonb,
     updated_at TIMESTAMPTZ DEFAULT NOW(),
-    UNIQUE(tenant_id, customer_phone, ledger_type)
+    UNIQUE(tenant_id, phone_number, ledger_type)
 );
 
 -- 4. Customer Contact Registry (For WhatsApp Broadcasts)
 CREATE TABLE IF NOT EXISTS public.tenant_customers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID REFERENCES public.tenants(id) ON DELETE CASCADE,
-    customer_phone TEXT NOT NULL,
+    phone_number TEXT NOT NULL,
     customer_name TEXT,
     last_active TIMESTAMPTZ DEFAULT NOW(),
-    UNIQUE(tenant_id, customer_phone)
+    UNIQUE(tenant_id, phone_number)
 );
 
 -- 5. Multi-Tenant Transactions Ledger
 CREATE TABLE IF NOT EXISTS public.tenant_transactions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID REFERENCES public.tenants(id) ON DELETE CASCADE,
-    customer_phone TEXT NOT NULL,
+    phone_number TEXT NOT NULL,
     payment_reference TEXT UNIQUE NOT NULL,
     transaction_reference TEXT,
     amount NUMERIC(12, 2) NOT NULL,
@@ -62,17 +68,19 @@ CREATE TABLE IF NOT EXISTS public.tenant_transactions (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 6. Bot Mutes (Muting per business instance & phone number)
-CREATE TABLE IF NOT EXISTS public.tenant_bot_mutes (
+-- 6. Bot Mutes (Human Takeover Management)
+CREATE TABLE IF NOT EXISTS public.bot_mutes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID REFERENCES public.tenants(id) ON DELETE CASCADE,
-    customer_phone TEXT NOT NULL,
-    muted_until TIMESTAMPTZ NOT NULL,
-    UNIQUE(tenant_id, customer_phone)
+    phone_number TEXT NOT NULL,
+    muted BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(tenant_id, phone_number)
 );
 
--- Indexes for sub-second database operations
+-- Sub-second Performance Indexes
 CREATE INDEX IF NOT EXISTS idx_tenant_instance ON public.tenants(instance_name);
-CREATE INDEX IF NOT EXISTS idx_products_tenant ON public.tenant_products(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_custom_ledger ON public.tenant_custom_ledgers(tenant_id, customer_phone);
-CREATE INDEX IF NOT EXISTS idx_trans_ref ON public.tenant_transactions(payment_reference);
+CREATE INDEX IF NOT EXISTS idx_tenant_entities_tenant ON public.tenant_entities(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_customer_ledgers_phone ON public.customer_ledgers(tenant_id, phone_number);
+CREATE INDEX IF NOT EXISTS idx_tenant_customers_phone ON public.tenant_customers(tenant_id, phone_number);
+CREATE INDEX IF NOT EXISTS idx_bot_mutes_phone ON public.bot_mutes(tenant_id, phone_number);
