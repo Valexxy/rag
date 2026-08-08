@@ -108,11 +108,13 @@ def generate_live_character_reply(
         # ── 3. MULTI-DIMENSIONAL OPEN-SOURCE AI ENSEMBLE ─────────────────
         from multi_dimensional_ai_ensemble import ai_ensemble
         cat_summary = "\n".join([f"• {item.get('name')}: ₦{item.get('price'):,}" for item in full_catalog if isinstance(item, dict)])
-        
+
         ensemble_res = ai_ensemble.generate_ensemble_reply(
             customer_query=latest_query,
             catalog_context=cat_summary,
-            chat_history=conversation_history
+            chat_history=conversation_history,
+            tenant=tenant,
+            catalog=full_catalog
         )
 
         return {
@@ -127,7 +129,13 @@ def generate_live_character_reply(
     except Exception as e:
         logger.error(f"[CharEngine] Sovereign Brain error: {e}")
         from multi_dimensional_ai_ensemble import ai_ensemble
-        fallback = ai_ensemble.generate_ensemble_reply(latest_query, "Teeslux Global Store")
+        fallback = ai_ensemble.generate_ensemble_reply(
+            customer_query=latest_query,
+            catalog_context="Teeslux Global Store",
+            chat_history="",
+            tenant=tenant,
+            catalog=[]
+        )
         return {
             "reply": fallback["reply"],
             "is_human_transfer": False,
