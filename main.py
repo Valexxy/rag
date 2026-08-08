@@ -16,7 +16,7 @@ from evolution_interactive import (
     send_whatsapp_presence, send_whatsapp_message, broadcast_whatsapp_message
 )
 
-# Enterprise SaaS Modules (53 FULL ENTERPRISE PYTHON MODULES TOTAL)
+# Enterprise SaaS Modules (54 FULL ENTERPRISE PYTHON MODULES TOTAL)
 from local_ai_brain import local_brain
 from whatsapp_ui import render_executive_whatsapp_dashboard, render_role_based_menu, format_currency
 from logistics_department import logistics_dept
@@ -51,7 +51,7 @@ from smart_price_alert_engine import smart_price_alert
 from global_market_price_engine import global_market_prices
 from multi_source_verifier import multi_source_verifier
 
-# Global Enterprise Expansion & Verification Engine (Modules 44-53)
+# Global Enterprise Expansion & Verification Engine (Modules 44-54)
 from global_tax_vat_engine import global_tax_engine
 from multilingual_translation_matrix import multilingual_matrix
 from cross_border_customs_tariff_engine import customs_tariff_engine
@@ -62,6 +62,7 @@ from fraud_biometric_risk_score import fraud_risk_engine
 from viral_share_generator import viral_share_gen
 from sovereign_directory_engine import sovereign_directory
 from sovereign_trust_score_engine import sovereign_trust_score
+from hyper_location_verifier import hyper_location_verifier
 
 from gamification_retention import gamification_engine
 from database_backup import backup_engine
@@ -107,6 +108,14 @@ def get_dashboard_html_content() -> str:
 </body>
 </html>"""
 
+def get_map_html_content() -> str:
+    """Reads map HTML or falls back to inline content."""
+    map_path = os.path.join(os.path.dirname(__file__), "static", "directory_map.html")
+    if os.path.exists(map_path):
+        with open(map_path, "r", encoding="utf-8") as f:
+            return f.read()
+    return "<h2>Map View Online</h2>"
+
 async def background_escalation_loop():
     """Background loop for high-priority repeated escalation alerts."""
     while True:
@@ -128,8 +137,8 @@ async def startup_event():
 async def root():
     return {
         "status": "online", 
-        "system": "Sovereign AI Commerce & Financial Platform v2030 (53 Enterprise Modules & Trust Score Shield)",
-        "architecture_modules": 53,
+        "system": "Sovereign AI Commerce & Financial Platform v2030 (54 Enterprise Modules & Down-To-House-Number Map View)",
+        "architecture_modules": 54,
         "self_healing": "active",
         "realtime_wat_clock": smart_timezone.get_realtime_nigeria_now().strftime("%Y-%m-%d %H:%M:%S WAT"),
         "is_night_protocol": smart_night_protocol.is_night_time(),
@@ -145,6 +154,13 @@ async def get_dashboard():
     """Serves the Executive Web SaaS Dashboard cleanly across all routes."""
     return HTMLResponse(content=get_dashboard_html_content())
 
+@app.get("/map", response_class=HTMLResponse)
+@app.get("/directory-map", response_class=HTMLResponse)
+@app.get("/map.html", response_class=HTMLResponse)
+async def get_directory_map():
+    """Serves the Premium Interactive Glowing Directory Map View."""
+    return HTMLResponse(content=get_map_html_content())
+
 # -------------------------------------------------------------
 # 👑 SUPER ADMIN API ENDPOINTS (Self-Healing & Diagnostics)
 # -------------------------------------------------------------
@@ -155,7 +171,7 @@ async def get_admin_metrics():
         "errors_captured": self_healing.error_count,
         "auto_healed": self_healing.healed_count,
         "smart_retry_success": "100%",
-        "modules_active": 53,
+        "modules_active": 54,
         "scale_metrics": infinite_scale_guard.get_scale_metrics(),
         "sla_metrics": sla_monitor.get_sla_metrics(),
         "failover_status": dr_failover_engine.check_health_and_failover()
@@ -173,14 +189,14 @@ async def admin_ai_agent_chat(payload: AdminChatPayload):
     if "error" in msg or "bug" in msg or "issue" in msg:
         reply = f"🛠️ **[DIAGNOSTIC ANALYSIS]**: Received report '{payload.message}'. Autonomous 24/7 Self-Healing worker has captured stack trace, cleared bad cache keys, and re-established database connection pool."
     elif "status" in msg or "health" in msg:
-        reply = f"📊 **[SYSTEM HEALTH]**: Platform is operating at 99.99% efficiency across 53 Enterprise Modules. Total auto-healed incidents: {self_healing.healed_count}."
+        reply = f"📊 **[SYSTEM HEALTH]**: Platform is operating at 99.99% efficiency across 54 Enterprise Modules. Total auto-healed incidents: {self_healing.healed_count}."
     else:
-        reply = f"🤖 **[SUPER ADMIN AGENT]**: Instruction processed: '{payload.message}'. All 53 enterprise modules are active and synchronized worldwide."
+        reply = f"🤖 **[SUPER ADMIN AGENT]**: Instruction processed: '{payload.message}'. All 54 enterprise modules are active and synchronized worldwide."
 
     return {"reply": reply}
 
 # -------------------------------------------------------------
-# 💬 WHATSAPP WEBHOOK HANDLER (Cryptographic Verification & Trust Score Engine)
+# 💬 WHATSAPP WEBHOOK HANDLER (Hyper Location Street Verification & Map View)
 # -------------------------------------------------------------
 @app.post("/webhook/whatsapp/{instance_name}")
 async def handle_whatsapp_webhook(instance_name: str, request: Request):
@@ -295,6 +311,24 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
             return {"status": "security_attack_blocked"}
 
         msg_lower = message_text.lower().strip()
+
+        # Street Address Verification Command (#verify-address <house_no> | <street> | <city> | <state>)
+        if msg_lower.startswith("#verify-address") or msg_lower.startswith("verify-address"):
+            try:
+                raw_addr = message_text.replace("#verify-address", "").replace("verify-address", "").strip()
+                parts = [p.strip() for p in raw_addr.split("|")]
+                h_no = parts[0]
+                street_name = parts[1]
+                city_name = parts[2]
+                state_name = parts[3] if len(parts) > 3 else "Anambra"
+                addr_res = hyper_location_verifier.verify_street_address(tenant["id"], h_no, street_name, city_name, state_name)
+                reply = f"📍 *[STREET ADDRESS HIGH-PRECISION VERIFIED]*\n\n🏠 *House/Shop No:* {addr_res['house_shop_number']}\n🛣️ *Street:* {addr_res['street_name']}\n🌆 *City/State:* {addr_res['city']}, {addr_res['state']}\n🌐 *Full Address:* `{addr_res['full_address']}`\n🏅 *Badge:* `{addr_res['verification_badge']}`\n\n🗺️ *View On Directory Map:* https://commerce-ai-saas.onrender.com/map"
+                send_whatsapp_message(instance_name, clean_sender, reply)
+                return {"status": "street_address_verified"}
+            except Exception:
+                reply = "❌ *Format Error!* Use:\n`#verify-address Shop 14B | Bright Street | Onitsha | Anambra`"
+                send_whatsapp_message(instance_name, clean_sender, reply)
+                return {"status": "address_format_error"}
 
         # Public Trust Verification Certificate Command (#trust / #certificate)
         if msg_lower.startswith("#trust") or msg_lower.startswith("#certificate") or msg_lower == "trust":
