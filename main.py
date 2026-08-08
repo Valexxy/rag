@@ -16,7 +16,7 @@ from evolution_interactive import (
     send_whatsapp_presence, send_whatsapp_message, broadcast_whatsapp_message
 )
 
-# Enterprise SaaS Modules (33 Modules Total)
+# Enterprise SaaS Modules (34 Modules Total)
 from local_ai_brain import local_brain
 from whatsapp_ui import render_executive_whatsapp_dashboard, render_role_based_menu, format_currency
 from logistics_department import logistics_dept
@@ -39,6 +39,7 @@ from sovereign_news_engine import sovereign_news
 from smart_timezone_engine import smart_timezone
 from smart_night_protocol import smart_night_protocol
 from autonomous_visual_agent import autonomous_visual
+from zero_information_fallback import zero_info_fallback
 from gamification_retention import gamification_engine
 from database_backup import backup_engine
 
@@ -95,7 +96,7 @@ async def root():
     return {
         "status": "online", 
         "system": "Sovereign AI Commerce & Financial Platform v2030",
-        "architecture_modules": 33,
+        "architecture_modules": 34,
         "self_healing": "active",
         "realtime_wat_clock": smart_timezone.get_realtime_nigeria_now().strftime("%Y-%m-%d %H:%M:%S WAT"),
         "is_night_protocol": smart_night_protocol.is_night_time()
@@ -118,7 +119,7 @@ async def get_admin_metrics():
         "errors_captured": self_healing.error_count,
         "auto_healed": self_healing.healed_count,
         "smart_retry_success": "100%",
-        "modules_active": 33
+        "modules_active": 34
     }
 
 @app.get("/api/admin/alerts")
@@ -135,12 +136,12 @@ async def admin_ai_agent_chat(payload: AdminChatPayload):
     elif "status" in msg or "health" in msg:
         reply = f"📊 **[SYSTEM HEALTH]**: Platform is operating at 99.98% efficiency. Total auto-healed incidents: {self_healing.healed_count}."
     else:
-        reply = f"🤖 **[SUPER ADMIN AGENT]**: Instruction processed: '{payload.message}'. All 33 enterprise modules are active and synchronized."
+        reply = f"🤖 **[SUPER ADMIN AGENT]**: Instruction processed: '{payload.message}'. All 34 enterprise modules are active and synchronized."
 
     return {"reply": reply}
 
 # -------------------------------------------------------------
-# 💬 WHATSAPP WEBHOOK HANDLER (100% Strict Tenant Data Isolation)
+# 💬 WHATSAPP WEBHOOK HANDLER (100% Strict Tenant Data Isolation & Zero-Info Fallback)
 # -------------------------------------------------------------
 @app.post("/webhook/whatsapp/{instance_name}")
 async def handle_whatsapp_webhook(instance_name: str, request: Request):
@@ -185,7 +186,6 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
 
         # -------------------------------------------------------------
         # 📸 🎥 SMART MEDIA (PICTURES & VIDEOS) HUMAN HANDOFF ROUTER
-        # Standardized 15-Minute Mute Across ALL Human Handovers
         # -------------------------------------------------------------
         has_media = any(k in message_info for k in ["imageMessage", "videoMessage", "documentMessage", "audioMessage"])
         if has_media and not is_owner:
@@ -194,11 +194,11 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
             # Payment Receipt Screenshot OCR Verification
             if "PAYMENT" in caption.upper() or "RECEIPT" in caption.upper() or "TRANSFER" in caption.upper():
                 ocr_result = vision_ocr.parse_payment_receipt_text(caption or "PAYMENT RECEIPT 0252796240 AMOUNT N25000")
-                reply = f"receipt *[RECEIPT OCR VERIFIED]*\n\nReference: `{ocr_result['transaction_reference']}`\nStatus: `PENDING SETTLEMENT`"
+                reply = f"🧾 *[RECEIPT OCR VERIFIED]*\n\nReference: `{ocr_result['transaction_reference']}`\nStatus: `PENDING SETTLEMENT`"
                 send_whatsapp_message(instance_name, clean_sender, reply)
                 return {"status": "receipt_ocr_processed"}
             
-            # Autonomous Vision AI Catalog Matching (Strict Tenant Isolation)
+            # Autonomous Vision AI Catalog Matching
             vision_match = autonomous_visual.analyze_image_and_match_catalog(tenant, clean_sender, caption)
 
             if smart_night_protocol.is_night_time():
@@ -359,7 +359,6 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
                 return {"status": "broadcast_processed"}
 
             else:
-                # Owner manual reply -> Standardized 15-Minute Mute for owner takeover
                 mute_tenant_bot(tenant["id"], clean_sender, minutes=15)
                 return {"status": "owner_takeover_muted"}
 
@@ -400,14 +399,21 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
         
         reply_payload = ai_res["reply"]
 
+        # ZERO-HALLUCINATION FACT VERIFICATION
         is_valid, verified_payload = zero_guard.verify_response_facts(reply_payload, "")
-        if not is_valid:
-            # Fact Boundary Trigger -> Standardized 15-Minute Mute & Manager Push Alert
+        
+        # If ZERO information or unverified facts exist -> Trigger Zero Information Fallback Card
+        if not is_valid or "don't know" in reply_payload.lower() or "not in catalog" in reply_payload.lower():
+            fallback_res = zero_info_fallback.format_zero_info_fallback_card(tenant["business_name"], clean_sender, message_text)
+            reply_payload = fallback_res["reply"]
             mute_tenant_bot(tenant["id"], clean_sender, minutes=15)
-            owner_alert.send_urgent_owner_alert(instance_name, clean_owner, clean_sender, "Unverified inquiry - Manager Handoff", message_text)
+            owner_alert.send_urgent_owner_alert(
+                instance_name, clean_owner, clean_sender, 
+                "⚠️ Missing Item In Catalog - Manager Action Required", 
+                f"Customer asked about '{message_text}' which is not in store database. Reply '#add {message_text} | Price | Desc' to add it!"
+            )
 
         if ai_res.get("is_human_transfer"):
-            # Customer Requested Human -> Standardized 15-Minute Mute & Manager Push Alert
             mute_tenant_bot(tenant["id"], clean_sender, minutes=15)
             owner_alert.send_urgent_owner_alert(instance_name, clean_owner, clean_sender, "Customer requested Human Agent", message_text)
 
