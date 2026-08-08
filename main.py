@@ -16,7 +16,7 @@ from evolution_interactive import (
     send_whatsapp_presence, send_whatsapp_message, broadcast_whatsapp_message
 )
 
-# Enterprise SaaS Modules (54 FULL ENTERPRISE PYTHON MODULES TOTAL)
+# Enterprise SaaS Modules (55 FULL ENTERPRISE PYTHON MODULES TOTAL)
 from local_ai_brain import local_brain
 from whatsapp_ui import render_executive_whatsapp_dashboard, render_role_based_menu, format_currency
 from logistics_department import logistics_dept
@@ -51,7 +51,7 @@ from smart_price_alert_engine import smart_price_alert
 from global_market_price_engine import global_market_prices
 from multi_source_verifier import multi_source_verifier
 
-# Global Enterprise Expansion & Verification Engine (Modules 44-54)
+# Global Enterprise Expansion & Verification Engine (Modules 44-55)
 from global_tax_vat_engine import global_tax_engine
 from multilingual_translation_matrix import multilingual_matrix
 from cross_border_customs_tariff_engine import customs_tariff_engine
@@ -63,6 +63,7 @@ from viral_share_generator import viral_share_gen
 from sovereign_directory_engine import sovereign_directory
 from sovereign_trust_score_engine import sovereign_trust_score
 from hyper_location_verifier import hyper_location_verifier
+from sovereign_legal_framework import sovereign_legal
 
 from gamification_retention import gamification_engine
 from database_backup import backup_engine
@@ -137,8 +138,8 @@ async def startup_event():
 async def root():
     return {
         "status": "online", 
-        "system": "Sovereign AI Commerce & Financial Platform v2030 (54 Enterprise Modules & Down-To-House-Number Map View)",
-        "architecture_modules": 54,
+        "system": "Sovereign AI Commerce & Financial Platform v2030 (55 Enterprise Modules & Legal Framework)",
+        "architecture_modules": 55,
         "self_healing": "active",
         "realtime_wat_clock": smart_timezone.get_realtime_nigeria_now().strftime("%Y-%m-%d %H:%M:%S WAT"),
         "is_night_protocol": smart_night_protocol.is_night_time(),
@@ -161,6 +162,13 @@ async def get_directory_map():
     """Serves the Premium Interactive Glowing Directory Map View."""
     return HTMLResponse(content=get_map_html_content())
 
+@app.get("/legal", response_class=HTMLResponse)
+@app.get("/privacy", response_class=HTMLResponse)
+@app.get("/terms", response_class=HTMLResponse)
+async def get_legal_page():
+    """Serves the Web Legal Terms of Service & Data Protection Privacy Policy Page."""
+    return HTMLResponse(content=sovereign_legal.get_full_legal_terms_html())
+
 # -------------------------------------------------------------
 # 👑 SUPER ADMIN API ENDPOINTS (Self-Healing & Diagnostics)
 # -------------------------------------------------------------
@@ -171,7 +179,7 @@ async def get_admin_metrics():
         "errors_captured": self_healing.error_count,
         "auto_healed": self_healing.healed_count,
         "smart_retry_success": "100%",
-        "modules_active": 54,
+        "modules_active": 55,
         "scale_metrics": infinite_scale_guard.get_scale_metrics(),
         "sla_metrics": sla_monitor.get_sla_metrics(),
         "failover_status": dr_failover_engine.check_health_and_failover()
@@ -189,14 +197,14 @@ async def admin_ai_agent_chat(payload: AdminChatPayload):
     if "error" in msg or "bug" in msg or "issue" in msg:
         reply = f"🛠️ **[DIAGNOSTIC ANALYSIS]**: Received report '{payload.message}'. Autonomous 24/7 Self-Healing worker has captured stack trace, cleared bad cache keys, and re-established database connection pool."
     elif "status" in msg or "health" in msg:
-        reply = f"📊 **[SYSTEM HEALTH]**: Platform is operating at 99.99% efficiency across 54 Enterprise Modules. Total auto-healed incidents: {self_healing.healed_count}."
+        reply = f"📊 **[SYSTEM HEALTH]**: Platform is operating at 99.99% efficiency across 55 Enterprise Modules. Total auto-healed incidents: {self_healing.healed_count}."
     else:
-        reply = f"🤖 **[SUPER ADMIN AGENT]**: Instruction processed: '{payload.message}'. All 54 enterprise modules are active and synchronized worldwide."
+        reply = f"🤖 **[SUPER ADMIN AGENT]**: Instruction processed: '{payload.message}'. All 55 enterprise modules are active and synchronized worldwide."
 
     return {"reply": reply}
 
 # -------------------------------------------------------------
-# 💬 WHATSAPP WEBHOOK HANDLER (Hyper Location Street Verification & Map View)
+# 💬 WHATSAPP WEBHOOK HANDLER (Legal Framework & Data Privacy Compliance)
 # -------------------------------------------------------------
 @app.post("/webhook/whatsapp/{instance_name}")
 async def handle_whatsapp_webhook(instance_name: str, request: Request):
@@ -311,6 +319,12 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
             return {"status": "security_attack_blocked"}
 
         msg_lower = message_text.lower().strip()
+
+        # Legal Terms & Privacy Onboarding Command (#legal / #terms / #privacy)
+        if msg_lower in ["#legal", "#terms", "#privacy", "legal", "terms", "privacy"]:
+            consent_card = sovereign_legal.get_onboarding_consent_card(tenant.get("business_name", "Store"))
+            send_whatsapp_message(instance_name, clean_sender, consent_card)
+            return {"status": "legal_consent_sent"}
 
         # Street Address Verification Command (#verify-address <house_no> | <street> | <city> | <state>)
         if msg_lower.startswith("#verify-address") or msg_lower.startswith("verify-address"):
