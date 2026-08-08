@@ -6,5 +6,7 @@ python-dotenv
 supabase
 groq
 google-genai
+sentence-transformers
 cachetools
 pydantic
+pyngrok

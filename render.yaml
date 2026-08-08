@@ -1,10 +1,25 @@
 services:
   - type: web
-    name: commerce-ai-saas
+    name: sovereign-ai-commerce-backend
     env: python
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "uvicorn main:app --host 0.0.0.0 --port $PORT"
-    autoDeploy: true
+    region: frankfurt
+    plan: free
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
       - key: PORT
         value: 10000
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: EVOLUTION_API_URL
+        value: https://evolution-api-latest-gxue.onrender.com
+      - key: EVOLUTION_API_KEY
+        value: F84B4F845BC6-464A-AD0E-553FD1046981

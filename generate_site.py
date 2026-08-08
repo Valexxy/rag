@@ -1,4 +1,7 @@
-<!DOCTYPE html>
+import os
+import subprocess
+
+HTML_CONTENT = r"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -996,4 +999,25 @@ window.addEventListener('DOMContentLoaded',()=>{
 });
 </script>
 </body>
-</html>
+</html>"""
+
+# Write HTML file
+with open('static/futuristic_app.html', 'w', encoding='utf-8') as f:
+    f.write(HTML_CONTENT)
+
+print(f"SUCCESS: Written {len(HTML_CONTENT):,} bytes to static/futuristic_app.html")
+
+# AUTOMATICALLY RUN NODE.JS SYNTAX CHECK TO GUARANTEE 0 SYNTAX ERRORS!
+script_content = HTML_CONTENT.split('<script>')[1].split('</script>')[0]
+temp_js = 'temp_check.js'
+with open(temp_js, 'w', encoding='utf-8') as f:
+    f.write(script_content)
+
+res = subprocess.run(['node', '-c', temp_js], capture_output=True, text=True)
+if os.path.exists(temp_js):
+    os.remove(temp_js)
+
+if res.returncode == 0:
+    print("[SUCCESS GUARANTEED]: Node.js syntax check passed! 0 SyntaxErrors in JavaScript.")
+else:
+    print("[SYNTAX ERROR DETECTED]:", res.stderr)

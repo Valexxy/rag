@@ -1,153 +1,149 @@
+"""
+╔══════════════════════════════════════════════════════════════════╗
+║       CHARACTER ENGINE — AI RESPONSE GENERATION PIPELINE       ║
+║  Powered by: Sovereign AI Brain (Groq Llama 3.3 70B / Gemini)  ║
+║  + Semantic Catalog Search + RAG Context Retrieval              ║
+╚══════════════════════════════════════════════════════════════════╝
+"""
+
 import os
 import re
+import logging
 from database import get_tenant_catalog, get_customer_ledger, get_customer_profile
 from rag_engine import rag_engine
 
-MODEL_ID = 'llama-3.1-8b-instant'
+logger = logging.getLogger(__name__)
 
-def get_groq_client():
-    api_key = os.environ.get("GROQ_API_KEY")
-    if not api_key:
-        return None
-    try:
-        from groq import Groq
-        return Groq(api_key=api_key)
-    except Exception:
-        return None
 
 def get_niche_config(niche: str) -> dict:
-    """Maps dynamic business niches to specific triggers and vocabulary."""
-    niche = niche.lower() if niche else "retail"
+    """Maps business niches to specific vocabulary and action verbs."""
+    niche = (niche or "retail").lower()
     if niche == "real_estate":
         return {
             "offerings_name": "property portfolio",
             "action_verb": "schedule a viewing or discuss terms",
-            "handoff_keywords": ["view", "inspect", "tour", "agent", "buy property", "rent", "lease", "pay", "yes"]
         }
-    elif niche == "service" or niche == "salon":
+    elif niche in ("service", "salon"):
         return {
             "offerings_name": "list of services",
             "action_verb": "book an appointment",
-            "handoff_keywords": ["book", "appointment", "schedule", "time", "date", "pay", "yes"]
         }
-    else: # Default Retail/Importation
+    else:
         return {
             "offerings_name": "product lineup",
             "action_verb": "finalize your request",
-            "handoff_keywords": ["pay", "payment", "account", "bank", "transfer", "pos", "cash", "custom", "source", "import", "order", "buy", "yes"]
         }
+
 
 def generate_live_character_reply(
-    tenant: dict, 
-    customer_phone: str, 
+    tenant: dict,
+    customer_phone: str,
     latest_query: str,
-    conversation_history: str, 
-    is_owner: bool = False
+    conversation_history: str,
+    is_owner: bool = False,
 ) -> dict:
-    """100% Production RAG Engine Pipeline."""
+    """
+    Full AI pipeline for generating a customer reply.
     
-    business_name = tenant.get('business_name', 'our company')
-    niche = tenant.get('business_niche', 'retail')
+    Pipeline:
+    1. RAG retrieval — fetch catalog + customer history
+    2. Sovereign AI Brain — intent classification + grounded answer generation
+    3. Fallback chain — if AI fails, clean human handoff
+    
+    Returns a dict with:
+      - reply: str (formatted WhatsApp message)
+      - is_human_transfer: bool
+      - is_high_value: bool
+      - detected_tags: list
+      - buttons: list
+    """
+    business_name = tenant.get("business_name", "Store")
+    niche = tenant.get("business_niche", "retail")
     config = get_niche_config(niche)
-    query_lower = latest_query.lower().strip()
 
-    # -------------------------------------------------------------
-    # 1. DETERMINISTIC HANDOFF (Zero AI Cost, Instant, Perfect Accuracy)
-    # -------------------------------------------------------------
-    if not is_owner and any(kw in query_lower for kw in config["handoff_keywords"]):
-        return {
-            "reply": f"🤖 *[{business_name} Automated System]*\n\nConnecting you directly with management to {config['action_verb']}. Please hold!",
-            "buttons": ["👤 Human Agent"],
-            "detected_tags": ["[TAG:TRANSFER_HUMAN]"],
-            "is_high_value": False,
-            "is_human_transfer": True
-        }
-
-    # -------------------------------------------------------------
-    # 2. RAG RETRIEVAL PHASE (Vector Cosine Similarity & Knowledge Ranking)
-    # -------------------------------------------------------------
+    # ── 1. RAG RETRIEVAL ─────────────────────────────────────────────
     rag_context = rag_engine.retrieve_relevant_context(tenant, customer_phone, latest_query)
-    
-    discovery_keywords = ["catalog", "price", "list", "what do you", "how much", "offer", "options", "services", "properties", "items", "types", "power bank"]
-    if not is_owner and any(kw in query_lower for kw in discovery_keywords):
-        return {
-            "reply": f"🤖 *[{business_name} Automated System]*\n\nHere is our active {config['offerings_name']}:\n\n{rag_context['retrieved_catalog_context']}\n\nWould you like to {config['action_verb']}?",
-            "buttons": ["👤 Human Agent"],
-            "detected_tags": [],
-            "is_high_value": False,
-            "is_human_transfer": False
-        }
+    full_catalog = rag_context.get("full_catalog", [])
+    best_matched_item = rag_context.get("best_matched_item")
 
-    # Location & Hours Bypass
-    location_keywords = ["address", "location", "where are you", "office", "store", "open", "closing time", "hours"]
-    if not is_owner and any(kw in query_lower for kw in location_keywords):
-        return {
-            "reply": f"🤖 *[{business_name} Automated System]*\n\nWe operate from Onitsha, Anambra State. Open Monday to Saturday, 8:00 AM to 6:00 PM.",
-            "buttons": ["👤 Human Agent"],
-            "detected_tags": [],
-            "is_high_value": False,
-            "is_human_transfer": False
-        }
-
-    # -------------------------------------------------------------
-    # 3. RAG AUGMENTATION & GENERATION PHASE
-    # -------------------------------------------------------------
-    prompt = rag_engine.augment_prompt(tenant, latest_query, rag_context)
-
-    system_instruction = (
-        f"You are the Assistant for {business_name}. "
-        "CRITICAL: Be extremely concise (1 sentence max). Instantly route any purchase, payment, or custom request to the owner using [TAG:TRANSFER_HUMAN]."
-    )
-
-    client = get_groq_client()
-    if not client:
-        return {
-            "reply": f"🤖 *[{business_name} Automated System]*\n\nConnecting you directly with management now. Please hold!",
-            "buttons": ["👤 Human Agent"],
-            "detected_tags": ["[TAG:TRANSFER_HUMAN]"],
-            "is_high_value": False,
-            "is_human_transfer": True
-        }
-
+    # ── 2. SOVEREIGN AI BRAIN — INTENT + ANSWER ──────────────────────
     try:
-        response = client.chat.completions.create(
-            model=MODEL_ID,
-            messages=[
-                {"role": "system", "content": system_instruction},
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=150,
-            temperature=0.1
+        from sovereign_ai_brain import sovereign_brain
+
+        # Classify intent first — understands any phrasing
+        classification = sovereign_brain.classify_intent(
+            message=latest_query,
+            catalog=full_catalog,
+            conversation_history=conversation_history,
         )
-        raw_text = response.choices[0].message.content.strip()
-    except Exception as e:
-        print(f"[ERROR] Groq API error: {e}")
+        intent = classification["intent"]
+        product_query = classification.get("product_query")
+
+        # If AI says human request — escalate immediately
+        if intent in ("HUMAN_REQUEST", "UNKNOWN") and not is_owner:
+            return _human_handoff_reply(business_name)
+
+        # For catalog queries — try semantic search with AI-extracted product name
+        if intent == "CATALOG_QUERY" and not is_owner:
+            try:
+                from semantic_catalog_engine import semantic_catalog
+                search_result = semantic_catalog.search_with_intent(
+                    product_query=product_query,
+                    full_message=latest_query,
+                    catalog=full_catalog,
+                )
+                if search_result["matched"]:
+                    return {
+                        "reply": search_result["reply"],
+                        "is_human_transfer": False,
+                        "is_high_value": False,
+                        "detected_tags": [],
+                        "buttons": ["#buy", "#human"],
+                        "source": f"semantic_{search_result['method']}",
+                    }
+                # No catalog match → let AI generate general answer or handoff
+            except Exception as e:
+                logger.warning(f"[CharEngine] Semantic search error: {e}")
+
+        # Generate grounded AI answer
+        ai_result = sovereign_brain.generate_answer(
+            message=latest_query,
+            intent=intent,
+            catalog=full_catalog,
+            matched_product=best_matched_item,
+            conversation_history=conversation_history,
+            tenant=tenant,
+        )
+
+        if ai_result["is_human_transfer"] and not is_owner:
+            return _human_handoff_reply(business_name)
+
         return {
-            "reply": f"🤖 *[{business_name} Automated System]*\n\nConnecting you directly with management now. Please hold!",
-            "buttons": ["👤 Human Agent"],
-            "detected_tags": ["[TAG:TRANSFER_HUMAN]"],
+            "reply": ai_result["reply"],
+            "is_human_transfer": ai_result.get("is_human_transfer", False),
             "is_high_value": False,
-            "is_human_transfer": True
+            "detected_tags": [],
+            "buttons": ["🤖 AI Assistant"],
+            "source": ai_result.get("source", "sovereign_brain"),
         }
 
-    buttons = ["📊 Executive Audit", "⏰ Set Schedule"] if is_owner else ["👤 Human Agent"]
-    button_match = re.search(r"\[BUTTONS:\s*(.*?)\]", raw_text)
-    if button_match:
-        button_str = button_match.group(1)
-        buttons = [b.strip() for b in button_str.split("|") if b.strip()]
-        raw_text = re.sub(r"\[BUTTONS:\s*.*?\]", "", raw_text).strip()
+    except Exception as e:
+        logger.error(f"[CharEngine] Sovereign Brain error: {e}")
+        # ── 3. SAFE FALLBACK ─────────────────────────────────────────
+        return _human_handoff_reply(business_name)
 
-    detected_tags = re.findall(r"\[TAG:[A-Z_]+\]", raw_text)
-    clean_text = re.sub(r"\[TAG:[A-Z_]+\]", "", raw_text).strip()
-    header_title = "Executive Office" if is_owner else "Automated System"
-    
-    is_high_value = "[TAG:HIGH_VALUE_TRANSACTION]" in detected_tags
-    is_human_transfer = "[TAG:TRANSFER_HUMAN]" in detected_tags
 
+def _human_handoff_reply(business_name: str) -> dict:
+    """Returns a clean, professional human handoff reply."""
     return {
-        "reply": f"🤖 *[{business_name} {header_title}]*\n\n{clean_text}",
-        "buttons": buttons,
-        "detected_tags": detected_tags,
-        "is_high_value": is_high_value,
-        "is_human_transfer": is_human_transfer
+        "reply": (
+            f"🤖 *[{business_name} AI Assistant]*\n\n"
+            f"Thank you for your message! I've connected you directly with our store manager "
+            f"who will assist you personally right away. Please hold!"
+        ),
+        "is_human_transfer": True,
+        "is_high_value": False,
+        "detected_tags": ["[TAG:TRANSFER_HUMAN]"],
+        "buttons": ["👤 Human Agent"],
+        "source": "handoff",
     }
