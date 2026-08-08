@@ -935,13 +935,33 @@ def _process_whatsapp_message_sync(instance_name: str, payload: dict):
             return {"status": "ai_detected_human_request"}
 
         if classified_intent == "PURCHASE":
-            risk_eval = fraud_risk_engine.evaluate_order_risk(clean_sender, 25000.0, "NG")
-            if risk_eval["risk_level"] == "HIGH_RISK_MANUAL_REVIEW":
-                asyncio.create_task(asyncio.to_thread(owner_alert.send_urgent_owner_alert, instance_name, clean_owner, clean_sender, "⚠️ HIGH FRAUD RISK ORDER", f"Risk score: {risk_eval['risk_score']}"))
-            realtime_monetization.record_transaction_commission(tenant["id"], 25000.0)
-            reply_payload = flexible_payment.format_merchant_payment_instructions(tenant, 25000.0, f"TRX-{clean_sender[-4:]}")
-            send_whatsapp_message(instance_name, clean_sender, reply_payload)
-            return {"status": "purchase_intent_payment_sent"}
+            cat_match = semantic_catalog.search_with_intent(product_query or message_text, message_text, full_catalog_list)
+            if cat_match.get("matched"):
+                item = cat_match["item"]
+                item_price = float(item.get("price", 25000.0))
+                item_name = item.get("name", "Product")
+                realtime_monetization.record_transaction_commission(tenant["id"], item_price)
+                reply_payload = flexible_payment.format_merchant_payment_instructions(tenant, item_price, f"TRX-{clean_sender[-4:]}")
+                send_whatsapp_message(instance_name, clean_sender, f"🛒 *[{tenant.get('business_name', 'Store')} Order Placement]*\n\n✅ *Item:* {item_name}\n💰 *Price:* ₦{item_price:,.2f}\n\n{reply_payload}")
+                return {"status": "purchase_intent_catalog_matched"}
+            else:
+                # Uncatalogued item request (e.g. Groundnut Oil) — Alert manager & notify customer
+                asyncio.create_task(asyncio.to_thread(escalation_alert_engine.register_human_handover, instance_name, clean_owner, clean_sender, f"🛒 Uncatalogued Item Request: {product_query or message_text}", message_text))
+                asyncio.create_task(asyncio.to_thread(
+                    owner_alert.send_urgent_owner_alert,
+                    instance_name, clean_owner, clean_sender,
+                    "🛒 Customer Requested Item Not In Catalog",
+                    f"Customer wants to buy: '{message_text}'\n\nQuick Action to add item:\n`#add {product_query or 'Item'} | Price | Description`"
+                ))
+                requested_item_str = product_query if product_query else message_text
+                reply = (
+                    f"🛍️ *[{tenant.get('business_name', 'Store')} Inventory Notice]*\n\n"
+                    f"Thank you for reaching out! We noticed you want to buy *{requested_item_str.title()}*, but it's currently not listed in our active catalog.\n\n"
+                    f"📢 *I have notified our store manager to check physical stock for you!*\n\n"
+                    f"💬 Reply *#1* to view our available catalog items, or reply *#human* to chat with our manager directly."
+                )
+                send_whatsapp_message(instance_name, clean_sender, reply)
+                return {"status": "uncatalogued_purchase_alerted"}
 
         if classified_intent == "CATALOG_QUERY":
             # ── TIER 6: SEMANTIC CATALOG SEARCH ──────────────────────────
