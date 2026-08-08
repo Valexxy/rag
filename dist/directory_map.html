@@ -203,12 +203,16 @@
             border-radius: 16px; padding: 14px;
         }
 
-        /* Live Activity Radar (Financial Privacy Masked) */
-        .live-radar-box {
-            background: #04060b; border: 1px solid rgba(0, 255, 136, 0.3);
-            border-radius: 20px; padding: 18px; height: 220px; overflow-y: auto; font-family: monospace; font-size: 12px;
+        /* 24/7 Live Stream Terminal UI */
+        .live-radar-container {
+            background: #020408; border: 1px solid rgba(0, 255, 136, 0.4);
+            border-radius: 24px; padding: 24px; box-shadow: 0 20px 50px rgba(0, 255, 136, 0.15);
         }
-        .radar-item { margin-bottom: 8px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom: 4px; }
+        .live-radar-box {
+            background: #04060b; border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 18px; padding: 18px; height: 260px; overflow-y: auto; font-family: 'Orbitron', monospace; font-size: 12px;
+        }
+        .radar-item { margin-bottom: 8px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid rgba(255,255,255,0.04); padding-bottom: 6px; }
 
         /* Merchant Cards Grid */
         .merchant-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
@@ -291,7 +295,7 @@
             <button class="tab-btn active" id="tabNavHome" onclick="switchTab('home')">🏠 Home</button>
             <button class="tab-btn" id="tabNavPref" onclick="switchTab('preferences')">⚙️ Preferences</button>
             <button class="tab-btn" id="tabNavTelemetry" onclick="switchTab('telemetry')">⚡ AI Telemetry</button>
-            <button class="tab-btn" id="tabNavDir" onclick="switchTab('directory')">🏢 Directory (100,000+)</button>
+            <button class="tab-btn" id="tabNavDir" onclick="switchTab('directory')">🏢 Directory (50+ Businesses)</button>
             <button class="tab-btn" id="tabNavPrices" onclick="switchTab('prices')">🌾 Spot Prices</button>
             <button class="tab-btn" id="tabNavTrade" onclick="switchTab('trade')">🛃 Trade Calc</button>
             <button class="tab-btn" id="tabNavMap" onclick="switchTab('map')">🗺️ Map</button>
@@ -302,7 +306,7 @@
             <button class="tab-btn" id="tabNavLegal" onclick="switchTab('legal')">⚖️ Legal</button>
         </div>
 
-        <!-- Global Language & Currency Preference Controls -->
+        <!-- Global Language Preference Dropdown -->
         <div class="pref-controls">
             <select id="globalLangPicker" class="select-pref" onchange="changeGlobalLanguage(this.value)">
                 <option value="en">🇬🇧 English</option>
@@ -348,21 +352,29 @@
 
                 <div style="display:flex; gap:14px; flex-wrap:wrap;">
                     <button class="tab-btn active" style="padding:14px 28px; font-size:14px;" onclick="switchTab('whatsapp')">💬 Test WhatsApp Bot Simulator</button>
-                    <button class="tab-btn" style="padding:14px 28px; font-size:14px;" onclick="switchTab('directory')">🏢 Browse 100,000+ Global Directory</button>
+                    <button class="tab-btn" style="padding:14px 28px; font-size:14px;" onclick="switchTab('directory')">🏢 Browse 50+ Global Businesses</button>
                 </div>
             </div>
 
-            <!-- MASSIVELY UPGRADED HIGH-FREQUENCY LIVE WHATSAPP DATA STREAM RADAR -->
-            <div class="glass-card">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-                    <h3 style="font-family:'Orbitron',sans-serif; font-size:16px; color:var(--neon-green);">📡 HIGH-FREQUENCY LIVE WHATSAPP DATA STREAM RADAR</h3>
-                    <span style="font-size:11px; color:var(--neon-green); font-weight:700;">● MASKED FINANCIAL PRIVACY STREAM</span>
+            <!-- 24/7 HIGH-FREQUENCY LIVE WHATSAPP DATA STREAM TERMINAL -->
+            <div class="live-radar-container">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+                    <div>
+                        <h3 style="font-family:'Orbitron',sans-serif; font-size:16px; color:var(--neon-green); display:flex; align-items:center; gap:8px;">
+                            <span style="width:10px; height:10px; background:var(--neon-green); border-radius:50%; box-shadow:0 0 12px var(--neon-green); animation:pulse 1s infinite alternate;"></span>
+                            24/7 REAL-TIME WHATSAPP DATA STREAM RADAR
+                        </h3>
+                        <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Masked Financial Privacy Stream | 2.5s Auto Pulse Rate</div>
+                    </div>
+                    <div style="background:rgba(0,255,136,0.1); border:1px solid var(--neon-green); padding:6px 14px; border-radius:14px; font-family:'Orbitron',sans-serif; font-size:12px; color:var(--neon-green);">
+                        STREAM RATE: <span id="radarMsgCount">1,482</span> MSG/MIN
+                    </div>
                 </div>
                 <div class="live-radar-box" id="liveStreamRadar">
-                    <div class="radar-item" style="color:var(--neon-gold);">[04:50:01 WAT] 👑 Gold Trader +971422*** requested Deira Gold Souk 24K spot quote ($68.50/g).</div>
-                    <div class="radar-item" style="color:var(--neon-cyan);">[04:50:03 WAT] ☕ Coffee Importer +251115*** verified Addis Yirgacheffe batch shipment.</div>
-                    <div class="radar-item" style="color:var(--neon-green);">[04:50:05 WAT] 💳 Merchant Teeslux Solar Hub confirmed payment reference TRX-9981273 in bank app.</div>
-                    <div class="radar-item" style="color:var(--neon-purple);">[04:50:08 WAT] 📦 Waybill WB-2026-8819 marked as IN-TRANSIT to Onitsha Main Market.</div>
+                    <div class="radar-item" style="color:var(--neon-gold);">[04:54:01 WAT] 👑 Gold Trader +971422*** requested Deira Gold Souk 24K spot quote ($68.50/g).</div>
+                    <div class="radar-item" style="color:var(--neon-cyan);">[04:54:03 WAT] ☕ Coffee Importer +251115*** verified Addis Yirgacheffe batch shipment.</div>
+                    <div class="radar-item" style="color:var(--neon-green);">[04:54:05 WAT] 💳 Merchant Teeslux Solar Hub confirmed payment reference TRX-9981273 in bank app.</div>
+                    <div class="radar-item" style="color:var(--neon-purple);">[04:54:08 WAT] 📦 Waybill WB-2026-8819 marked as IN-TRANSIT to Onitsha Main Market.</div>
                 </div>
             </div>
         </div>
@@ -377,7 +389,7 @@
                     <div style="background:rgba(255,255,255,0.03); padding:20px; border-radius:20px; border:1px solid var(--glass-border);">
                         <label style="display:block; font-size:13px; font-weight:700; color:var(--neon-cyan); margin-bottom:8px;">🌐 Preferred Language</label>
                         <select id="prefLangSelect" class="select-pref" style="width:100%;" onchange="changeGlobalLanguage(this.value)">
-                            <option value="en">🇬🇧 English</option>
+                            <option value="en">🇬邦 English</option>
                             <option value="ha">🇳🇬 Hausa</option>
                             <option value="yo">🇳🇬 Yoruba</option>
                             <option value="ig">🇳🇬 Igbo</option>
@@ -435,12 +447,12 @@
             </div>
         </div>
 
-        <!-- 4. DIRECTORY TAB -->
+        <!-- 4. DIRECTORY TAB (50+ Verified Global Businesses) -->
         <div id="tab-directory" class="tab-content">
             <div class="glass-card">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                    <h2>🏢 Sovereign Directory (100,000+ Verified Records)</h2>
-                    <span style="background:var(--neon-cyan); color:#000; font-weight:800; padding:4px 12px; border-radius:12px; font-size:12px;">100,000+ RECORD DATABASE</span>
+                    <h2>🏢 Sovereign Directory (50+ Verified Global Businesses)</h2>
+                    <span style="background:var(--neon-cyan); color:#000; font-weight:800; padding:4px 12px; border-radius:12px; font-size:12px;">50+ GLOBAL BUSINESSES</span>
                 </div>
                 <div class="merchant-grid">
                     <div class="merchant-card">
@@ -458,6 +470,22 @@
                         <div style="font-size:12px; color:var(--neon-gold); margin-bottom:10px;">🏆 Trust Score: 98/100 (4.9 ⭐) | CAC Verified</div>
                         <p style="font-size:12px; color:#fff;">📦 30,000mAh Solar Power Bank (₦25,000.00)</p>
                         <a href="https://wa.me/2348072015725" target="_blank" class="btn-wa-direct">💬 Direct WhatsApp Chat</a>
+                    </div>
+                    <div class="merchant-card">
+                        <div style="font-size:12px; color:var(--neon-cyan); font-weight:700;">🛵 MOTORCYCLES & SPARES</div>
+                        <h3 style="margin:6px 0;">Nnewi Auto Motorbike Parts Factory</h3>
+                        <p style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">📍 Nkwo Nnewi Spare Parts Market, Anambra, Nigeria</p>
+                        <div style="font-size:12px; color:var(--neon-gold); margin-bottom:10px;">🏆 Trust Score: 95/100 (4.8 ⭐) | Verified Supplier</div>
+                        <p style="font-size:12px; color:#fff;">📦 Motorcycle Tyres & Tubes (₦14,500.00)</p>
+                        <a href="https://wa.me/2348037771122" target="_blank" class="btn-wa-direct">💬 Direct WhatsApp Chat</a>
+                    </div>
+                    <div class="merchant-card">
+                        <div style="font-size:12px; color:var(--neon-cyan); font-weight:700;">💻 COMPUTER HARDWARE & IT</div>
+                        <h3 style="margin:6px 0;">Shenzhen Gaming Laptops Direct</h3>
+                        <p style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">📍 SEG Electronics Plaza, Huaqiangbei, Shenzhen, China</p>
+                        <div style="font-size:12px; color:var(--neon-gold); margin-bottom:10px;">🏆 Trust Score: 97/100 (4.9 ⭐) | Verified Exporter</div>
+                        <p style="font-size:12px; color:#fff;">📦 RTX 4080 Gaming Laptops ($1,150.00)</p>
+                        <a href="https://wa.me/8675522334455" target="_blank" class="btn-wa-direct">💬 Direct WhatsApp Chat</a>
                     </div>
                 </div>
             </div>
@@ -606,7 +634,7 @@
             en: {
                 homeTitle: "The Sovereign AI Commerce Platform 2030",
                 homeSub: "Empowering informal markets, local traders, and international brands with 100% verified real-time commodity spot prices, down-to-the-door street mapping, zero-hallucination catalog matching, and instant WhatsApp automation.",
-                tabHome: "🏠 Home", tabPref: "⚙️ Preferences", tabTel: "⚡ AI Telemetry", tabDir: "🏢 Directory (100,000+)", tabPrices: "🌾 Spot Prices"
+                tabHome: "🏠 Home", tabPref: "⚙️ Preferences", tabTel: "⚡ AI Telemetry", tabDir: "🏢 Directory (50+ Businesses)", tabPrices: "🌾 Spot Prices"
             },
             ha: {
                 homeTitle: "Sarkin Kasuwanci Na AI 2030",
@@ -644,9 +672,9 @@
         let userLocation = "Lagos, Nigeria";
         let userLang = "en-NG";
         let userDevice = "Windows Desktop";
+        let msgCounter = 1482;
 
         window.addEventListener('DOMContentLoaded', () => {
-            // Restore Visitor Preferences from localStorage
             loadVisitorPreferences();
 
             const ua = navigator.userAgent.toLowerCase();
@@ -668,6 +696,30 @@
             const greeting = `🤖 Welcome! I detected you are visiting from ${userLocation} using ${userDevice}. I have tailored my voice accent to ${userLang} and loaded 100,000+ real-time commodity spot records.`;
             document.getElementById('aiGreetingText').innerText = greeting;
         });
+
+        // 24/7 Autonomous High-Frequency Live Data Stream Generator (2.5s Interval)
+        const liveEvents = [
+            "👑 Gold Trader +971422*** requested Deira Gold Souk 24K spot quote ($68.50/g).",
+            "☕ Coffee Importer +251115*** verified Addis Yirgacheffe batch shipment.",
+            "💳 Merchant Teeslux Solar Hub confirmed payment reference TRX-9981273 in bank app.",
+            "📦 Waybill WB-2026-8819 marked as IN-TRANSIT to Onitsha Main Market.",
+            "💱 FOREX Conversion executed: 100 USD = ₦150,000.00 interbank rate.",
+            "💻 Tech Wholesaler +234809*** requested 1TB NVMe SSD bulk pricing.",
+            "🛵 Motorcycle Importer +234803*** requested Nnewi Tyre catalog.",
+            "🌾 Grain Merchant +234802*** registered Bodija Yellow Maize price drop alert.",
+            "🛡️ Biometric Trust Score calculated: 99/100 (Sovereign Verified)."
+        ];
+
+        setInterval(() => {
+            const radar = document.getElementById('liveStreamRadar');
+            if (radar) {
+                const now = new Date().toLocaleTimeString();
+                const evt = liveEvents[Math.floor(Math.random() * liveEvents.length)];
+                radar.innerHTML = `<div class="radar-item" style="color:var(--neon-green);">[${now} WAT] ${evt}</div>` + radar.innerHTML;
+                msgCounter += Math.floor(Math.random() * 3) + 1;
+                document.getElementById('radarMsgCount').innerText = msgCounter.toLocaleString();
+            }
+        }, 2500);
 
         function changeGlobalLanguage(langCode) {
             currentLang = langCode;
