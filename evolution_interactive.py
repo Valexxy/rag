@@ -16,6 +16,17 @@ def send_whatsapp_presence(instance_name: str, phone: str, state: str = "composi
     except Exception as e:
         print(f"[WARNING] Presence signal skipped: {e}")
 
+BOT_SENT_MSG_IDS = set()
+
+def is_bot_sent_message(msg_id: str) -> bool:
+    return bool(msg_id and msg_id in BOT_SENT_MSG_IDS)
+
+def record_bot_sent_message(msg_id: str):
+    if msg_id:
+        BOT_SENT_MSG_IDS.add(msg_id)
+        if len(BOT_SENT_MSG_IDS) > 2000:
+            BOT_SENT_MSG_IDS.clear()
+
 def send_whatsapp_message(instance_name: str, phone: str, text: str, buttons: list = None) -> bool:
     """Delivers clean, perfectly formatted WhatsApp messages with quick option shortcuts."""
     url_base, key = get_evolution_credentials()
@@ -36,7 +47,15 @@ def send_whatsapp_message(instance_name: str, phone: str, text: str, buttons: li
 
     try:
         res = requests.post(url, json=payload, headers=headers, timeout=10)
-        return res.status_code in [200, 201]
+        if res.status_code in [200, 201]:
+            try:
+                res_json = res.json()
+                msg_id = res_json.get("key", {}).get("id") or res_json.get("messageId")
+                record_bot_sent_message(msg_id)
+            except Exception:
+                pass
+            return True
+        return False
     except Exception as e:
         print(f"[ERROR] Error sending WhatsApp message: {e}")
         return False

@@ -13,7 +13,7 @@ from database import (
 )
 from character_engine import generate_live_character_reply
 from evolution_interactive import (
-    send_whatsapp_presence, send_whatsapp_message, broadcast_whatsapp_message
+    send_whatsapp_presence, send_whatsapp_message, broadcast_whatsapp_message, is_bot_sent_message
 )
 
 # Enterprise SaaS Modules (56 FULL ENTERPRISE PYTHON MODULES TOTAL)
@@ -357,6 +357,10 @@ def _process_whatsapp_message_sync(instance_name: str, payload: dict):
         key_info = data.get("key", {}) if isinstance(data, dict) else {}
         message_info = data.get("message", {}) if isinstance(data, dict) else {}
 
+        msg_id = key_info.get("id") or ""
+        if is_bot_sent_message(msg_id):
+            return {"status": "bot_own_message_ignored"}
+
         is_from_me = key_info.get("fromMe", False)
         remote_jid = (
             key_info.get("remoteJid")
@@ -369,7 +373,7 @@ def _process_whatsapp_message_sync(instance_name: str, payload: dict):
         
         clean_sender = "".join(filter(str.isdigit, str(remote_jid)))
         clean_owner = "".join(filter(str.isdigit, str(tenant.get("owner_phone", ""))))
-        is_owner = is_from_me or (clean_owner and clean_sender == clean_owner)
+        is_owner = (clean_owner and clean_sender == clean_owner)
 
         # Dynamic Global Timezone Resolution
         greeting, customer_loc_info, customer_local_time = global_tz.get_customer_local_time(clean_sender)
