@@ -206,8 +206,11 @@ class SemanticCatalogEngine:
             "bank":      ("power bank", +0.15),
             "powerbank": ("power bank", +0.15),
             "generator": ("generator", +0.15),
-            "inverter":  ("generator", +0.10),
+            "inverter":  ("inverter", +0.15),
             "genset":    ("generator", +0.15),
+            "kva":       ("kva", +0.30),
+            "1.5kva":    ("1.5kva", +0.35),
+            "3.5kva":    ("3.5kva", +0.35),
             "rice":      ("rice", +0.15),
             "gold":      ("gold", +0.15),
             "bullion":   ("gold", +0.15),
@@ -217,13 +220,20 @@ class SemanticCatalogEngine:
             """Applies keyword boost to disambiguate semantically similar items."""
             item_name_lower = item.get("name", "").lower()
             item_desc_lower = item.get("description", "").lower()
-            item_text_lower = f"{item_name_lower} {item_desc_lower}"
+            item_text_lower = f"{item_name_lower} {item_desc_lower}".replace(" ", "").replace(".", "").replace("-", "")
+            q_clean = query_lower.replace(" ", "").replace(".", "").replace("-", "")
+            
             boosted = base_score
             query_tokens = set(query_lower.split())
+            
+            # Exact substring match for technical product specs (e.g. 1.5kva in 1.5kvadualsolargenerator)
+            if q_clean in item_text_lower and len(q_clean) >= 3:
+                boosted += 0.35
+
             for token, (target_fragment, boost) in KEYWORD_BOOSTS.items():
-                if token in query_tokens and target_fragment in item_text_lower:
+                if (token in query_tokens or token in q_clean) and target_fragment in item_text_lower:
                     boosted += boost
-                    break  # Only apply one boost per query to avoid double counting
+                    break
             return boosted
 
         q_lower = query.lower()
