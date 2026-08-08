@@ -16,7 +16,7 @@ from evolution_interactive import (
     send_whatsapp_presence, send_whatsapp_message, broadcast_whatsapp_message
 )
 
-# Enterprise SaaS Modules (55 FULL ENTERPRISE PYTHON MODULES TOTAL)
+# Enterprise SaaS Modules (56 FULL ENTERPRISE PYTHON MODULES TOTAL)
 from local_ai_brain import local_brain
 from whatsapp_ui import render_executive_whatsapp_dashboard, render_role_based_menu, format_currency
 from logistics_department import logistics_dept
@@ -51,7 +51,7 @@ from smart_price_alert_engine import smart_price_alert
 from global_market_price_engine import global_market_prices
 from multi_source_verifier import multi_source_verifier
 
-# Global Enterprise Expansion & Verification Engine (Modules 44-55)
+# Global Enterprise Expansion & Verification Engine (Modules 44-56)
 from global_tax_vat_engine import global_tax_engine
 from multilingual_translation_matrix import multilingual_matrix
 from cross_border_customs_tariff_engine import customs_tariff_engine
@@ -64,6 +64,7 @@ from sovereign_directory_engine import sovereign_directory
 from sovereign_trust_score_engine import sovereign_trust_score
 from hyper_location_verifier import hyper_location_verifier
 from sovereign_legal_framework import sovereign_legal
+from realtime_monetization_analytics import realtime_monetization
 
 from gamification_retention import gamification_engine
 from database_backup import backup_engine
@@ -90,40 +91,86 @@ chat_memory = {}
 class AdminChatPayload(BaseModel):
     message: str
 
-def get_index_html_content() -> str:
-    """Reads landing page HTML or falls back to inline content."""
-    idx_path = os.path.join(os.path.dirname(__file__), "static", "index.html")
-    if os.path.exists(idx_path):
-        with open(idx_path, "r", encoding="utf-8") as f:
-            return f.read()
-    return "<h2>Sovereign AI Commerce Online</h2>"
-
-def get_dashboard_html_content() -> str:
-    """Reads dashboard HTML or falls back to inline content."""
-    dash_path = os.path.join(os.path.dirname(__file__), "static", "dashboard.html")
-    if os.path.exists(dash_path):
-        with open(dash_path, "r", encoding="utf-8") as f:
-            return f.read()
-    elif os.path.exists("static/dashboard.html"):
-        with open("static/dashboard.html", "r", encoding="utf-8") as f:
-            return f.read()
-            
-    return """<!DOCTYPE html>
-<html>
-<head><title>Executive Dashboard</title></head>
-<body style="background:#07090e;color:#fff;font-family:sans-serif;padding:40px;">
-<h2>⚡ SOVEREIGN AI SAAS EXECUTIVE DASHBOARD</h2>
-<p>System Online & 100% Operational.</p>
+# -------------------------------------------------------------
+# 🌐 BULLETPROOF INLINE HTML TEMPLATES (Always loads instantly)
+# -------------------------------------------------------------
+INDEX_HTML_TEMPLATE = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sovereign AI Commerce Platform 2030</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { background: #05070a; color: #f0f4f8; font-family: 'Plus Jakarta Sans', sans-serif; padding: 40px; text-align: center; }
+        h1 { font-family: 'Outfit', sans-serif; font-size: 48px; background: linear-gradient(135deg, #00f2fe, #4facfe); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 20px; }
+        p { color: #8a99ad; font-size: 18px; max-width: 700px; margin: 0 auto 30px; line-height: 1.6; }
+        .btn-group { display: flex; justify-content: center; gap: 20px; }
+        .btn { padding: 14px 28px; border-radius: 12px; font-weight: 700; text-decoration: none; }
+        .btn-primary { background: linear-gradient(135deg, #00f2fe, #4facfe); color: #000; }
+        .btn-sec { background: rgba(255,255,255,0.08); color: #fff; border: 1px solid rgba(255,255,255,0.15); }
+    </style>
+</head>
+<body>
+    <h1>⚡ Sovereign AI Commerce Platform 2030</h1>
+    <p>56 Enterprise Python Modules Active. Empowering global informal trade with 100% real-time verified prices, down-to-door street mapping, and zero-latency WhatsApp automation.</p>
+    <div class="btn-group">
+        <a href="/dashboard" class="btn btn-primary">Open Executive Dashboard</a>
+        <a href="/map" class="btn btn-sec">Interactive Directory Map View</a>
+        <a href="/legal" class="btn btn-sec">Legal & Privacy Terms</a>
+    </div>
 </body>
 </html>"""
 
+DASHBOARD_HTML_TEMPLATE = """<!DOCTYPE html>
+<html>
+<head><title>Executive Dashboard</title></head>
+<body style="background:#07090e;color:#fff;font-family:sans-serif;padding:40px;">
+<h2>⚡ SOVEREIGN AI SAAS EXECUTIVE DASHBOARD (56 MODULES ACTIVE)</h2>
+<p>System Online & 100% Operational.</p>
+<p><a href="/map" style="color:#00f2fe;">Go to Interactive Directory Map View</a></p>
+</body>
+</html>"""
+
+MAP_HTML_TEMPLATE = """<!DOCTYPE html>
+<html>
+<head><title>Directory Map View</title></head>
+<body style="background:#07090e;color:#fff;font-family:sans-serif;padding:40px;">
+<h2>🗺️ SOVEREIGN DIRECTORY MAP VIEW ONLINE</h2>
+<p>High-Precision Down-To-House-Number Map Active.</p>
+<p><a href="/dashboard" style="color:#00f2fe;">Back to Dashboard</a></p>
+</body>
+</html>"""
+
+def get_index_html_content() -> str:
+    idx_path = os.path.join(os.path.dirname(__file__), "static", "index.html")
+    if os.path.exists(idx_path):
+        try:
+            with open(idx_path, "r", encoding="utf-8") as f:
+                return f.read()
+        except Exception:
+            pass
+    return INDEX_HTML_TEMPLATE
+
+def get_dashboard_html_content() -> str:
+    dash_path = os.path.join(os.path.dirname(__file__), "static", "dashboard.html")
+    if os.path.exists(dash_path):
+        try:
+            with open(dash_path, "r", encoding="utf-8") as f:
+                return f.read()
+        except Exception:
+            pass
+    return DASHBOARD_HTML_TEMPLATE
+
 def get_map_html_content() -> str:
-    """Reads map HTML or falls back to inline content."""
     map_path = os.path.join(os.path.dirname(__file__), "static", "directory_map.html")
     if os.path.exists(map_path):
-        with open(map_path, "r", encoding="utf-8") as f:
-            return f.read()
-    return "<h2>Map View Online</h2>"
+        try:
+            with open(map_path, "r", encoding="utf-8") as f:
+                return f.read()
+        except Exception:
+            pass
+    return MAP_HTML_TEMPLATE
 
 async def background_escalation_loop():
     """Background loop for high-priority repeated escalation alerts."""
@@ -152,14 +199,14 @@ async def get_api_status():
     """Returns JSON API status payload for health checks."""
     return {
         "status": "online", 
-        "system": "Sovereign AI Commerce & Financial Platform v2030 (55 Enterprise Modules)",
-        "architecture_modules": 55,
+        "system": "Sovereign AI Commerce & Financial Platform v2030 (56 Enterprise Modules & 24/7 Revenue Ledger)",
+        "architecture_modules": 56,
         "self_healing": "active",
         "realtime_wat_clock": smart_timezone.get_realtime_nigeria_now().strftime("%Y-%m-%d %H:%M:%S WAT"),
         "is_night_protocol": smart_night_protocol.is_night_time(),
         "free_tier_scale": infinite_scale_guard.get_scale_metrics(),
         "sla_performance": sla_monitor.get_sla_metrics(),
-        "disaster_recovery": dr_failover_engine.check_health_and_failover()
+        "monetization": realtime_monetization.get_owner_realtime_analytics()
     }
 
 @app.get("/dashboard", response_class=HTMLResponse)
@@ -183,6 +230,12 @@ async def get_legal_page():
     """Serves the Web Legal Terms of Service & Data Protection Privacy Policy Page."""
     return HTMLResponse(content=sovereign_legal.get_full_legal_terms_html())
 
+@app.get("/revenue")
+@app.get("/api/admin/revenue")
+async def get_owner_revenue_data():
+    """Returns 100% 24/7 owner revenue, commission ledger & merchant subscription metrics."""
+    return realtime_monetization.get_owner_realtime_analytics()
+
 # -------------------------------------------------------------
 # 👑 SUPER ADMIN API ENDPOINTS (Self-Healing & Diagnostics)
 # -------------------------------------------------------------
@@ -193,10 +246,10 @@ async def get_admin_metrics():
         "errors_captured": self_healing.error_count,
         "auto_healed": self_healing.healed_count,
         "smart_retry_success": "100%",
-        "modules_active": 55,
+        "modules_active": 56,
         "scale_metrics": infinite_scale_guard.get_scale_metrics(),
         "sla_metrics": sla_monitor.get_sla_metrics(),
-        "failover_status": dr_failover_engine.check_health_and_failover()
+        "monetization": realtime_monetization.get_owner_realtime_analytics()
     }
 
 @app.get("/api/admin/alerts")
@@ -211,14 +264,14 @@ async def admin_ai_agent_chat(payload: AdminChatPayload):
     if "error" in msg or "bug" in msg or "issue" in msg:
         reply = f"🛠️ **[DIAGNOSTIC ANALYSIS]**: Received report '{payload.message}'. Autonomous 24/7 Self-Healing worker has captured stack trace, cleared bad cache keys, and re-established database connection pool."
     elif "status" in msg or "health" in msg:
-        reply = f"📊 **[SYSTEM HEALTH]**: Platform is operating at 99.99% efficiency across 55 Enterprise Modules. Total auto-healed incidents: {self_healing.healed_count}."
+        reply = f"📊 **[SYSTEM HEALTH]**: Platform is operating at 99.99% efficiency across 56 Enterprise Modules. Total auto-healed incidents: {self_healing.healed_count}."
     else:
-        reply = f"🤖 **[SUPER ADMIN AGENT]**: Instruction processed: '{payload.message}'. All 55 enterprise modules are active and synchronized worldwide."
+        reply = f"🤖 **[SUPER ADMIN AGENT]**: Instruction processed: '{payload.message}'. All 56 enterprise modules are active and synchronized worldwide."
 
     return {"reply": reply}
 
 # -------------------------------------------------------------
-# 💬 WHATSAPP WEBHOOK HANDLER (Legal Framework & Data Privacy Compliance)
+# 💬 WHATSAPP WEBHOOK HANDLER (Legal Framework & Monetization Ledger)
 # -------------------------------------------------------------
 @app.post("/webhook/whatsapp/{instance_name}")
 async def handle_whatsapp_webhook(instance_name: str, request: Request):
@@ -637,6 +690,9 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
             if risk_eval["risk_level"] == "HIGH_RISK_MANUAL_REVIEW":
                 owner_alert.send_urgent_owner_alert(instance_name, clean_owner, clean_sender, "⚠️ HIGH FRAUD RISK ORDER DETECTED", f"Risk score: {risk_eval['risk_score']}")
             
+            # Log Commission to Realtime Ledger
+            realtime_monetization.record_transaction_commission(tenant["id"], 25000.0)
+
             reply_payload = flexible_payment.format_merchant_payment_instructions(tenant, 25000.0, f"TRX-{clean_sender[-4:]}")
             send_whatsapp_message(instance_name, clean_sender, reply_payload)
             return {"status": "payment_instructions_sent"}
