@@ -277,6 +277,22 @@ class SemanticCatalogEngine:
             threshold = TFIDF_MATCH_THRESHOLD
 
         if best_item and best_score >= threshold:
+            # Check for close multi-candidate ambiguity (e.g. multiple solar or inverter items)
+            close_candidates = [
+                entry[1] if len(entry) == 2 else entry[2]
+                for entry in scored_items
+                if entry[0] >= threshold and (best_score - entry[0]) < 0.20
+            ]
+
+            if len(close_candidates) > 1 and best_score < 0.95:
+                return {
+                    "matched": True,
+                    "item": best_item,
+                    "score": best_score,
+                    "method": f"{method}_disambiguation",
+                    "reply": self._format_disambiguation_card(close_candidates[:4])
+                }
+
             return {
                 "matched": True,
                 "item": best_item,
@@ -302,6 +318,20 @@ class SemanticCatalogEngine:
         # Pass 2: Use full customer message
         result = self.search(full_message, catalog)
         return result
+
+    def _format_disambiguation_card(self, candidates: list) -> str:
+        """Formats a smart clarification menu when multiple catalog items match."""
+        lines = [f"🤔 *[Teeslux Store — Multiple Options Found]*\n", "I found a few items matching your request! Which one are you looking for?\n"]
+        digits = ["1️⃣", "2️⃣", "3️⃣", "4️⃣"]
+        for idx, item in enumerate(candidates):
+            d = digits[idx] if idx < len(digits) else f"{idx+1}️⃣"
+            name = item.get("name", "Product")
+            price = item.get("price", 0)
+            price_fmt = f"₦{price:,.2f}" if isinstance(price, (int, float)) else str(price)
+            lines.append(f"{d} *{name}* ({price_fmt})")
+            
+        lines.append("\n💬 Reply with *1*, *2*, or *3* to view details, or reply *#buy* to place an order!")
+        return "\n".join(lines)
 
     def _format_product_card(self, item: dict) -> str:
         """Formats a catalog item as a beautiful WhatsApp product card."""
