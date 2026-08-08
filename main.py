@@ -16,7 +16,7 @@ from evolution_interactive import (
     send_whatsapp_presence, send_whatsapp_message, broadcast_whatsapp_message
 )
 
-# Enterprise SaaS Modules (40 Modules Total - Flexible Payments & Viral Market Features)
+# Enterprise SaaS Modules (41 Modules Total - Live Price Alerts & Dynamic News Subscriptions)
 from local_ai_brain import local_brain
 from whatsapp_ui import render_executive_whatsapp_dashboard, render_role_based_menu, format_currency
 from logistics_department import logistics_dept
@@ -47,6 +47,7 @@ from sovereign_offline_payments import sovereign_offline_payments
 from escalation_alert_engine import escalation_alert_engine
 from flexible_payment_engine import flexible_payment
 from trader_virality_engine import trader_virality
+from smart_price_alert_engine import smart_price_alert
 from gamification_retention import gamification_engine
 from database_backup import backup_engine
 
@@ -112,8 +113,8 @@ async def startup_event():
 async def root():
     return {
         "status": "online", 
-        "system": "Sovereign AI Commerce & Financial Platform v2030 (Flexible Payments & Viral Market Features)",
-        "architecture_modules": 40,
+        "system": "Sovereign AI Commerce & Financial Platform v2030 (Real-Time Price Alerts & Subscriptions)",
+        "architecture_modules": 41,
         "self_healing": "active",
         "realtime_wat_clock": smart_timezone.get_realtime_nigeria_now().strftime("%Y-%m-%d %H:%M:%S WAT"),
         "is_night_protocol": smart_night_protocol.is_night_time(),
@@ -137,7 +138,7 @@ async def get_admin_metrics():
         "errors_captured": self_healing.error_count,
         "auto_healed": self_healing.healed_count,
         "smart_retry_success": "100%",
-        "modules_active": 40,
+        "modules_active": 41,
         "scale_metrics": infinite_scale_guard.get_scale_metrics()
     }
 
@@ -155,12 +156,12 @@ async def admin_ai_agent_chat(payload: AdminChatPayload):
     elif "status" in msg or "health" in msg:
         reply = f"📊 **[SYSTEM HEALTH]**: Platform is operating at 99.98% efficiency. Total auto-healed incidents: {self_healing.healed_count}."
     else:
-        reply = f"🤖 **[SUPER ADMIN AGENT]**: Instruction processed: '{payload.message}'. All 40 enterprise modules are active and synchronized."
+        reply = f"🤖 **[SUPER ADMIN AGENT]**: Instruction processed: '{payload.message}'. All 41 enterprise modules are active and synchronized."
 
     return {"reply": reply}
 
 # -------------------------------------------------------------
-# 💬 WHATSAPP WEBHOOK HANDLER (Flexible Merchant Payments & Zero-False-Validation Shield)
+# 💬 WHATSAPP WEBHOOK HANDLER (Real-Time Price Alerts & Wide Subscriptions)
 # -------------------------------------------------------------
 @app.post("/webhook/whatsapp/{instance_name}")
 async def handle_whatsapp_webhook(instance_name: str, request: Request):
@@ -213,7 +214,7 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
         if has_media and not is_owner:
             caption = message_info.get("imageMessage", {}).get("caption") or message_info.get("videoMessage", {}).get("caption") or ""
             
-            # Safe Payment Receipt Screenshot Processing (NO false validation, subject to manager bank app check!)
+            # Safe Payment Receipt Screenshot Processing
             if "PAYMENT" in caption.upper() or "RECEIPT" in caption.upper() or "TRANSFER" in caption.upper():
                 ocr_result = vision_ocr.parse_payment_receipt_text(caption or "PAYMENT RECEIPT 0252796240 AMOUNT N25000")
                 receipt_res = flexible_payment.process_receipt_screenshot_safely(clean_sender, ocr_result['transaction_reference'])
@@ -274,6 +275,27 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
             return {"status": "security_attack_blocked"}
 
         msg_lower = message_text.lower().strip()
+
+        # Real-Time Price Alert Commands (#alert garri 100 / #alert rice 60000)
+        if msg_lower.startswith("#alert") or msg_lower.startswith("alert "):
+            try:
+                raw_alert = message_text.replace("#alert", "").replace("alert", "").strip()
+                parts = raw_alert.split()
+                commodity_name = parts[0]
+                target_val = float(parts[1])
+                alert_card = smart_price_alert.register_price_alert(clean_sender, commodity_name, target_val)
+                send_whatsapp_message(instance_name, clean_sender, alert_card)
+                return {"status": "price_alert_registered"}
+            except Exception:
+                reply = "❌ *Format Error!* Use:\n`#alert garri 100` or `#alert rice 60000`"
+                send_whatsapp_message(instance_name, clean_sender, reply)
+                return {"status": "alert_format_error"}
+
+        # Real-Time Commodity Price Check Command (#prices / #commodity)
+        if msg_lower.startswith("#price") or msg_lower in ["prices", "commodity", "commodities"]:
+            report = smart_price_alert.check_user_price_alerts(clean_sender)
+            send_whatsapp_message(instance_name, clean_sender, report)
+            return {"status": "user_price_report_sent"}
 
         # Informal Market Virality Commands (#nugget, #wisdom, #escrow)
         if msg_lower.startswith("#nugget") or msg_lower.startswith("#wisdom") or msg_lower in ["nugget", "wisdom"]:
