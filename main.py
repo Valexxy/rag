@@ -326,19 +326,18 @@ async def get_ai_telemetry():
 # -------------------------------------------------------------
 @app.post("/webhook/whatsapp/{instance_name}")
 async def handle_whatsapp_webhook(instance_name: str, request: Request, background_tasks: BackgroundTasks):
-    t_start = asyncio.get_event_loop().time()
     try:
         payload = await request.json()
     except Exception as e:
         self_healing.capture_error("WebhookJSONParser", e)
         return {"status": "invalid_json"}
 
-    background_tasks.add_task(_process_whatsapp_message_async, instance_name, payload)
+    background_tasks.add_task(_process_whatsapp_message_sync, instance_name, payload)
     return {"status": "queued"}
 
 
-async def _process_whatsapp_message_async(instance_name: str, payload: dict):
-    t_start = asyncio.get_event_loop().time()
+def _process_whatsapp_message_sync(instance_name: str, payload: dict):
+    t_start = time.time()
     try:
         tenant = hp_cache.get_cached_tenant(instance_name)
         if tenant:
