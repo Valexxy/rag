@@ -16,7 +16,7 @@ from evolution_interactive import (
     send_whatsapp_presence, send_whatsapp_message, broadcast_whatsapp_message
 )
 
-# Enterprise SaaS Modules (31 Modules Total)
+# Enterprise SaaS Modules (32 Modules Total)
 from local_ai_brain import local_brain
 from whatsapp_ui import render_executive_whatsapp_dashboard, render_role_based_menu, format_currency
 from logistics_department import logistics_dept
@@ -37,6 +37,7 @@ from location_intelligence import real_location_intel
 from local_sovereign_tracker import sovereign_tracker
 from sovereign_news_engine import sovereign_news
 from smart_timezone_engine import smart_timezone
+from smart_night_protocol import smart_night_protocol
 from gamification_retention import gamification_engine
 from database_backup import backup_engine
 
@@ -93,9 +94,10 @@ async def root():
     return {
         "status": "online", 
         "system": "Sovereign AI Commerce & Financial Platform v2030",
-        "architecture_modules": 31,
+        "architecture_modules": 32,
         "self_healing": "active",
-        "realtime_wat_clock": smart_timezone.get_realtime_nigeria_now().strftime("%Y-%m-%d %H:%M:%S WAT")
+        "realtime_wat_clock": smart_timezone.get_realtime_nigeria_now().strftime("%Y-%m-%d %H:%M:%S WAT"),
+        "is_night_protocol": smart_night_protocol.is_night_time()
     }
 
 @app.get("/dashboard", response_class=HTMLResponse)
@@ -115,7 +117,7 @@ async def get_admin_metrics():
         "errors_captured": self_healing.error_count,
         "auto_healed": self_healing.healed_count,
         "smart_retry_success": "100%",
-        "modules_active": 31
+        "modules_active": 32
     }
 
 @app.get("/api/admin/alerts")
@@ -132,7 +134,7 @@ async def admin_ai_agent_chat(payload: AdminChatPayload):
     elif "status" in msg or "health" in msg:
         reply = f"📊 **[SYSTEM HEALTH]**: Platform is operating at 99.98% efficiency. Total auto-healed incidents: {self_healing.healed_count}."
     else:
-        reply = f"🤖 **[SUPER ADMIN AGENT]**: Instruction processed: '{payload.message}'. All 31 enterprise modules are active and synchronized."
+        reply = f"🤖 **[SUPER ADMIN AGENT]**: Instruction processed: '{payload.message}'. All 32 enterprise modules are active and synchronized."
 
     return {"reply": reply}
 
@@ -194,18 +196,27 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
                 send_whatsapp_message(instance_name, clean_sender, reply)
                 return {"status": "receipt_ocr_processed"}
             
-            # General Product Picture / Video inquiry -> Instant Manager Handoff
-            reply = f"🤖 *[{tenant.get('business_name', 'Store')} Automated System]*\n\n{greeting}! 📸 🎥 We received your photo/video inquiry! I have routed your media directly to our store manager for visual verification. The manager will reply to you shortly!"
-            send_whatsapp_message(instance_name, clean_sender, reply)
-            
-            # Mute bot for customer and send urgent manager push alert
-            mute_tenant_bot(tenant["id"], clean_sender, minutes=120)
-            owner_alert.send_urgent_owner_alert(
-                instance_name, clean_owner, clean_sender, 
-                "Visual Media (Picture/Video) Inquiry Received", 
-                f"Customer uploaded a photo/video for product inspection. Caption: '{caption}'"
-            )
-            return {"status": "visual_media_routed_to_human"}
+            # Night-Time vs Daytime Media Protocol
+            if smart_night_protocol.is_night_time():
+                night_info = smart_night_protocol.handle_night_time_media_inquiry(tenant.get("business_name", "Store"), clean_sender, caption)
+                send_whatsapp_message(instance_name, clean_sender, night_info["reply"])
+                mute_tenant_bot(tenant["id"], clean_sender, minutes=night_info["mute_duration_minutes"])
+                owner_alert.send_urgent_owner_alert(
+                    instance_name, clean_owner, clean_sender, 
+                    "🌙 Night Media Inquiry Logged for Morning", 
+                    f"Customer uploaded photo/video at night. Logged at #1 in morning queue. Caption: '{caption}'"
+                )
+                return {"status": "night_media_logged_for_morning"}
+            else:
+                reply = f"🤖 *[{tenant.get('business_name', 'Store')} Automated System]*\n\n{greeting}! 📸 🎥 We received your photo/video inquiry! I have routed your media directly to our store manager for visual verification. The manager will reply to you shortly!"
+                send_whatsapp_message(instance_name, clean_sender, reply)
+                mute_tenant_bot(tenant["id"], clean_sender, minutes=30)
+                owner_alert.send_urgent_owner_alert(
+                    instance_name, clean_owner, clean_sender, 
+                    "Visual Media (Picture/Video) Inquiry Received", 
+                    f"Customer uploaded a photo/video for product inspection. Caption: '{caption}'"
+                )
+                return {"status": "visual_media_routed_to_human"}
 
         message_text = (
             message_info.get("conversation")
