@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Sovereign AI Commerce 2030 | Native PWA App</title>
-    <!-- PWA Manifest & Meta Tags for Native App Feel -->
+    <title>Sovereign AI Commerce 2030 | Multi-Niche Enterprise App</title>
+    <!-- PWA Manifest & Meta Tags -->
     <link rel="manifest" href="/static/manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -54,14 +54,11 @@
         .ticker-track {
             display: flex;
             width: max-content;
-            animation: scrollTicker 30s linear infinite;
+            animation: scrollTicker 35s linear infinite;
         }
         .ticker-track:hover { animation-play-state: paused; }
 
-        @keyframes scrollTicker {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-50%); }
-        }
+        @keyframes scrollTicker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
 
         .ticker-item {
             display: inline-flex;
@@ -83,16 +80,16 @@
         .app-brand { font-family: 'Orbitron', sans-serif; font-size: 18px; font-weight: 900; background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 1px; }
 
         /* Desktop Nav Tabs */
-        .desktop-tabs { display: flex; gap: 10px; }
-        @media (max-width: 768px) { .desktop-tabs { display: none; } }
+        .desktop-tabs { display: flex; gap: 8px; }
+        @media (max-width: 900px) { .desktop-tabs { display: none; } }
 
         .tab-btn {
             background: rgba(255, 255, 255, 0.04);
             border: 1px solid rgba(255, 255, 255, 0.1);
             color: var(--text-muted);
-            padding: 8px 16px;
+            padding: 8px 14px;
             border-radius: 12px;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -120,14 +117,14 @@
             align-items: center;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
         }
-        @media (max-width: 768px) { .mobile-app-bar { display: flex; } }
+        @media (max-width: 900px) { .mobile-app-bar { display: flex; } }
 
         .nav-item-mob {
             display: flex; flex-direction: column; align-items: center; gap: 4px;
             color: var(--text-muted); font-size: 10px; font-weight: 600; text-decoration: none; cursor: pointer;
         }
         .nav-item-mob.active { color: var(--neon-cyan); }
-        .nav-icon { font-size: 20px; }
+        .nav-icon { font-size: 18px; }
 
         /* Container View */
         .container { max-width: 1400px; margin: 0 auto; padding: 24px 20px 100px; }
@@ -147,6 +144,21 @@
             margin-bottom: 20px;
             position: relative;
             overflow: hidden;
+        }
+
+        /* Merchant Cards Grid */
+        .merchant-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
+        .merchant-card {
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 20px; padding: 20px; transition: all 0.3s ease;
+        }
+        .merchant-card:hover { transform: translateY(-4px); border-color: var(--neon-cyan); }
+
+        .btn-wa-direct {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            width: 100%; background: linear-gradient(135deg, #00c853, #64dd17);
+            color: #fff; text-decoration: none; font-weight: 700; padding: 12px;
+            border-radius: 12px; margin-top: 14px; box-shadow: 0 8px 16px rgba(0, 200, 83, 0.3);
         }
 
         /* In-App Toast Push Notification */
@@ -189,22 +201,22 @@
             <div class="ticker-item">🌾 RICE 50KG: <span class="ticker-green">₦60,000 (+1.2%)</span></div>
             <div class="ticker-item">⚡ SOLAR POWER BANK 30KmAh: <span class="ticker-gold">₦25,000 (1-Price Fixed)</span></div>
             <div class="ticker-item">💱 FOREX USD/NGN: <span class="ticker-green">₦1,500.00</span></div>
-            <div class="ticker-item">💱 FOREX EUR/NGN: <span class="ticker-green">₦1,630.50</span></div>
-            <div class="ticker-item">🛢️ BRENT CRUDE OIL: <span class="ticker-green">$82.40/bbl</span></div>
+            <div class="ticker-item">🛞 TOYOTA BRAKE PADS: <span class="ticker-green">₦12,000</span></div>
+            <div class="ticker-item">💻 1TB NVMe SSD: <span class="ticker-green">₦32,000</span></div>
             <div class="ticker-item">🛡️ MERCHANT TRUST RATING: <span class="ticker-gold">98/100 (5.0 ⭐ Verified)</span></div>
-            <div class="ticker-item">⚡ SYSTEM UPTIME SLA: <span class="ticker-green">99.99% (Sub-5ms Latency)</span></div>
-            <div class="ticker-item">📍 MAP DIRECTORY: <span class="ticker-green">1,420 Verified Shops Geocoded</span></div>
+            <div class="ticker-item">⚡ SYSTEM UPTIME SLA: <span class="ticker-green">99.99% (Sub-5ms)</span></div>
+            <div class="ticker-item">📍 MAP DIRECTORY: <span class="ticker-green">1,420 Verified Shops</span></div>
 
-            <!-- Duplicate Sequence for Continuous Seamless Loop -->
+            <!-- Loop Duplicate -->
             <div class="ticker-item">🌾 GARRI SPOT: <span class="ticker-green">₦100/Mudu (Target Met ✅)</span></div>
             <div class="ticker-item">🌾 RICE 50KG: <span class="ticker-green">₦60,000 (+1.2%)</span></div>
             <div class="ticker-item">⚡ SOLAR POWER BANK 30KmAh: <span class="ticker-gold">₦25,000 (1-Price Fixed)</span></div>
             <div class="ticker-item">💱 FOREX USD/NGN: <span class="ticker-green">₦1,500.00</span></div>
-            <div class="ticker-item">💱 FOREX EUR/NGN: <span class="ticker-green">₦1,630.50</span></div>
-            <div class="ticker-item">🛢️ BRENT CRUDE OIL: <span class="ticker-green">$82.40/bbl</span></div>
+            <div class="ticker-item">🛞 TOYOTA BRAKE PADS: <span class="ticker-green">₦12,000</span></div>
+            <div class="ticker-item">💻 1TB NVMe SSD: <span class="ticker-green">₦32,000</span></div>
             <div class="ticker-item">🛡️ MERCHANT TRUST RATING: <span class="ticker-gold">98/100 (5.0 ⭐ Verified)</span></div>
-            <div class="ticker-item">⚡ SYSTEM UPTIME SLA: <span class="ticker-green">99.99% (Sub-5ms Latency)</span></div>
-            <div class="ticker-item">📍 MAP DIRECTORY: <span class="ticker-green">1,420 Verified Shops Geocoded</span></div>
+            <div class="ticker-item">⚡ SYSTEM UPTIME SLA: <span class="ticker-green">99.99% (Sub-5ms)</span></div>
+            <div class="ticker-item">📍 MAP DIRECTORY: <span class="ticker-green">1,420 Verified Shops</span></div>
         </div>
     </div>
 
@@ -219,15 +231,17 @@
         
         <div class="desktop-tabs">
             <button class="tab-btn active" onclick="switchTab('home')">🏠 Home</button>
+            <button class="tab-btn" onclick="switchTab('directory')">🏢 Directory (All Niches)</button>
             <button class="tab-btn" onclick="switchTab('dash')">📊 Control</button>
             <button class="tab-btn" onclick="switchTab('map')">🗺️ Map</button>
-            <button class="tab-btn" onclick="switchTab('whatsapp')">📲 WhatsApp Chat</button>
+            <button class="tab-btn" onclick="switchTab('whatsapp')">💬 WhatsApp Chat</button>
+            <button class="tab-btn" onclick="switchTab('qr')">📲 QR Generator</button>
             <button class="tab-btn" onclick="switchTab('features')">💎 1,000+ Features</button>
             <button class="tab-btn" onclick="switchTab('legal')">⚖️ Legal</button>
         </div>
 
         <div style="font-size:12px; color:var(--neon-green); font-weight:700; display:flex; align-items:center; gap:6px;">
-            <span style="width:8px; height:8px; background:var(--neon-green); border-radius:50%; box-shadow:0 0 10px var(--neon-green);"></span> LIVE SCROLLING
+            <span style="width:8px; height:8px; background:var(--neon-green); border-radius:50%; box-shadow:0 0 10px var(--neon-green);"></span> 100% WHATSAPP ONLY
         </div>
     </div>
 
@@ -236,30 +250,120 @@
         <div id="tab-home" class="tab-content active">
             <div class="glass-card">
                 <h1 style="font-family:'Orbitron',sans-serif; font-size:36px; margin-bottom:12px; background:linear-gradient(135deg, #fff, #a5b4fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Sovereign AI Native Web App</h1>
-                <p style="color:var(--text-muted); font-size:15px; margin-bottom:24px;">The world's first native-feeling AI commerce platform with live continuous scrolling tickers for informal traders and global markets.</p>
+                <p style="color:var(--text-muted); font-size:15px; margin-bottom:24px;">The world's first native-feeling AI commerce platform with live continuous scrolling tickers for informal traders, multi-niche directories, and instant WhatsApp automation.</p>
                 <div style="display:flex; gap:12px;">
-                    <button class="tab-btn active" style="padding:12px 24px;" onclick="switchTab('whatsapp')">📲 Open WhatsApp Bot</button>
-                    <button class="tab-btn" style="padding:12px 24px;" onclick="switchTab('map')">🗺️ View Map</button>
+                    <button class="tab-btn active" style="padding:12px 24px;" onclick="switchTab('whatsapp')">💬 Open WhatsApp Bot</button>
+                    <button class="tab-btn" style="padding:12px 24px;" onclick="switchTab('directory')">🏢 Browse Multi-Niche Directory</button>
                 </div>
             </div>
 
             <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:16px;">
                 <div class="glass-card">
                     <h3 style="color:var(--neon-cyan); margin-bottom:8px;">📍 High-Precision Geocoding</h3>
-                    <p style="color:var(--text-muted); font-size:13px;">Street address down to shop/house number across Lagos, Onitsha, Aba, Dubai, Yiwu.</p>
+                    <p style="color:var(--text-muted); font-size:13px;">Street address down to shop/house number across Lagos, Onitsha, Aba, Kano, Dubai, Yiwu.</p>
                 </div>
                 <div class="glass-card">
                     <h3 style="color:var(--neon-green); margin-bottom:8px;">🛡️ Anti-Fake Review Shield</h3>
                     <p style="color:var(--text-muted); font-size:13px;">Cryptographic Trust Scores (0-100 Rating) with self-rating attack penalties (-25 pts).</p>
                 </div>
                 <div class="glass-card">
-                    <h3 style="color:var(--neon-gold); margin-bottom:8px;">🌾 Spot Commodity Price Alerts</h3>
-                    <p style="color:var(--text-muted); font-size:13px;">Real-time price drop notifications for Garri, Rice, Solar Equipment, and FOREX.</p>
+                    <h3 style="color:var(--neon-gold); margin-bottom:8px;">📲 100% WhatsApp Direct Only</h3>
+                    <p style="color:var(--text-muted); font-size:13px;">Zero external social media clutter—100% direct buyer-to-seller WhatsApp reachouts.</p>
                 </div>
             </div>
         </div>
 
-        <!-- 2. DASHBOARD TAB -->
+        <!-- 2. MULTI-NICHE DIRECTORY TAB -->
+        <div id="tab-directory" class="tab-content">
+            <div class="glass-card">
+                <h2>🏢 Sovereign Multi-Niche Merchant Directory</h2>
+                <p style="color:var(--text-muted); font-size:13px; margin-bottom:20px;">Top verified suppliers across Solar, Electronics, Fashion, Grain Agriculture, Automotive, Computer Components, and Healthcare.</p>
+                
+                <div class="merchant-grid">
+                    <div class="merchant-card">
+                        <div style="font-size:12px; color:var(--neon-cyan); font-weight:700;">☀️ SOLAR & CLEAN ENERGY</div>
+                        <h3 style="margin:6px 0;">Teeslux Electronics & Solar Hub</h3>
+                        <p style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">📍 Shop 14B Bright Street, Onitsha Main Market, Anambra</p>
+                        <div style="font-size:12px; color:var(--neon-gold); margin-bottom:10px;">🏆 Trust Score: 98/100 (4.9 ⭐) | CAC Verified</div>
+                        <p style="font-size:12px; color:#fff;">📦 30,000mAh Solar Power Bank (₦25,000.00)</p>
+                        <a href="https://wa.me/2348072015725" target="_blank" class="btn-wa-direct">💬 Direct WhatsApp Chat</a>
+                    </div>
+
+                    <div class="merchant-card">
+                        <div style="font-size:12px; color:var(--neon-cyan); font-weight:700;">💻 CONSUMER ELECTRONICS & TECH</div>
+                        <h3 style="margin:6px 0;">Alaba Tech Wholesale Direct</h3>
+                        <p style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">📍 Suite 8 Fancy Plaza, Alaba Market Road, Ojo, Lagos</p>
+                        <div style="font-size:12px; color:var(--neon-gold); margin-bottom:10px;">🏆 Trust Score: 95/100 (4.8 ⭐) | CAC Verified</div>
+                        <p style="font-size:12px; color:#fff;">📦 Smart Power Accessories (₦15,000.00)</p>
+                        <a href="https://wa.me/2348123456789" target="_blank" class="btn-wa-direct">💬 Direct WhatsApp Chat</a>
+                    </div>
+
+                    <div class="merchant-card">
+                        <div style="font-size:12px; color:var(--neon-cyan); font-weight:700;">👞 FASHION & LEATHERCRAFT</div>
+                        <h3 style="margin:6px 0;">Ariaria Leather & Shoe Factory</h3>
+                        <p style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">📍 No. 42B Faulks Road, Near Ariaria Market, Aba, Abia</p>
+                        <div style="font-size:12px; color:var(--neon-gold); margin-bottom:10px;">🏆 Trust Score: 96/100 (4.8 ⭐) | Home Business Verified</div>
+                        <p style="font-size:12px; color:#fff;">📦 Pure Leather Boots (₦18,500.00)</p>
+                        <a href="https://wa.me/2348033334444" target="_blank" class="btn-wa-direct">💬 Direct WhatsApp Chat</a>
+                    </div>
+
+                    <div class="merchant-card">
+                        <div style="font-size:12px; color:var(--neon-cyan); font-weight:700;">🌾 GRAIN & AGRICULTURE DEPOT</div>
+                        <h3 style="margin:6px 0;">Dawanau Grain & Agriculture Depot</h3>
+                        <p style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">📍 Shed 12, Dawanau International Market, Kano</p>
+                        <div style="font-size:12px; color:var(--neon-gold); margin-bottom:10px;">🏆 Trust Score: 97/100 (4.9 ⭐) | CAC Verified</div>
+                        <p style="font-size:12px; color:#fff;">📦 50kg White Rice (₦60,000.00)</p>
+                        <a href="https://wa.me/2348022221111" target="_blank" class="btn-wa-direct">💬 Direct WhatsApp Chat</a>
+                    </div>
+
+                    <div class="merchant-card">
+                        <div style="font-size:12px; color:var(--neon-cyan); font-weight:700;">🛞 AUTOMOTIVE PARTS & SPARES</div>
+                        <h3 style="margin:6px 0;">Ladipo Auto Spares Direct</h3>
+                        <p style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">📍 Line 4, Ladipo Auto Market, Mushin, Lagos</p>
+                        <div style="font-size:12px; color:var(--neon-gold); margin-bottom:10px;">🏆 Trust Score: 94/100 (4.7 ⭐) | Physical Shop Verified</div>
+                        <p style="font-size:12px; color:#fff;">📦 Toyota Genuine Brake Pads (₦12,000.00)</p>
+                        <a href="https://wa.me/2348055556666" target="_blank" class="btn-wa-direct">💬 Direct WhatsApp Chat</a>
+                    </div>
+
+                    <div class="merchant-card">
+                        <div style="font-size:12px; color:var(--neon-cyan); font-weight:700;">🖥️ COMPUTER HARDWARE & IT</div>
+                        <h3 style="margin:6px 0;">Computer Village Component Hub</h3>
+                        <p style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">📍 No. 15 Otigba Street, Computer Village, Ikeja, Lagos</p>
+                        <div style="font-size:12px; color:var(--neon-gold); margin-bottom:10px;">🏆 Trust Score: 98/100 (4.9 ⭐) | CAC Verified</div>
+                        <p style="font-size:12px; color:#fff;">📦 1TB NVMe SSDs & DDR5 RAM (₦32,000.00)</p>
+                        <a href="https://wa.me/2348099998888" target="_blank" class="btn-wa-direct">💬 Direct WhatsApp Chat</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. INSTANT WHATSAPP QR CODE GENERATOR TAB -->
+        <div id="tab-qr" class="tab-content">
+            <div class="glass-card">
+                <h2>📲 Dynamic WhatsApp Merchant QR Code Generator</h2>
+                <p style="color:var(--text-muted); font-size:13px; margin-bottom:20px;">Generate high-resolution 1-tap scan QR codes for direct WhatsApp checkout & merchant reachouts.</p>
+
+                <div style="max-width:480px; margin:0 auto; text-align:center; background:rgba(255,255,255,0.03); padding:24px; border-radius:24px; border:1px solid var(--glass-border);">
+                    <div style="margin-bottom:16px;">
+                        <label style="display:block; font-size:12px; color:var(--text-muted); margin-bottom:6px;">Select Merchant Business</label>
+                        <select id="qrMerchantSelect" onchange="generateMerchantQR()" style="width:100%; background:#121824; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:10px; color:#fff; outline:none;">
+                            <option value="2348072015725">Teeslux Solar Hub (Onitsha)</option>
+                            <option value="2348123456789">Alaba Tech Wholesale (Lagos)</option>
+                            <option value="2348033334444">Ariaria Leather Factory (Aba)</option>
+                            <option value="2348022221111">Dawanau Grain Depot (Kano)</option>
+                        </select>
+                    </div>
+
+                    <div style="background:#fff; padding:20px; border-radius:20px; display:inline-block; margin-bottom:16px;">
+                        <img id="qrCodeImg" src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=https://wa.me/2348072015725" alt="WhatsApp QR Code" style="width:180px; height:180px; display:block;">
+                    </div>
+
+                    <p style="font-size:12px; color:var(--neon-green); font-weight:700;">📲 Scan with Phone Camera to Start 1-Tap WhatsApp Chat!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. DASHBOARD TAB -->
         <div id="tab-dash" class="tab-content">
             <div class="glass-card">
                 <h2>📊 Super Admin Control & 24/7 Self-Healing Monitor</h2>
@@ -284,18 +388,18 @@
             </div>
         </div>
 
-        <!-- 3. MAP TAB -->
+        <!-- 5. MAP TAB -->
         <div id="tab-map" class="tab-content">
             <div class="glass-card">
-                <h2>🗺️ Directory Map View</h2>
+                <h2>🗺️ Multi-Niche Directory Map View</h2>
                 <div id="mapContainer" style="width:100%; height:400px; border-radius:20px; margin-top:16px;"></div>
             </div>
         </div>
 
-        <!-- 4. WHATSAPP SIMULATOR TAB -->
+        <!-- 6. WHATSAPP SIMULATOR TAB -->
         <div id="tab-whatsapp" class="tab-content">
             <div class="glass-card">
-                <h2>📲 Live Interactive WhatsApp Chatbot</h2>
+                <h2>💬 Live Interactive WhatsApp Chatbot</h2>
                 <p style="color:var(--text-muted); font-size:13px; margin-bottom:16px;">Test live WhatsApp commands: <code>#trust</code>, <code>#alert garri 100</code>, <code>#flex</code>, <code>#find solar</code>, <code>#nugget</code></p>
                 
                 <div class="phone-sim-grid">
@@ -327,7 +431,7 @@
             </div>
         </div>
 
-        <!-- 5. FEATURES TAB -->
+        <!-- 7. FEATURES TAB -->
         <div id="tab-features" class="tab-content">
             <div class="glass-card">
                 <h2>💎 1,000+ System Feature Matrix</h2>
@@ -348,7 +452,7 @@
             </div>
         </div>
 
-        <!-- 6. LEGAL TAB -->
+        <!-- 8. LEGAL TAB -->
         <div id="tab-legal" class="tab-content">
             <div class="glass-card">
                 <h2>⚖️ Legal & Privacy Portal</h2>
@@ -363,9 +467,9 @@
             <span class="nav-icon">🏠</span>
             <span>Home</span>
         </div>
-        <div class="nav-item-mob" id="mob-dash" onclick="switchTab('dash')">
-            <span class="nav-icon">📊</span>
-            <span>Control</span>
+        <div class="nav-item-mob" id="mob-directory" onclick="switchTab('directory')">
+            <span class="nav-icon">🏢</span>
+            <span>Shops</span>
         </div>
         <div class="nav-item-mob" id="mob-map" onclick="switchTab('map')">
             <span class="nav-icon">🗺️</span>
@@ -375,9 +479,9 @@
             <span class="nav-icon">💬</span>
             <span>Chat</span>
         </div>
-        <div class="nav-item-mob" id="mob-features" onclick="switchTab('features')">
-            <span class="nav-icon">💎</span>
-            <span>Matrix</span>
+        <div class="nav-item-mob" id="mob-qr" onclick="switchTab('qr')">
+            <span class="nav-icon">📲</span>
+            <span>QR</span>
         </div>
     </div>
 
@@ -408,11 +512,17 @@
             }
         }
 
+        function generateMerchantQR() {
+            const phone = document.getElementById('qrMerchantSelect').value;
+            document.getElementById('qrCodeImg').src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=https://wa.me/${phone}`;
+            showAppToast("📲 Generated Instant WhatsApp QR Code!");
+        }
+
         let mapInitialized = false;
         function initMap() {
             if (mapInitialized) return;
             mapInitialized = true;
-            const map = L.map('mapContainer').setView([6.1472, 6.7845], 7);
+            const map = L.map('mapContainer').setView([6.1472, 6.7845], 6);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map);
 
             const pinIcon = L.divIcon({
@@ -423,6 +533,8 @@
 
             L.marker([6.1472, 6.7845], { icon: pinIcon }).addTo(map).bindPopup('<b>Teeslux Solar Hub</b><br>Shop 14B Bright St, Onitsha');
             L.marker([6.4636, 3.1901], { icon: pinIcon }).addTo(map).bindPopup('<b>Alaba Tech Wholesale</b><br>Suite 8 Fancy Plaza, Lagos');
+            L.marker([5.1066, 7.3667], { icon: pinIcon }).addTo(map).bindPopup('<b>Ariaria Leather Factory</b><br>No. 42B Faulks Rd, Aba');
+            L.marker([12.0022, 8.5920], { icon: pinIcon }).addTo(map).bindPopup('<b>Dawanau Grain Depot</b><br>Shed 12 Dawanau Market, Kano');
         }
 
         function sendSimMsg() {
