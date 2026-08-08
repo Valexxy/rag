@@ -20,7 +20,7 @@ if _hf_token:
 # Gemini 1.5 Flash 8B: 1,500 req/day, 1M tokens/day — high quota.
 # ─────────────────────────────────────────────
 GROQ_MODEL    = "llama-3.3-70b-versatile"   # Free: 14,400 req/day, 128K context
-GEMINI_MODEL  = "gemini-1.5-flash-8b"        # Free: 1,500 req/day, higher quota than 2.0
+GEMINI_MODEL  = "gemini-2.0-flash"           # Official Google Gemini 2.0 Flash Model
 GEMINI_RETRY_AFTER = 60   # seconds to wait after rate limit before retrying
 
 # Intent classification schema — what Groq/Gemini will return

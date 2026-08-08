@@ -814,16 +814,12 @@ def _process_whatsapp_message_sync(instance_name: str, payload: dict):
             send_whatsapp_message(instance_name, clean_sender, report)
             return {"status": "market_intel_sent"}
 
-        # Human escalation — catches both commands AND natural language requests
+        # Human escalation — explicit request for human manager/owner only
         _HUMAN_KEYWORDS = [
             "#human", "#help", "speak to manager", "talk to human", "connect me to owner",
-            "call manager", "escalate", "need human", "need a human", "human help",
-            "human agent", "speak with manager", "speak to human", "talk to manager",
-            "contact manager", "speak with human", "i want human", "let me talk",
-            "i need help", "further enquiries", "more enquiries", "real person",
-            "speak with agent", "talk to agent", "need support", "need assistance",
-            "connect me", "i need someone", "call me", "speak with owner",
-            "human support", "human care", "speak with owner"
+            "call manager", "human agent", "speak with manager", "speak to human", "talk to manager",
+            "contact manager", "speak with human", "i want human", "real person",
+            "speak with owner", "connect to human"
         ]
         _is_human_request = (
             msg_lower.startswith("#human") or
