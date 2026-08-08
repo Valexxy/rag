@@ -16,7 +16,7 @@ from evolution_interactive import (
     send_whatsapp_presence, send_whatsapp_message, broadcast_whatsapp_message
 )
 
-# Enterprise SaaS Modules (38 Modules Total - World-First Architecture)
+# Enterprise SaaS Modules (38 Modules Total - Fixed 1-Price Architecture)
 from local_ai_brain import local_brain
 from whatsapp_ui import render_executive_whatsapp_dashboard, render_role_based_menu, format_currency
 from logistics_department import logistics_dept
@@ -42,7 +42,7 @@ from autonomous_visual_agent import autonomous_visual
 from zero_information_fallback import zero_info_fallback
 from global_timezone_detector import global_tz
 from infinite_scale_guard import infinite_scale_guard
-from ai_haggling_engine import ai_haggling
+from ai_haggling_engine import fixed_price_engine
 from sovereign_offline_payments import sovereign_offline_payments
 from gamification_retention import gamification_engine
 from database_backup import backup_engine
@@ -99,7 +99,7 @@ async def startup_event():
 async def root():
     return {
         "status": "online", 
-        "system": "Sovereign AI Commerce & Financial Platform v2030 (World-First Architecture)",
+        "system": "Sovereign AI Commerce & Financial Platform v2030 (Fixed 1-Price Guarantee)",
         "architecture_modules": 38,
         "self_healing": "active",
         "realtime_wat_clock": smart_timezone.get_realtime_nigeria_now().strftime("%Y-%m-%d %H:%M:%S WAT"),
@@ -147,7 +147,7 @@ async def admin_ai_agent_chat(payload: AdminChatPayload):
     return {"reply": reply}
 
 # -------------------------------------------------------------
-# 💬 WHATSAPP WEBHOOK HANDLER (World-First AI Haggling & Offline Payment Verification)
+# 💬 WHATSAPP WEBHOOK HANDLER (Fixed 1-Price Guarantee & Auto Bargain Handoff Router)
 # -------------------------------------------------------------
 @app.post("/webhook/whatsapp/{instance_name}")
 async def handle_whatsapp_webhook(instance_name: str, request: Request):
@@ -190,7 +190,7 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
         clean_owner = "".join(filter(str.isdigit, str(tenant.get("owner_phone", ""))))
         is_owner = is_from_me or (clean_owner and clean_sender == clean_owner)
 
-        # Dynamic Global Timezone Resolution (Tailored to customer's country code!)
+        # Dynamic Global Timezone Resolution
         greeting, customer_loc_info, customer_local_time = global_tz.get_customer_local_time(clean_sender)
 
         # -------------------------------------------------------------
@@ -255,23 +255,18 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
 
         msg_lower = message_text.lower().strip()
 
-        # World-First AI Dynamic Haggling & Bargaining Intent Detector
-        haggling_triggers = ["last price", "discount", "reduce price", "too expensive", "give me for", "help me reduce"]
-        if any(tr in msg_lower for tr in haggling_triggers) and not is_owner:
-            # Extract offer number from customer text (e.g. "give me for 22000")
-            import re
-            num_match = re.search(r'(\d+[\d,.]*)', message_text)
-            cust_offer = float(num_match.group(1).replace(',', '')) if num_match else 22000.0
-            
-            # Run AI Haggling Engine
-            haggling_res = ai_haggling.negotiate_price(
-                list_price=25000.0, 
-                floor_price=21000.0, 
-                customer_offer=cust_offer, 
-                currency_symbol=customer_loc_info["symbol"]
+        # Fixed 1-Price Guarantee: Route ALL bargain/discount requests to Human Manager
+        bargain_triggers = ["last price", "discount", "reduce price", "too expensive", "give me for", "help me reduce", "bargain", "cheaper"]
+        if any(tr in msg_lower for tr in bargain_triggers) and not is_owner:
+            bargain_res = fixed_price_engine.handle_bargain_request(tenant.get("business_name", "Store"), clean_sender, message_text)
+            send_whatsapp_message(instance_name, clean_sender, bargain_res["reply"])
+            mute_tenant_bot(tenant["id"], clean_sender, minutes=15)
+            owner_alert.send_urgent_owner_alert(
+                instance_name, clean_owner, clean_sender, 
+                "🏷️ Customer Bargain/Discount Request - Manager Action Required", 
+                f"Customer requested a discount/bargain on '{message_text}'. Reply '#discount {clean_sender} | 10%' to grant, or reply directly!"
             )
-            send_whatsapp_message(instance_name, clean_sender, haggling_res["reply"])
-            return {"status": "ai_haggling_negotiated"}
+            return {"status": "bargain_routed_to_human_manager"}
 
         # World-First Zero-Latency Cryptographic Offline Payment Verification
         if msg_lower.startswith("#pay-verify") or msg_lower.startswith("pay-verify") or "verify payment" in msg_lower:

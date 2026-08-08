@@ -1,37 +1,24 @@
-class AIHagglingEngine:
-    """World-First AI Dynamic Haggling & Margin-Aware Bargaining Engine for Informal Markets."""
+class FixedPricePolicyEngine:
+    """Fixed 1-Price Guarantee Policy & Human Bargain Routing Engine."""
 
     @staticmethod
-    def negotiate_price(list_price: float, floor_price: float, customer_offer: float, currency_symbol: str = "₦") -> dict:
-        """Evaluates customer's bargain offer against merchant's minimum floor price."""
-        if customer_offer >= list_price:
-            return {
-                "status": "ACCEPTED",
-                "agreed_price": list_price,
-                "reply": f"🤝 *[DEAL ACCEPTED]*\n\nYour offer of *{currency_symbol}{customer_offer:,.2f}* is accepted! You can proceed to payment."
-            }
+    def handle_bargain_request(business_name: str, customer_phone: str, query_text: str) -> dict:
+        """Enforces 1 fixed price policy. Automatically routes bargain requests to human store manager."""
+        reply_text = f"""🤖 *[{business_name} AUTOMATED SYSTEM]*
+---------------------------------------------
+Our listed catalog items are set at *1 Fixed Price* for top quality guarantee.
 
-        if customer_offer >= floor_price:
-            return {
-                "status": "ACCEPTED_DISCOUNT",
-                "agreed_price": customer_offer,
-                "reply": f"🤝 *[BARGAIN ACCEPTED]*\n\nDeal! I can give it to you at your offered price of *{currency_symbol}{customer_offer:,.2f}*. Let's complete your order!"
-            }
+Since you requested a special price consideration, I have routed your request directly to our store manager to inspect and decide!
 
-        # If customer offer is below floor price -> Counter-offer at midpoint
-        counter_offer = round((floor_price + list_price) / 2.0, 2)
-        if customer_offer < floor_price * 0.7:
-            # Lowball offer
-            return {
-                "status": "REJECTED_LOWBALL",
-                "counter_price": floor_price,
-                "reply": f"💬 *[PRICE COUNTER-OFFER]*\n\nAh, my friend! *{currency_symbol}{customer_offer:,.2f}* is too low for this quality item! The lowest I can do to help you today is *{currency_symbol}{floor_price:,.2f}*. Shall I book it for you?"
-            }
-        else:
-            return {
-                "status": "COUNTER_OFFER",
-                "counter_price": counter_offer,
-                "reply": f"💬 *[SPECIAL DISCOUNTER COUNTER-OFFER]*\n\nI can't do *{currency_symbol}{customer_offer:,.2f}*, but because we value your business, I can give it to you for *{currency_symbol}{counter_offer:,.2f}* final price! Deal?"
-            }
+👉 *What Happens Next:*
+1️⃣ Our store manager has been notified via priority alert.
+2️⃣ The manager will reply to you directly in this chat shortly.
 
-ai_haggling = AIHagglingEngine()
+🤖 *In the meantime, you can type `menu` to view our full catalog!*"""
+
+        return {
+            "status": "routed_bargain_to_human",
+            "reply": reply_text
+        }
+
+fixed_price_engine = FixedPricePolicyEngine()
