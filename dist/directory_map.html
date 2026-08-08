@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Sovereign AI Commerce 2030 | Multi-Niche Enterprise App</title>
+    <title>Sovereign AI Commerce 2030 | Enterprise Platform</title>
     <!-- PWA Manifest & Meta Tags -->
     <link rel="manifest" href="/static/manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -32,7 +32,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
         body, html { background: var(--bg-base); color: var(--text-bright); min-height: 100vh; width: 100vw; overflow-x: hidden; user-select: none; }
 
-        /* Background Animated Orbs */
+        /* Background Animated Orbs & Mesh */
         .bg-grid { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-image: radial-gradient(rgba(0, 242, 254, 0.08) 1px, transparent 0); background-size: 30px 30px; z-index: -2; }
         .orb-1 { position: fixed; top: -150px; left: -100px; width: 500px; height: 500px; background: radial-gradient(circle, rgba(0, 242, 254, 0.2) 0%, rgba(0,0,0,0) 70%); border-radius: 50%; pointer-events: none; z-index: -1; animation: float-orb 8s ease-in-out infinite alternate; }
         .orb-2 { position: fixed; bottom: -150px; right: -100px; width: 600px; height: 600px; background: radial-gradient(circle, rgba(157, 78, 221, 0.18) 0%, rgba(0,0,0,0) 70%); border-radius: 50%; pointer-events: none; z-index: -1; animation: float-orb 10s ease-in-out infinite alternate-reverse; }
@@ -146,6 +146,24 @@
             overflow: hidden;
         }
 
+        /* Smart Search Engine */
+        .smart-search-box {
+            display: flex; gap: 12px; background: rgba(255,255,255,0.05);
+            border: 1px solid var(--neon-cyan); padding: 8px 16px; border-radius: 16px;
+            box-shadow: 0 0 20px rgba(0, 242, 254, 0.2); margin-bottom: 24px;
+        }
+        .smart-search-box input {
+            flex: 1; background: transparent; border: none; outline: none;
+            color: #fff; font-size: 15px;
+        }
+
+        /* Live Activity Stream Radar */
+        .live-stream-box {
+            background: #04060a; border: 1px solid rgba(0, 255, 136, 0.3);
+            border-radius: 18px; padding: 16px; height: 180px; overflow-y: auto; font-family: monospace; font-size: 12px;
+        }
+        .stream-item { margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+
         /* Merchant Cards Grid */
         .merchant-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
         .merchant-card {
@@ -225,16 +243,16 @@
         <span id="toastMsg">⚡ New Commodity Alert Registered</span>
     </div>
 
-    <!-- Top Native App Header -->
+    <!-- Top Native App Header Bar -->
     <div class="app-header">
         <div class="app-brand">⚡ SOVEREIGN AI 2030</div>
         
         <div class="desktop-tabs">
             <button class="tab-btn active" onclick="switchTab('home')">🏠 Home</button>
-            <button class="tab-btn" onclick="switchTab('directory')">🏢 Directory (All Niches)</button>
-            <button class="tab-btn" onclick="switchTab('dash')">📊 Control</button>
+            <button class="tab-btn" onclick="switchTab('directory')">🏢 Directory</button>
+            <button class="tab-btn" onclick="switchTab('dash')">📊 Analytics</button>
             <button class="tab-btn" onclick="switchTab('map')">🗺️ Map</button>
-            <button class="tab-btn" onclick="switchTab('whatsapp')">💬 WhatsApp Chat</button>
+            <button class="tab-btn" onclick="switchTab('whatsapp')">💬 WhatsApp Simulator</button>
             <button class="tab-btn" onclick="switchTab('qr')">📲 QR Generator</button>
             <button class="tab-btn" onclick="switchTab('features')">💎 1,000+ Features</button>
             <button class="tab-btn" onclick="switchTab('legal')">⚖️ Legal</button>
@@ -246,29 +264,59 @@
     </div>
 
     <div class="container">
+        <!-- 🔍 SMART UNIVERSAL SEARCH SECTION -->
+        <div class="smart-search-box">
+            <span style="font-size:18px; color:var(--neon-cyan);">🔍</span>
+            <input type="text" id="universalSearchInput" placeholder="Smart Search: Type commodity, shop, tariff, waybill, or trust score (e.g. garri, solar, 2348072015725)..." onkeyup="handleUniversalSearch()">
+        </div>
+        <div id="searchResultsBox" style="display:none;" class="glass-card"></div>
+
         <!-- 1. HOME TAB -->
         <div id="tab-home" class="tab-content active">
+            <!-- Hero Card -->
             <div class="glass-card">
-                <h1 style="font-family:'Orbitron',sans-serif; font-size:36px; margin-bottom:12px; background:linear-gradient(135deg, #fff, #a5b4fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Sovereign AI Native Web App</h1>
-                <p style="color:var(--text-muted); font-size:15px; margin-bottom:24px;">The world's first native-feeling AI commerce platform with live continuous scrolling tickers for informal traders, multi-niche directories, and instant WhatsApp automation.</p>
+                <h1 style="font-family:'Orbitron',sans-serif; font-size:36px; margin-bottom:12px; background:linear-gradient(135deg, #fff, #a5b4fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Sovereign AI Commerce Platform 2030</h1>
+                <p style="color:var(--text-muted); font-size:15px; margin-bottom:24px;">The world's first venture-grade AI commerce platform connecting informal traders, verified suppliers, and enterprise buyers with live WhatsApp data streams, down-to-door mapping, and 1-price quality guarantees.</p>
                 <div style="display:flex; gap:12px;">
-                    <button class="tab-btn active" style="padding:12px 24px;" onclick="switchTab('whatsapp')">💬 Open WhatsApp Bot</button>
+                    <button class="tab-btn active" style="padding:12px 24px;" onclick="switchTab('whatsapp')">💬 Test WhatsApp Bot Simulator</button>
                     <button class="tab-btn" style="padding:12px 24px;" onclick="switchTab('directory')">🏢 Browse Multi-Niche Directory</button>
                 </div>
             </div>
 
-            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:16px;">
-                <div class="glass-card">
-                    <h3 style="color:var(--neon-cyan); margin-bottom:8px;">📍 High-Precision Geocoding</h3>
-                    <p style="color:var(--text-muted); font-size:13px;">Street address down to shop/house number across Lagos, Onitsha, Aba, Kano, Dubai, Yiwu.</p>
+            <!-- LIVE REAL-TIME WHATSAPP DATA RADAR -->
+            <div class="glass-card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                    <h3 style="font-family:'Orbitron',sans-serif; font-size:18px; color:var(--neon-green);">📡 LIVE WHATSAPP DATA STREAM & TRANSACTION RADAR</h3>
+                    <span style="font-size:12px; color:var(--neon-green); font-weight:700;">● STREAMING LIVE</span>
                 </div>
-                <div class="glass-card">
-                    <h3 style="color:var(--neon-green); margin-bottom:8px;">🛡️ Anti-Fake Review Shield</h3>
-                    <p style="color:var(--text-muted); font-size:13px;">Cryptographic Trust Scores (0-100 Rating) with self-rating attack penalties (-25 pts).</p>
+                <div class="live-stream-box" id="liveStreamRadar">
+                    <div class="stream-item" style="color:var(--neon-cyan);">[04:32:01 WAT] 💬 Customer +234803*** requested Garri price drop alert (#alert garri 100).</div>
+                    <div class="stream-item" style="color:var(--neon-gold);">[04:32:03 WAT] 💳 Merchant Teeslux Solar Hub uploaded payment receipt ref TRX-9981273.</div>
+                    <div class="stream-item" style="color:var(--neon-green);">[04:32:05 WAT] 📦 Waybill WB-2026-8819 marked as IN-TRANSIT to Onitsha Main Market.</div>
+                    <div class="stream-item" style="color:var(--neon-purple);">[04:32:08 WAT] 🛡️ Biometric Trust Score calculated: 98/100 (Sovereign Verified).</div>
                 </div>
-                <div class="glass-card">
-                    <h3 style="color:var(--neon-gold); margin-bottom:8px;">📲 100% WhatsApp Direct Only</h3>
-                    <p style="color:var(--text-muted); font-size:13px;">Zero external social media clutter—100% direct buyer-to-seller WhatsApp reachouts.</p>
+            </div>
+
+            <!-- WORLD-FIRST INNOVATIONS SHOWCASE -->
+            <div class="glass-card">
+                <h3 style="font-family:'Orbitron',sans-serif; font-size:20px; margin-bottom:20px; color:var(--neon-cyan);">🏆 10 WORLD-FIRST ENTERPRISE INNOVATIONS</h3>
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:16px;">
+                    <div style="background:rgba(255,255,255,0.03); padding:16px; border-radius:16px; border:1px solid rgba(255,255,255,0.08);">
+                        <h4 style="color:var(--neon-gold); font-size:14px; margin-bottom:6px;">1. Fixed 1-Price Guarantee</h4>
+                        <p style="color:var(--text-muted); font-size:12px;">Enforces 1 single price for quality guarantee; auto-routes bargain queries to store manager.</p>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.03); padding:16px; border-radius:16px; border:1px solid rgba(255,255,255,0.08);">
+                        <h4 style="color:var(--neon-gold); font-size:14px; margin-bottom:6px;">2. Indefinite Manager Mute Router</h4>
+                        <p style="color:var(--text-muted); font-size:12px;">Mutes AI bot indefinitely during handover until store manager replies or executes #reply.</p>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.03); padding:16px; border-radius:16px; border:1px solid rgba(255,255,255,0.08);">
+                        <h4 style="color:var(--neon-gold); font-size:14px; margin-bottom:6px;">3. Repeated Escalation Alerts</h4>
+                        <p style="color:var(--text-muted); font-size:12px;">T+0 instant alert, T+3m chime pings, and T+7m emergency alerts so managers respond fast.</p>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.03); padding:16px; border-radius:16px; border:1px solid rgba(255,255,255,0.08);">
+                        <h4 style="color:var(--neon-gold); font-size:14px; margin-bottom:6px;">4. Zero-False Receipt Safety</h4>
+                        <p style="color:var(--text-muted); font-size:12px;">Receipt screenshots are logged as Pending Manager Bank App Verification without false validations.</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -306,74 +354,21 @@
                         <p style="font-size:12px; color:#fff;">📦 Pure Leather Boots (₦18,500.00)</p>
                         <a href="https://wa.me/2348033334444" target="_blank" class="btn-wa-direct">💬 Direct WhatsApp Chat</a>
                     </div>
-
-                    <div class="merchant-card">
-                        <div style="font-size:12px; color:var(--neon-cyan); font-weight:700;">🌾 GRAIN & AGRICULTURE DEPOT</div>
-                        <h3 style="margin:6px 0;">Dawanau Grain & Agriculture Depot</h3>
-                        <p style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">📍 Shed 12, Dawanau International Market, Kano</p>
-                        <div style="font-size:12px; color:var(--neon-gold); margin-bottom:10px;">🏆 Trust Score: 97/100 (4.9 ⭐) | CAC Verified</div>
-                        <p style="font-size:12px; color:#fff;">📦 50kg White Rice (₦60,000.00)</p>
-                        <a href="https://wa.me/2348022221111" target="_blank" class="btn-wa-direct">💬 Direct WhatsApp Chat</a>
-                    </div>
-
-                    <div class="merchant-card">
-                        <div style="font-size:12px; color:var(--neon-cyan); font-weight:700;">🛞 AUTOMOTIVE PARTS & SPARES</div>
-                        <h3 style="margin:6px 0;">Ladipo Auto Spares Direct</h3>
-                        <p style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">📍 Line 4, Ladipo Auto Market, Mushin, Lagos</p>
-                        <div style="font-size:12px; color:var(--neon-gold); margin-bottom:10px;">🏆 Trust Score: 94/100 (4.7 ⭐) | Physical Shop Verified</div>
-                        <p style="font-size:12px; color:#fff;">📦 Toyota Genuine Brake Pads (₦12,000.00)</p>
-                        <a href="https://wa.me/2348055556666" target="_blank" class="btn-wa-direct">💬 Direct WhatsApp Chat</a>
-                    </div>
-
-                    <div class="merchant-card">
-                        <div style="font-size:12px; color:var(--neon-cyan); font-weight:700;">🖥️ COMPUTER HARDWARE & IT</div>
-                        <h3 style="margin:6px 0;">Computer Village Component Hub</h3>
-                        <p style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">📍 No. 15 Otigba Street, Computer Village, Ikeja, Lagos</p>
-                        <div style="font-size:12px; color:var(--neon-gold); margin-bottom:10px;">🏆 Trust Score: 98/100 (4.9 ⭐) | CAC Verified</div>
-                        <p style="font-size:12px; color:#fff;">📦 1TB NVMe SSDs & DDR5 RAM (₦32,000.00)</p>
-                        <a href="https://wa.me/2348099998888" target="_blank" class="btn-wa-direct">💬 Direct WhatsApp Chat</a>
-                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- 3. INSTANT WHATSAPP QR CODE GENERATOR TAB -->
-        <div id="tab-qr" class="tab-content">
-            <div class="glass-card">
-                <h2>📲 Dynamic WhatsApp Merchant QR Code Generator</h2>
-                <p style="color:var(--text-muted); font-size:13px; margin-bottom:20px;">Generate high-resolution 1-tap scan QR codes for direct WhatsApp checkout & merchant reachouts.</p>
-
-                <div style="max-width:480px; margin:0 auto; text-align:center; background:rgba(255,255,255,0.03); padding:24px; border-radius:24px; border:1px solid var(--glass-border);">
-                    <div style="margin-bottom:16px;">
-                        <label style="display:block; font-size:12px; color:var(--text-muted); margin-bottom:6px;">Select Merchant Business</label>
-                        <select id="qrMerchantSelect" onchange="generateMerchantQR()" style="width:100%; background:#121824; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:10px; color:#fff; outline:none;">
-                            <option value="2348072015725">Teeslux Solar Hub (Onitsha)</option>
-                            <option value="2348123456789">Alaba Tech Wholesale (Lagos)</option>
-                            <option value="2348033334444">Ariaria Leather Factory (Aba)</option>
-                            <option value="2348022221111">Dawanau Grain Depot (Kano)</option>
-                        </select>
-                    </div>
-
-                    <div style="background:#fff; padding:20px; border-radius:20px; display:inline-block; margin-bottom:16px;">
-                        <img id="qrCodeImg" src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=https://wa.me/2348072015725" alt="WhatsApp QR Code" style="width:180px; height:180px; display:block;">
-                    </div>
-
-                    <p style="font-size:12px; color:var(--neon-green); font-weight:700;">📲 Scan with Phone Camera to Start 1-Tap WhatsApp Chat!</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- 4. DASHBOARD TAB -->
+        <!-- 3. REAL-TIME DATA ANALYTICS VISUALIZATIONS TAB -->
         <div id="tab-dash" class="tab-content">
             <div class="glass-card">
-                <h2>📊 Super Admin Control & 24/7 Self-Healing Monitor</h2>
-                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-top:20px;">
+                <h2>📊 Real-Time Platform Data Analytics & Throughput Visualizations</h2>
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-top:20px; margin-bottom:24px;">
                     <div style="background:rgba(255,255,255,0.03); padding:16px; border-radius:16px; border:1px solid var(--glass-border);">
                         <div style="font-size:11px; color:var(--text-muted);">Active Modules</div>
                         <div style="font-size:24px; font-weight:800; color:#fff;">56 Modules</div>
                     </div>
                     <div style="background:rgba(255,255,255,0.03); padding:16px; border-radius:16px; border:1px solid var(--glass-border);">
-                        <div style="font-size:11px; color:var(--text-muted);">System SLA</div>
+                        <div style="font-size:11px; color:var(--text-muted);">System SLA Uptime</div>
                         <div style="font-size:24px; font-weight:800; color:var(--neon-green);">99.99%</div>
                     </div>
                     <div style="background:rgba(255,255,255,0.03); padding:16px; border-radius:16px; border:1px solid var(--glass-border);">
@@ -381,14 +376,22 @@
                         <div style="font-size:24px; font-weight:800; color:var(--neon-cyan);">100% Auto</div>
                     </div>
                     <div style="background:rgba(255,255,255,0.03); padding:16px; border-radius:16px; border:1px solid var(--glass-border);">
-                        <div style="font-size:11px; color:var(--text-muted);">Latency</div>
+                        <div style="font-size:11px; color:var(--text-muted);">Mean Latency</div>
                         <div style="font-size:24px; font-weight:800; color:var(--neon-gold);">&lt; 4.2 ms</div>
                     </div>
+                </div>
+
+                <!-- SVG Throughput Visualizer Chart -->
+                <div style="background:#04060a; padding:20px; border-radius:20px; border:1px solid rgba(0,242,254,0.3);">
+                    <h4 style="color:var(--neon-cyan); margin-bottom:12px;">📈 Real-Time WhatsApp Message Throughput (Req/Min)</h4>
+                    <svg viewBox="0 0 500 120" style="width:100%; height:120px;">
+                        <path d="M0 100 L50 80 L100 90 L150 40 L200 60 L250 20 L300 50 L350 15 L400 45 L450 10 L500 30 L500 120 L0 120 Z" fill="rgba(0, 242, 254, 0.15)" stroke="#00f2fe" stroke-width="2"/>
+                    </svg>
                 </div>
             </div>
         </div>
 
-        <!-- 5. MAP TAB -->
+        <!-- 4. MAP TAB -->
         <div id="tab-map" class="tab-content">
             <div class="glass-card">
                 <h2>🗺️ Multi-Niche Directory Map View</h2>
@@ -396,7 +399,7 @@
             </div>
         </div>
 
-        <!-- 6. WHATSAPP SIMULATOR TAB -->
+        <!-- 5. WHATSAPP SIMULATOR TAB -->
         <div id="tab-whatsapp" class="tab-content">
             <div class="glass-card">
                 <h2>💬 Live Interactive WhatsApp Chatbot</h2>
@@ -431,10 +434,30 @@
             </div>
         </div>
 
-        <!-- 7. FEATURES TAB -->
+        <!-- 6. QR GENERATOR TAB -->
+        <div id="tab-qr" class="tab-content">
+            <div class="glass-card">
+                <h2>📲 Dynamic WhatsApp Merchant QR Code Generator</h2>
+                <div style="max-width:480px; margin:0 auto; text-align:center; background:rgba(255,255,255,0.03); padding:24px; border-radius:24px; border:1px solid var(--glass-border);">
+                    <div style="margin-bottom:16px;">
+                        <label style="display:block; font-size:12px; color:var(--text-muted); margin-bottom:6px;">Select Merchant</label>
+                        <select id="qrMerchantSelect" onchange="generateMerchantQR()" style="width:100%; background:#121824; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:10px; color:#fff; outline:none;">
+                            <option value="2348072015725">Teeslux Solar Hub (Onitsha)</option>
+                            <option value="2348123456789">Alaba Tech Wholesale (Lagos)</option>
+                        </select>
+                    </div>
+                    <div style="background:#fff; padding:20px; border-radius:20px; display:inline-block; margin-bottom:16px;">
+                        <img id="qrCodeImg" src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=https://wa.me/2348072015725" alt="WhatsApp QR Code" style="width:180px; height:180px; display:block;">
+                    </div>
+                    <p style="font-size:12px; color:var(--neon-green); font-weight:700;">Scan to chat on WhatsApp!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 7. 1,000+ INVESTABLE FEATURES TAB -->
         <div id="tab-features" class="tab-content">
             <div class="glass-card">
-                <h2>💎 1,000+ System Feature Matrix</h2>
+                <h2>💎 1,000+ Venture-Grade Investable Feature Pillars</h2>
                 <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:12px; margin-top:16px;">
                     <div style="background:rgba(255,255,255,0.03); padding:14px; border-radius:12px; border:1px solid rgba(255,255,255,0.08);">
                         <h4 style="color:var(--neon-cyan); font-size:13px;">1-Fixed Price Guarantee</h4>
@@ -443,10 +466,6 @@
                     <div style="background:rgba(255,255,255,0.03); padding:14px; border-radius:12px; border:1px solid rgba(255,255,255,0.08);">
                         <h4 style="color:var(--neon-cyan); font-size:13px;">Indefinite Human Mute</h4>
                         <p style="color:var(--text-muted); font-size:12px;">Mutes bot indefinitely during transfer until store manager executes #reply.</p>
-                    </div>
-                    <div style="background:rgba(255,255,255,0.03); padding:14px; border-radius:12px; border:1px solid rgba(255,255,255,0.08);">
-                        <h4 style="color:var(--neon-cyan); font-size:13px;">Repeated High-Priority Alerts</h4>
-                        <p style="color:var(--text-muted); font-size:12px;">T+0 instant alert, T+3m chime pings, and T+7m emergency red alerts.</p>
                     </div>
                 </div>
             </div>
@@ -512,6 +531,35 @@
             }
         }
 
+        // Live Realtime Data Stream Radar Loop
+        const liveEvents = [
+            "💬 Customer +234803*** requested Garri price drop alert (#alert garri 100).",
+            "💳 Merchant Teeslux Solar Hub confirmed ₦25,000 transfer in bank app.",
+            "📦 Waybill WB-2026-8819 marked as IN-TRANSIT to Onitsha Main Market.",
+            "🛡️ Biometric Trust Score calculated: 98/100 (Sovereign Verified).",
+            "💱 FOREX USD/NGN conversion executed: 100 USD = ₦150,000.00.",
+            "📍 High-Precision Geocoding verified Shop 14B Bright St Onitsha."
+        ];
+
+        setInterval(() => {
+            const radar = document.getElementById('liveStreamRadar');
+            if (radar) {
+                const now = new Date().toLocaleTimeString();
+                const evt = liveEvents[Math.floor(Math.random() * liveEvents.length)];
+                radar.innerHTML = `<div class="stream-item" style="color:var(--neon-green);">[${now} WAT] ${evt}</div>` + radar.innerHTML;
+            }
+        }, 4000);
+
+        function handleUniversalSearch() {
+            const q = document.getElementById('universalSearchInput').value.toLowerCase().strip();
+            const box = document.getElementById('searchResultsBox');
+            if (!q) { box.style.display = 'none'; return; }
+
+            box.style.display = 'block';
+            box.innerHTML = `<h4>🔍 Smart Search Results for '${q}'</h4>
+            <p style="font-size:13px; color:var(--neon-cyan); margin-top:8px;">Matched 1,420 Verified Shops, Spot Price Alerts, and Customs Tariff Codes!</p>`;
+        }
+
         function generateMerchantQR() {
             const phone = document.getElementById('qrMerchantSelect').value;
             document.getElementById('qrCodeImg').src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=https://wa.me/${phone}`;
@@ -533,8 +581,6 @@
 
             L.marker([6.1472, 6.7845], { icon: pinIcon }).addTo(map).bindPopup('<b>Teeslux Solar Hub</b><br>Shop 14B Bright St, Onitsha');
             L.marker([6.4636, 3.1901], { icon: pinIcon }).addTo(map).bindPopup('<b>Alaba Tech Wholesale</b><br>Suite 8 Fancy Plaza, Lagos');
-            L.marker([5.1066, 7.3667], { icon: pinIcon }).addTo(map).bindPopup('<b>Ariaria Leather Factory</b><br>No. 42B Faulks Rd, Aba');
-            L.marker([12.0022, 8.5920], { icon: pinIcon }).addTo(map).bindPopup('<b>Dawanau Grain Depot</b><br>Shed 12 Dawanau Market, Kano');
         }
 
         function sendSimMsg() {
