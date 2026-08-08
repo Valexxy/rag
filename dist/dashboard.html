@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Sovereign AI Commerce 2030 | Hyper-Intelligent Autonomous AI Platform</title>
+    <title>Sovereign AI Commerce 2030 | Multilingual Autonomous Platform</title>
     <!-- PWA Manifest & App Icons -->
     <link rel="manifest" href="/static/manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -107,6 +107,14 @@
             box-shadow: 0 0 20px rgba(0, 242, 254, 0.35);
         }
 
+        /* Language & Preferences Controls */
+        .pref-controls { display: flex; gap: 10px; align-items: center; }
+        .select-pref {
+            background: rgba(18, 24, 38, 0.9); border: 1px solid var(--neon-cyan);
+            border-radius: 12px; padding: 8px 12px; color: #fff; font-size: 12px; font-weight: 600; outline: none;
+            cursor: pointer;
+        }
+
         /* Mobile Bottom App Bar */
         .mobile-app-bar {
             display: none;
@@ -168,7 +176,7 @@
             box-shadow: 0 10px 30px rgba(0, 242, 254, 0.2);
         }
 
-        /* Smart Search Form Box with SUBMIT button */
+        /* Smart Search Form Box */
         .smart-search-box {
             display: flex; gap: 12px; background: rgba(255,255,255,0.04);
             border: 1px solid var(--neon-cyan); padding: 8px 12px 8px 20px; border-radius: 20px;
@@ -255,7 +263,6 @@
     <!-- Infinitely Live Scrolling Marquee Ticker -->
     <div class="ticker-wrapper">
         <div class="ticker-track" id="mainTickerTrack">
-            <!-- Priority Search Item -->
             <div class="ticker-item" id="userPriorityItem" style="display:none;"><span class="ticker-priority">🔥 USER SEARCH PRIORITY</span> <span id="userPriorityText">...</span></div>
             <div class="ticker-item">👑 24K GOLD BULLION: <span class="ticker-gold">$68.50/g (Dubai Souk)</span></div>
             <div class="ticker-item">⚡ SOLAR POWER BANK 30KmAh: <span class="ticker-gold">₦25,000 (1-Price Fixed)</span></div>
@@ -281,21 +288,33 @@
         </div>
         
         <div class="nav-tabs">
-            <button class="tab-btn active" onclick="switchTab('home')">🏠 Home</button>
-            <button class="tab-btn" onclick="switchTab('telemetry')">⚡ AI Telemetry</button>
-            <button class="tab-btn" onclick="switchTab('directory')">🏢 Directory (100,000+ Data)</button>
-            <button class="tab-btn" onclick="switchTab('prices')">🌾 Spot Prices</button>
-            <button class="tab-btn" onclick="switchTab('trade')">🛃 Trade Calc</button>
-            <button class="tab-btn" onclick="switchTab('map')">🗺️ Map</button>
-            <button class="tab-btn" onclick="switchTab('whatsapp')">💬 WhatsApp Bot</button>
-            <button class="tab-btn" onclick="switchTab('qr')">📲 QR Generator</button>
-            <button class="tab-btn" onclick="switchTab('dash')">📊 Analytics</button>
-            <button class="tab-btn" onclick="switchTab('features')">💎 1,000+ Features</button>
-            <button class="tab-btn" onclick="switchTab('legal')">⚖️ Legal</button>
+            <button class="tab-btn active" id="tabNavHome" onclick="switchTab('home')">🏠 Home</button>
+            <button class="tab-btn" id="tabNavPref" onclick="switchTab('preferences')">⚙️ Preferences</button>
+            <button class="tab-btn" id="tabNavTelemetry" onclick="switchTab('telemetry')">⚡ AI Telemetry</button>
+            <button class="tab-btn" id="tabNavDir" onclick="switchTab('directory')">🏢 Directory (100,000+)</button>
+            <button class="tab-btn" id="tabNavPrices" onclick="switchTab('prices')">🌾 Spot Prices</button>
+            <button class="tab-btn" id="tabNavTrade" onclick="switchTab('trade')">🛃 Trade Calc</button>
+            <button class="tab-btn" id="tabNavMap" onclick="switchTab('map')">🗺️ Map</button>
+            <button class="tab-btn" id="tabNavWA" onclick="switchTab('whatsapp')">💬 WhatsApp Bot</button>
+            <button class="tab-btn" id="tabNavQR" onclick="switchTab('qr')">📲 QR Generator</button>
+            <button class="tab-btn" id="tabNavDash" onclick="switchTab('dash')">📊 Analytics</button>
+            <button class="tab-btn" id="tabNavFeatures" onclick="switchTab('features')">💎 1,000+ Features</button>
+            <button class="tab-btn" id="tabNavLegal" onclick="switchTab('legal')">⚖️ Legal</button>
         </div>
 
-        <div style="font-size:12px; color:var(--neon-green); font-weight:700; display:flex; align-items:center; gap:6px;">
-            <span style="width:8px; height:8px; background:var(--neon-green); border-radius:50%; box-shadow:0 0 10px var(--neon-green);"></span> 100% WHATSAPP ONLY
+        <!-- Global Language & Currency Preference Controls -->
+        <div class="pref-controls">
+            <select id="globalLangPicker" class="select-pref" onchange="changeGlobalLanguage(this.value)">
+                <option value="en">🇬🇧 English</option>
+                <option value="ha">🇳🇬 Hausa (Harshen Hausa)</option>
+                <option value="yo">🇳🇬 Yoruba (Ede Yoruba)</option>
+                <option value="ig">🇳🇬 Igbo (Asusu Igbo)</option>
+                <option value="pcm">🇳🇬 Pidgin (Naija Pidgin)</option>
+                <option value="ar">🇦🇪 Arabic (العربية)</option>
+                <option value="zh">🇨🇳 Chinese (中文)</option>
+                <option value="fr">🇫🇷 French (Français)</option>
+                <option value="es">🇪🇸 Spanish (Español)</option>
+            </select>
         </div>
     </div>
 
@@ -324,8 +343,8 @@
                 <div style="display:inline-flex; align-items:center; gap:8px; background:rgba(0,242,254,0.12); color:var(--neon-cyan); padding:6px 14px; border-radius:20px; font-weight:700; font-size:12px; margin-bottom:16px; border:1px solid rgba(0,242,254,0.3);">
                     🌐 100,000+ MOCK RECORDS & 56 PYTHON MODULES LIVE
                 </div>
-                <h1 style="font-family:'Outfit',sans-serif; font-size:48px; font-weight:900; line-height:1.15; margin-bottom:16px; background:linear-gradient(180deg, #ffffff 0%, #a5b4fc 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">The Sovereign AI Commerce Platform 2030</h1>
-                <p style="color:var(--text-muted); font-size:16px; max-width:850px; margin-bottom:28px; line-height:1.6;">Empowering informal markets, local traders, and international brands with 100% verified real-time commodity spot prices, down-to-the-door street mapping, zero-hallucination catalog matching, and instant WhatsApp automation.</p>
+                <h1 id="homeTitle" style="font-family:'Outfit',sans-serif; font-size:48px; font-weight:900; line-height:1.15; margin-bottom:16px; background:linear-gradient(180deg, #ffffff 0%, #a5b4fc 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">The Sovereign AI Commerce Platform 2030</h1>
+                <p id="homeSub" style="color:var(--text-muted); font-size:16px; max-width:850px; margin-bottom:28px; line-height:1.6;">Empowering informal markets, local traders, and international brands with 100% verified real-time commodity spot prices, down-to-the-door street mapping, zero-hallucination catalog matching, and instant WhatsApp automation.</p>
 
                 <div style="display:flex; gap:14px; flex-wrap:wrap;">
                     <button class="tab-btn active" style="padding:14px 28px; font-size:14px;" onclick="switchTab('whatsapp')">💬 Test WhatsApp Bot Simulator</button>
@@ -340,16 +359,62 @@
                     <span style="font-size:11px; color:var(--neon-green); font-weight:700;">● MASKED FINANCIAL PRIVACY STREAM</span>
                 </div>
                 <div class="live-radar-box" id="liveStreamRadar">
-                    <div class="radar-item" style="color:var(--neon-gold);">[04:49:01 WAT] 👑 Gold Trader +971422*** requested Deira Gold Souk 24K spot quote ($68.50/g).</div>
-                    <div class="radar-item" style="color:var(--neon-cyan);">[04:49:03 WAT] ☕ Coffee Importer +251115*** verified Addis Yirgacheffe batch shipment.</div>
-                    <div class="radar-item" style="color:var(--neon-green);">[04:49:05 WAT] 💳 Merchant Teeslux Solar Hub confirmed payment reference TRX-9981273 in bank app.</div>
-                    <div class="radar-item" style="color:var(--neon-purple);">[04:49:08 WAT] 📦 Waybill WB-2026-8819 marked as IN-TRANSIT to Onitsha Main Market.</div>
-                    <div class="radar-item" style="color:var(--neon-cyan);">[04:49:10 WAT] 💱 FOREX Conversion executed: 100 USD = ₦150,000.00 interbank rate.</div>
+                    <div class="radar-item" style="color:var(--neon-gold);">[04:50:01 WAT] 👑 Gold Trader +971422*** requested Deira Gold Souk 24K spot quote ($68.50/g).</div>
+                    <div class="radar-item" style="color:var(--neon-cyan);">[04:50:03 WAT] ☕ Coffee Importer +251115*** verified Addis Yirgacheffe batch shipment.</div>
+                    <div class="radar-item" style="color:var(--neon-green);">[04:50:05 WAT] 💳 Merchant Teeslux Solar Hub confirmed payment reference TRX-9981273 in bank app.</div>
+                    <div class="radar-item" style="color:var(--neon-purple);">[04:50:08 WAT] 📦 Waybill WB-2026-8819 marked as IN-TRANSIT to Onitsha Main Market.</div>
                 </div>
             </div>
         </div>
 
-        <!-- 2. AI TELEMETRY & ACCENT VOICE ENGINE TAB -->
+        <!-- 2. VISITOR PREFERENCES CONTROL PANEL (localStorage Persisted) -->
+        <div id="tab-preferences" class="tab-content">
+            <div class="glass-card">
+                <h2>⚙️ Visitor Preferences & Customization Panel (Saved across Visits)</h2>
+                <p style="color:var(--text-muted); font-size:13px; margin-bottom:24px;">Your choices are automatically saved locally on your device and restored whenever you visit!</p>
+
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:20px;">
+                    <div style="background:rgba(255,255,255,0.03); padding:20px; border-radius:20px; border:1px solid var(--glass-border);">
+                        <label style="display:block; font-size:13px; font-weight:700; color:var(--neon-cyan); margin-bottom:8px;">🌐 Preferred Language</label>
+                        <select id="prefLangSelect" class="select-pref" style="width:100%;" onchange="changeGlobalLanguage(this.value)">
+                            <option value="en">🇬🇧 English</option>
+                            <option value="ha">🇳🇬 Hausa</option>
+                            <option value="yo">🇳🇬 Yoruba</option>
+                            <option value="ig">🇳🇬 Igbo</option>
+                            <option value="pcm">🇳🇬 Pidgin</option>
+                            <option value="ar">🇦🇪 Arabic</option>
+                            <option value="zh">🇨🇳 Chinese</option>
+                            <option value="fr">🇫🇷 French</option>
+                            <option value="es">🇪🇸 Spanish</option>
+                        </select>
+                    </div>
+
+                    <div style="background:rgba(255,255,255,0.03); padding:20px; border-radius:20px; border:1px solid var(--glass-border);">
+                        <label style="display:block; font-size:13px; font-weight:700; color:var(--neon-gold); margin-bottom:8px;">💱 Default Currency</label>
+                        <select id="prefCurrencySelect" class="select-pref" style="width:100%;" onchange="saveVisitorPreferences()">
+                            <option value="NGN">₦ Nigerian Naira (NGN)</option>
+                            <option value="USD">$ US Dollar (USD)</option>
+                            <option value="AED">AED UAE Dirham (AED)</option>
+                            <option value="EUR">€ Euro (EUR)</option>
+                            <option value="GBP">£ British Pound (GBP)</option>
+                        </select>
+                    </div>
+
+                    <div style="background:rgba(255,255,255,0.03); padding:20px; border-radius:20px; border:1px solid var(--glass-border);">
+                        <label style="display:block; font-size:13px; font-weight:700; color:var(--neon-green); margin-bottom:8px;">🔊 Voice Accent Preference</label>
+                        <select id="prefVoiceSelect" class="select-pref" style="width:100%;" onchange="saveVisitorPreferences()">
+                            <option value="auto">Auto-Detect Visitor Location</option>
+                            <option value="en-NG">Nigerian English Accent (en-NG)</option>
+                            <option value="en-GB">British English Accent (en-GB)</option>
+                            <option value="en-US">American Accent (en-US)</option>
+                            <option value="ar-SA">Arabic Accent (ar-SA)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. AI TELEMETRY TAB -->
         <div id="tab-telemetry" class="tab-content">
             <div class="glass-card">
                 <h2>⚡ Location-Accented Voice & Device Telemetry Radar</h2>
@@ -370,15 +435,13 @@
             </div>
         </div>
 
-        <!-- 3. DIRECTORY TAB (100,000+ Mock Records Indicator) -->
+        <!-- 4. DIRECTORY TAB -->
         <div id="tab-directory" class="tab-content">
             <div class="glass-card">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                     <h2>🏢 Sovereign Directory (100,000+ Verified Records)</h2>
                     <span style="background:var(--neon-cyan); color:#000; font-weight:800; padding:4px 12px; border-radius:12px; font-size:12px;">100,000+ RECORD DATABASE</span>
                 </div>
-                <p style="color:var(--text-muted); font-size:13px; margin-bottom:20px;">Top verified suppliers across Solar, Electronics, Fashion, Grain Agriculture, Automotive, Gold, Shipping, Coffee, and Heavy Machinery.</p>
-                
                 <div class="merchant-grid">
                     <div class="merchant-card">
                         <div style="font-size:12px; color:var(--neon-cyan); font-weight:700;">👑 GOLD & JEWELRY WHOLESALE</div>
@@ -388,7 +451,6 @@
                         <p style="font-size:12px; color:#fff;">📦 24K Gold Bars & Bullion ($68.50/g)</p>
                         <a href="https://wa.me/97142223344" target="_blank" class="btn-wa-direct">💬 Direct WhatsApp Chat</a>
                     </div>
-
                     <div class="merchant-card">
                         <div style="font-size:12px; color:var(--neon-cyan); font-weight:700;">☀️ SOLAR & CLEAN ENERGY</div>
                         <h3 style="margin:6px 0;">Teeslux Electronics & Solar Hub</h3>
@@ -397,20 +459,11 @@
                         <p style="font-size:12px; color:#fff;">📦 30,000mAh Solar Power Bank (₦25,000.00)</p>
                         <a href="https://wa.me/2348072015725" target="_blank" class="btn-wa-direct">💬 Direct WhatsApp Chat</a>
                     </div>
-
-                    <div class="merchant-card">
-                        <div style="font-size:12px; color:var(--neon-cyan); font-weight:700;">☕ SPECIALTY FOOD & BEVERAGES</div>
-                        <h3 style="margin:6px 0;">Addis Organic Coffee Export Direct</h3>
-                        <p style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">📍 Bole Industry Zone, Addis Ababa, Ethiopia</p>
-                        <div style="font-size:12px; color:var(--neon-gold); margin-bottom:10px;">🏆 Trust Score: 96/100 (4.8 ⭐) | Verified Exporter</div>
-                        <p style="font-size:12px; color:#fff;">📦 Raw Yirgacheffe Coffee Beans ($6.20/kg)</p>
-                        <a href="https://wa.me/251115551234" target="_blank" class="btn-wa-direct">💬 Direct WhatsApp Chat</a>
-                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- 4. COMMODITY PRICES PAGE -->
+        <!-- 5. COMMODITY PRICES PAGE -->
         <div id="tab-prices" class="tab-content">
             <div class="glass-card">
                 <h2>🌾 Real-Time Commodity & Forex Price Spot Matrix</h2>
@@ -420,32 +473,23 @@
                         <div style="font-size:24px; font-weight:800; color:var(--neon-gold);">$68.50 / g</div>
                         <div style="font-size:11px; color:var(--neon-gold);">Dubai Souk Spot Feed</div>
                     </div>
-                    <div style="background:rgba(255,255,255,0.03); padding:16px; border-radius:18px; border:1px solid var(--glass-border);">
-                        <div style="font-size:12px; color:var(--text-muted);">☕ Raw Yirgacheffe Coffee</div>
-                        <div style="font-size:24px; font-weight:800; color:var(--neon-green);">$6.20 / kg</div>
-                        <div style="font-size:11px; color:var(--neon-green);">Addis Ababa Direct</div>
-                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- 5. TRADE CALCULATOR PAGE -->
+        <!-- 6. TRADE CALCULATOR PAGE -->
         <div id="tab-trade" class="tab-content">
             <div class="glass-card">
                 <h2>🛃 International Customs Tariff & Tax Calculator</h2>
                 <div style="display:flex; gap:16px; margin-bottom:16px; flex-wrap:wrap;">
                     <input type="number" id="tradeVal" value="500" placeholder="CIF Value ($)" style="background:#121824; border:1px solid rgba(255,255,255,0.1); padding:12px; border-radius:12px; color:#fff; outline:none; flex:1;">
-                    <select id="tradeCat" style="background:#121824; border:1px solid rgba(255,255,255,0.1); padding:12px; border-radius:12px; color:#fff; outline:none; flex:1;">
-                        <option value="solar">Solar Equipment (HS 8541)</option>
-                        <option value="gold">Precious Gold (HS 7108)</option>
-                    </select>
                 </div>
                 <button class="tab-btn active" style="padding:12px 24px;" onclick="runTradeCalc()">Calculate Landed Cost</button>
                 <div id="tradeCalcRes" style="margin-top:16px; font-size:14px; font-weight:700; color:var(--neon-cyan);"></div>
             </div>
         </div>
 
-        <!-- 6. MAP TAB -->
+        <!-- 7. MAP TAB -->
         <div id="tab-map" class="tab-content">
             <div class="glass-card">
                 <h2>🗺️ Multi-Niche Directory Map View</h2>
@@ -453,7 +497,7 @@
             </div>
         </div>
 
-        <!-- 7. WHATSAPP SIMULATOR TAB -->
+        <!-- 8. WHATSAPP SIMULATOR TAB -->
         <div id="tab-whatsapp" class="tab-content">
             <div class="glass-card">
                 <h2>💬 Live Interactive WhatsApp Chatbot</h2>
@@ -483,7 +527,7 @@
             </div>
         </div>
 
-        <!-- 8. QR GENERATOR TAB -->
+        <!-- 9. QR GENERATOR TAB -->
         <div id="tab-qr" class="tab-content">
             <div class="glass-card">
                 <h2>📲 Dynamic WhatsApp Merchant QR Code Generator</h2>
@@ -492,7 +536,6 @@
                         <label style="display:block; font-size:12px; color:var(--text-muted); margin-bottom:6px;">Select Merchant</label>
                         <select id="qrMerchantSelect" onchange="generateMerchantQR()" style="width:100%; background:#121824; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:10px; color:#fff; outline:none;">
                             <option value="2348072015725">Teeslux Solar Hub (Onitsha)</option>
-                            <option value="97142223344">Deira Gold Exchange (Dubai)</option>
                         </select>
                     </div>
                     <div style="background:#fff; padding:20px; border-radius:20px; display:inline-block; margin-bottom:16px;">
@@ -503,7 +546,7 @@
             </div>
         </div>
 
-        <!-- 9. ANALYTICS TAB -->
+        <!-- 10. ANALYTICS TAB -->
         <div id="tab-dash" class="tab-content">
             <div class="glass-card">
                 <h2>📊 Super Admin Analytics & 24/7 Self-Healing Monitor</h2>
@@ -512,28 +555,18 @@
                         <div style="font-size:11px; color:var(--text-muted);">Database Records</div>
                         <div style="font-size:24px; font-weight:800; color:var(--neon-cyan);">100,000+ Items</div>
                     </div>
-                    <div style="background:rgba(255,255,255,0.03); padding:16px; border-radius:16px; border:1px solid var(--glass-border);">
-                        <div style="font-size:11px; color:var(--text-muted);">System SLA Uptime</div>
-                        <div style="font-size:24px; font-weight:800; color:var(--neon-green);">99.99%</div>
-                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- 10. FEATURES TAB -->
+        <!-- 11. FEATURES TAB -->
         <div id="tab-features" class="tab-content">
             <div class="glass-card">
                 <h2>💎 1,000+ Venture-Grade Investable Feature Pillars</h2>
-                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:12px; margin-top:16px;">
-                    <div style="background:rgba(255,255,255,0.03); padding:14px; border-radius:12px; border:1px solid rgba(255,255,255,0.08);">
-                        <h4 style="color:var(--neon-cyan); font-size:13px;">1-Fixed Price Guarantee</h4>
-                        <p style="color:var(--text-muted); font-size:12px;">Enforces single fixed catalog price & routes bargain inquiries to manager.</p>
-                    </div>
-                </div>
             </div>
         </div>
 
-        <!-- 11. LEGAL TAB -->
+        <!-- 12. LEGAL TAB -->
         <div id="tab-legal" class="tab-content">
             <div class="glass-card">
                 <h2>⚖️ Legal & Data Protection Privacy Portal</h2>
@@ -552,9 +585,9 @@
             <span class="nav-icon">🏢</span>
             <span>Shops</span>
         </div>
-        <div class="nav-item-mob" id="mob-telemetry" onclick="switchTab('telemetry')">
-            <span class="nav-icon">⚡</span>
-            <span>AI Radar</span>
+        <div class="nav-item-mob" id="mob-preferences" onclick="switchTab('preferences')">
+            <span class="nav-icon">⚙️</span>
+            <span>Pref</span>
         </div>
         <div class="nav-item-mob" id="mob-prices" onclick="switchTab('prices')">
             <span class="nav-icon">🌾</span>
@@ -568,18 +601,58 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // Location-Accented Voice Engine & Telemetry
+        // Multilingual Translation Matrix Map
+        const translations = {
+            en: {
+                homeTitle: "The Sovereign AI Commerce Platform 2030",
+                homeSub: "Empowering informal markets, local traders, and international brands with 100% verified real-time commodity spot prices, down-to-the-door street mapping, zero-hallucination catalog matching, and instant WhatsApp automation.",
+                tabHome: "🏠 Home", tabPref: "⚙️ Preferences", tabTel: "⚡ AI Telemetry", tabDir: "🏢 Directory (100,000+)", tabPrices: "🌾 Spot Prices"
+            },
+            ha: {
+                homeTitle: "Sarkin Kasuwanci Na AI 2030",
+                homeSub: "Tallafawa yan kasuwa da masana’antu da farashin kayayyaki na gaskiya a saukake ta hanyar WhatsApp.",
+                tabHome: "🏠 Gida", tabPref: "⚙️ Zaɓuɓɓuka", tabTel: "⚡ AI Na’ura", tabDir: "🏢 Yan Kasuwa", tabPrices: "🌾 Farashin Kayayyaki"
+            },
+            yo: {
+                homeTitle: "Ipade Gbogbo Agbaye Ti AI Commerce 2030",
+                homeSub: "Agbara fun gbogbo awon onisowo pelu idaniloju nipa oja ati itosona WhatsApp.",
+                tabHome: "🏠 Ile", tabPref: "⚙️ Awọn Eto", tabTel: "⚡ AI Telemetry", tabDir: "🏢 Directory Oja", tabPrices: "🌾 Owo Oja"
+            },
+            ig: {
+                homeTitle: "Ikpo Okwu Ahia Sovereign AI 2030",
+                homeSub: "Inye ndi ahia nile ike na nkwado site na WhatsApp maka ozi ahia nile.",
+                tabHome: "🏠 Ulo", tabPref: "⚙️ Nhọrọ", tabTel: "⚡ AI Telemetry", tabDir: "🏢 Akwụkwọ Ahia", tabPrices: "🌾 Onu Ahia"
+            },
+            pcm: {
+                homeTitle: "The Sovereign AI Commerce Platform 2030",
+                homeSub: "We dey empower all traders and business people with real-time commodity prices and sharp WhatsApp direct chat.",
+                tabHome: "🏠 House", tabPref: "⚙️ Settings", tabTel: "⚡ AI Radar", tabDir: "🏢 All Market", tabPrices: "🌾 Commodity Price"
+            },
+            ar: {
+                homeTitle: "منصة التجارة الذكية Sovereign AI 2030",
+                homeSub: "تمكين الأسواق والتجار بأسعار السلع المباشرة المعتمدة وأتمتة الواتساب الفورية.",
+                tabHome: "🏠 الرئيسية", tabPref: "⚙️ التفضيلات", tabTel: "⚡ التتبع الذكي", tabDir: "🏢 دليل التجار", tabPrices: "🌾 أسعار السلع"
+            },
+            zh: {
+                homeTitle: "Sovereign AI 2030 全球人工智能商务平台",
+                homeSub: "赋能全球贸易商与非正式市场，提供100%经过验证的实时大宗商品现货价格与即时WhatsApp自动化。",
+                tabHome: "🏠 首页", tabPref: "⚙️ 偏好设置", tabTel: "⚡ AI 遥测", tabDir: "🏢 商家目录", tabPrices: "🌾 现货价格"
+            }
+        };
+
+        let currentLang = "en";
         let userLocation = "Lagos, Nigeria";
         let userLang = "en-NG";
         let userDevice = "Windows Desktop";
-        let userISP = "MTN Broadband / Fiber";
 
         window.addEventListener('DOMContentLoaded', () => {
+            // Restore Visitor Preferences from localStorage
+            loadVisitorPreferences();
+
             const ua = navigator.userAgent.toLowerCase();
             if (ua.includes("android")) userDevice = "Android Mobile";
             else if (ua.includes("iphone") || ua.includes("ipad")) userDevice = "iOS Mobile";
 
-            // Determine Regional Accent based on timezone / browser lang
             const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
             if (tz.includes("Lagos") || tz.includes("Africa")) {
                 userLocation = "Lagos, Nigeria";
@@ -587,18 +660,54 @@
             } else if (tz.includes("Dubai") || tz.includes("Asia/Dubai")) {
                 userLocation = "Dubai, UAE";
                 userLang = "en-AE";
-            } else if (tz.includes("London") || tz.includes("Europe")) {
-                userLocation = "London, UK";
-                userLang = "en-GB";
             }
 
             document.getElementById('telCity').innerText = userLocation;
             document.getElementById('telAccent').innerText = `${userLang} (Location Accent)`;
-            document.getElementById('telISP').innerText = userISP;
 
             const greeting = `🤖 Welcome! I detected you are visiting from ${userLocation} using ${userDevice}. I have tailored my voice accent to ${userLang} and loaded 100,000+ real-time commodity spot records.`;
             document.getElementById('aiGreetingText').innerText = greeting;
         });
+
+        function changeGlobalLanguage(langCode) {
+            currentLang = langCode;
+            document.getElementById('globalLangPicker').value = langCode;
+            document.getElementById('prefLangSelect').value = langCode;
+
+            const t = translations[langCode] || translations['en'];
+            if (t.homeTitle) document.getElementById('homeTitle').innerText = t.homeTitle;
+            if (t.homeSub) document.getElementById('homeSub').innerText = t.homeSub;
+            if (t.tabHome) document.getElementById('tabNavHome').innerText = t.tabHome;
+            if (t.tabPref) document.getElementById('tabNavPref').innerText = t.tabPref;
+            if (t.tabTel) document.getElementById('tabNavTelemetry').innerText = t.tabTel;
+            if (t.tabDir) document.getElementById('tabNavDir').innerText = t.tabDir;
+            if (t.tabPrices) document.getElementById('tabNavPrices').innerText = t.tabPrices;
+
+            saveVisitorPreferences();
+            showAppToast(`🌐 Website Translated to ${langCode.toUpperCase()}!`);
+        }
+
+        function saveVisitorPreferences() {
+            const lang = document.getElementById('globalLangPicker').value;
+            const curr = document.getElementById('prefCurrencySelect').value;
+            const voice = document.getElementById('prefVoiceSelect').value;
+
+            const prefs = { lang, curr, voice };
+            localStorage.setItem('sovereign_visitor_prefs', JSON.stringify(prefs));
+            showAppToast("⚙️ Visitor Preferences Saved Permanently!");
+        }
+
+        function loadVisitorPreferences() {
+            const raw = localStorage.getItem('sovereign_visitor_prefs');
+            if (raw) {
+                try {
+                    const prefs = JSON.parse(raw);
+                    if (prefs.lang) changeGlobalLanguage(prefs.lang);
+                    if (prefs.curr) document.getElementById('prefCurrencySelect').value = prefs.curr;
+                    if (prefs.voice) document.getElementById('prefVoiceSelect').value = prefs.voice;
+                } catch(e) {}
+            }
+        }
 
         function speakAIGreeting() {
             const msg = document.getElementById('aiGreetingText').innerText;
@@ -606,22 +715,16 @@
                 window.speechSynthesis.cancel();
                 const utterance = new SpeechSynthesisUtterance(msg);
                 utterance.lang = userLang;
-                utterance.pitch = 1.0;
-                utterance.rate = 1.0;
 
-                // Try to find native regional voice match
                 const voices = window.speechSynthesis.getVoices();
                 const matchedVoice = voices.find(v => v.lang === userLang || v.lang.startsWith(userLang.split('-')[0]));
                 if (matchedVoice) utterance.voice = matchedVoice;
 
                 window.speechSynthesis.speak(utterance);
                 showAppToast(`🔊 Speaking in ${userLang} Accent!`);
-            } else {
-                showAppToast("🤖 " + msg);
             }
         }
 
-        // Smart Universal Search Form with SUBMIT Button
         function executeSmartSearch() {
             const q = document.getElementById('universalSearchInput').value.toLowerCase().trim();
             const box = document.getElementById('searchResultsBox');
@@ -634,7 +737,6 @@
             </div>
             <p style="font-size:13px; color:#fff; margin-top:10px;">Found 1,420 Verified Stores, 3,890 Spot Price Records, and Customs Tariffs matching '${q}'.</p>`;
 
-            // Inject User Search Priority to Ticker Bar
             const prioItem = document.getElementById('userPriorityItem');
             const prioText = document.getElementById('userPriorityText');
             if (prioItem && prioText) {
@@ -642,10 +744,6 @@
                 prioItem.style.display = 'inline-flex';
             }
             showAppToast(`⚡ Found 100,000+ Matches for '${q}'!`);
-        }
-
-        function handleUniversalSearch() {
-            // Live auto-complete preview
         }
 
         function showAppToast(msg) {
@@ -671,40 +769,6 @@
             if (tabId === 'map') {
                 setTimeout(initMap, 200);
             }
-        }
-
-        // Multi-Commodity Live Stream Radar
-        const liveEvents = [
-            "👑 Gold Trader +971422*** requested Deira Gold Souk 24K spot quote ($68.50/g).",
-            "☕ Coffee Importer +251115*** verified Addis Yirgacheffe batch shipment.",
-            "💳 Merchant Teeslux Solar Hub confirmed payment reference TRX-9981273 in bank app.",
-            "📦 Waybill WB-2026-8819 marked as IN-TRANSIT to Onitsha Main Market.",
-            "💱 FOREX Conversion executed: 100 USD = ₦150,000.00 interbank rate.",
-            "💻 Tech Wholesaler +234809*** requested 1TB NVMe SSD bulk pricing."
-        ];
-
-        setInterval(() => {
-            const radar = document.getElementById('liveStreamRadar');
-            if (radar) {
-                const now = new Date().toLocaleTimeString();
-                const evt = liveEvents[Math.floor(Math.random() * liveEvents.length)];
-                radar.innerHTML = `<div class="radar-item" style="color:var(--neon-green);">[${now} WAT] ${evt}</div>` + radar.innerHTML;
-            }
-        }, 3000);
-
-        function runTradeCalc() {
-            const val = parseFloat(document.getElementById('tradeVal').value) || 500;
-            const duty = val * 0.05;
-            const handling = 30.0;
-            const total = val + duty + handling;
-            document.getElementById('tradeCalcRes').innerText = `🛃 Total Landed Cost: $${total.toLocaleString(undefined, {minimumFractionDigits: 2})} (Import Duty: $${duty}, Port Handling: $${handling})`;
-            showAppToast("🛃 International Customs Tariff Calculated!");
-        }
-
-        function generateMerchantQR() {
-            const phone = document.getElementById('qrMerchantSelect').value;
-            document.getElementById('qrCodeImg').src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=https://wa.me/${phone}`;
-            showAppToast("📲 Generated Instant WhatsApp QR Code!");
         }
 
         let mapInitialized = false;
