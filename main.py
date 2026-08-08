@@ -81,6 +81,14 @@ load_dotenv()
 
 app = FastAPI(title="Sovereign AI Commerce & Financial SaaS Platform 2030")
 
+@app.on_event("startup")
+def startup_event():
+    try:
+        from keep_alive_worker import start_keep_alive_background_thread
+        start_keep_alive_background_thread()
+    except Exception as e:
+        print(f"[STARTUP WARNING] Could not start keep-alive worker: {e}")
+
 os.makedirs("static", exist_ok=True)
 try:
     app.mount("/static", StaticFiles(directory="static"), name="static")
