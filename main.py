@@ -322,6 +322,25 @@ async def get_ai_telemetry():
         "timestamp": smart_timezone.get_realtime_nigeria_now().strftime("%Y-%m-%d %H:%M:%S WAT")
     }
 
+@app.get("/api/test-chat")
+async def test_chat_endpoint(query: str = "1.5kva", phone: str = "2348072015725"):
+    """Instant browser diagnostic testing endpoint for product queries and AI replies."""
+    tenant = get_tenant_by_instance("store-bot")
+    res = generate_live_character_reply(
+        tenant=tenant,
+        customer_phone=phone,
+        latest_query=query,
+        conversation_history=""
+    )
+    return {
+        "status": "success",
+        "query": query,
+        "phone": phone,
+        "reply": res.get("reply"),
+        "source": res.get("source"),
+        "is_transfer": res.get("is_human_transfer")
+    }
+
 # -------------------------------------------------------------
 # 💬 WHATSAPP WEBHOOK HANDLER (Legal Framework & Monetization Ledger)
 # -------------------------------------------------------------
