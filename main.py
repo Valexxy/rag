@@ -874,12 +874,16 @@ def _process_whatsapp_message_sync(instance_name: str, payload: dict):
             return {"status": "option_5_human_escalated"}
 
         # ── TIER 3: PURE GREETINGS (Exact or Starts-With Match Only) ───
-        pure_greetings = {"hi", "hello", "hey", "menu", "help", "start", "good morning", "good afternoon", "good evening"}
-        is_greeting = (msg_lower in pure_greetings or
-                       msg_lower.startswith("good morning") or
-                       msg_lower.startswith("good afternoon") or
-                       msg_lower.startswith("good evening"))
-        if is_greeting and len(msg_lower.split()) <= 3:
+        pure_greetings = {
+            "hi", "hello", "hey", "menu", "help", "start",
+            "good morning", "good afternoon", "good evening", "good day", "goodday", "gday",
+            "greetings", "greeting", "hi there", "hello there", "how far", "xup", "boss", "chief"
+        }
+        is_greeting = (
+            msg_lower in pure_greetings or
+            any(msg_lower.startswith(g) for g in ["good morning", "good afternoon", "good evening", "good day", "hi", "hello", "hey"])
+        )
+        if is_greeting and len(msg_lower.split()) <= 4:
             reply_payload = render_role_based_menu("CLIENT", tenant, clean_sender)
             send_whatsapp_message(instance_name, clean_sender, f"☀️ *[{tenant.get('business_name', 'Store')} Client Care]*\n\n{greeting}! Welcome to {tenant.get('business_name', 'Store')}.\n\n{reply_payload}")
             return {"status": "menu_sent"}
