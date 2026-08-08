@@ -16,7 +16,7 @@ from evolution_interactive import (
     send_whatsapp_presence, send_whatsapp_message, broadcast_whatsapp_message
 )
 
-# Enterprise SaaS Modules (39 Modules Total - Indefinite Human Handoff & Repeated Escalation)
+# Enterprise SaaS Modules (40 Modules Total - Flexible Payments & Viral Market Features)
 from local_ai_brain import local_brain
 from whatsapp_ui import render_executive_whatsapp_dashboard, render_role_based_menu, format_currency
 from logistics_department import logistics_dept
@@ -45,6 +45,8 @@ from infinite_scale_guard import infinite_scale_guard
 from ai_haggling_engine import fixed_price_engine
 from sovereign_offline_payments import sovereign_offline_payments
 from escalation_alert_engine import escalation_alert_engine
+from flexible_payment_engine import flexible_payment
+from trader_virality_engine import trader_virality
 from gamification_retention import gamification_engine
 from database_backup import backup_engine
 
@@ -110,8 +112,8 @@ async def startup_event():
 async def root():
     return {
         "status": "online", 
-        "system": "Sovereign AI Commerce & Financial Platform v2030 (Indefinite Human Handoff)",
-        "architecture_modules": 39,
+        "system": "Sovereign AI Commerce & Financial Platform v2030 (Flexible Payments & Viral Market Features)",
+        "architecture_modules": 40,
         "self_healing": "active",
         "realtime_wat_clock": smart_timezone.get_realtime_nigeria_now().strftime("%Y-%m-%d %H:%M:%S WAT"),
         "is_night_protocol": smart_night_protocol.is_night_time(),
@@ -135,7 +137,7 @@ async def get_admin_metrics():
         "errors_captured": self_healing.error_count,
         "auto_healed": self_healing.healed_count,
         "smart_retry_success": "100%",
-        "modules_active": 39,
+        "modules_active": 40,
         "scale_metrics": infinite_scale_guard.get_scale_metrics()
     }
 
@@ -153,12 +155,12 @@ async def admin_ai_agent_chat(payload: AdminChatPayload):
     elif "status" in msg or "health" in msg:
         reply = f"📊 **[SYSTEM HEALTH]**: Platform is operating at 99.98% efficiency. Total auto-healed incidents: {self_healing.healed_count}."
     else:
-        reply = f"🤖 **[SUPER ADMIN AGENT]**: Instruction processed: '{payload.message}'. All 39 enterprise modules are active and synchronized."
+        reply = f"🤖 **[SUPER ADMIN AGENT]**: Instruction processed: '{payload.message}'. All 40 enterprise modules are active and synchronized."
 
     return {"reply": reply}
 
 # -------------------------------------------------------------
-# 💬 WHATSAPP WEBHOOK HANDLER (Indefinite Human Handoff Until Manager Messages)
+# 💬 WHATSAPP WEBHOOK HANDLER (Flexible Merchant Payments & Zero-False-Validation Shield)
 # -------------------------------------------------------------
 @app.post("/webhook/whatsapp/{instance_name}")
 async def handle_whatsapp_webhook(instance_name: str, request: Request):
@@ -211,12 +213,17 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
         if has_media and not is_owner:
             caption = message_info.get("imageMessage", {}).get("caption") or message_info.get("videoMessage", {}).get("caption") or ""
             
-            # Payment Receipt Screenshot OCR Verification
+            # Safe Payment Receipt Screenshot Processing (NO false validation, subject to manager bank app check!)
             if "PAYMENT" in caption.upper() or "RECEIPT" in caption.upper() or "TRANSFER" in caption.upper():
                 ocr_result = vision_ocr.parse_payment_receipt_text(caption or "PAYMENT RECEIPT 0252796240 AMOUNT N25000")
-                reply = f"🧾 *[RECEIPT OCR VERIFIED]*\n\nReference: `{ocr_result['transaction_reference']}`\nStatus: `PENDING SETTLEMENT`"
-                send_whatsapp_message(instance_name, clean_sender, reply)
-                return {"status": "receipt_ocr_processed"}
+                receipt_res = flexible_payment.process_receipt_screenshot_safely(clean_sender, ocr_result['transaction_reference'])
+                send_whatsapp_message(instance_name, clean_sender, receipt_res["reply"])
+                owner_alert.send_urgent_owner_alert(
+                    instance_name, clean_owner, clean_sender, 
+                    "💳 Payment Receipt Uploaded - Verify In Bank App", 
+                    f"Customer uploaded receipt for ref '{ocr_result['transaction_reference']}'. Reply '#confirm-pay {clean_sender} | {ocr_result['transaction_reference']}' to confirm!"
+                )
+                return {"status": "receipt_safely_processed_pending_manager"}
             
             # Autonomous Vision AI Catalog Matching
             vision_match = autonomous_visual.analyze_image_and_match_catalog(tenant, clean_sender, caption)
@@ -267,6 +274,17 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
             return {"status": "security_attack_blocked"}
 
         msg_lower = message_text.lower().strip()
+
+        # Informal Market Virality Commands (#nugget, #wisdom, #escrow)
+        if msg_lower.startswith("#nugget") or msg_lower.startswith("#wisdom") or msg_lower in ["nugget", "wisdom"]:
+            nugget_card = trader_virality.get_daily_morning_nugget()
+            send_whatsapp_message(instance_name, clean_sender, nugget_card)
+            return {"status": "trader_nugget_sent"}
+
+        if msg_lower.startswith("#escrow") or msg_lower == "escrow":
+            escrow_card = trader_virality.generate_escrow_trust_badge(clean_sender, tenant.get("business_name", "Store"), 25000.0)
+            send_whatsapp_message(instance_name, clean_sender, escrow_card)
+            return {"status": "escrow_badge_sent"}
 
         # Fixed 1-Price Guarantee: Route ALL bargain/discount requests to Human Manager Indefinitely
         bargain_triggers = ["last price", "discount", "reduce price", "too expensive", "give me for", "help me reduce", "bargain", "cheaper"]
@@ -319,7 +337,7 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
             send_whatsapp_message(instance_name, clean_sender, report)
             return {"status": "market_intel_sent"}
 
-        # Flexible Owner Commands (Resolves Indefinite Handover & Unmutes)
+        # Flexible Owner Commands (Resolves Indefinite Handover & Manual Payment Confirmations)
         if is_owner:
             cmd = msg_lower
 
@@ -327,6 +345,21 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
                 dashboard_text = render_executive_whatsapp_dashboard(tenant)
                 send_whatsapp_message(instance_name, clean_sender, dashboard_text)
                 return {"status": "owner_dashboard_sent"}
+
+            elif msg_lower.startswith("#confirm-pay ") or msg_lower.startswith("confirm-pay "):
+                try:
+                    raw_cmd = message_text.replace("#confirm-pay ", "").replace("confirm-pay ", "").strip()
+                    parts = [p.strip() for p in raw_cmd.split("|")]
+                    target_cust = parts[0]
+                    txn_ref = parts[1]
+                    send_whatsapp_message(instance_name, target_cust, f"🎉 *[PAYMENT SETTLED & CONFIRMED BY MANAGEMENT]*\n\nYour bank transfer (Ref: `{txn_ref}`) has been confirmed in our bank app! Your order dispatch is underway.")
+                    unmute_tenant_bot(tenant["id"], target_cust)
+                    escalation_alert_engine.resolve_handover(target_cust)
+                    reply = f"✅ *[PAYMENT CONFIRMED & DISPATCH STARTED]*\n\nConfirmed transfer from customer `{target_cust}`."
+                except Exception:
+                    reply = "❌ *Format Error!* Use:\n`#confirm-pay Phone | Reference`"
+                send_whatsapp_message(instance_name, clean_sender, reply)
+                return {"status": "owner_payment_confirmed"}
 
             elif msg_lower.startswith("#reply ") or msg_lower.startswith("reply "):
                 try:
@@ -387,7 +420,6 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
                 return {"status": "owner_add_processed"}
 
             else:
-                # Owner manual reply in chat -> Mute indefinitely until owner finishes
                 mute_tenant_bot_indefinitely(tenant["id"], clean_sender)
                 return {"status": "owner_takeover_muted"}
 
@@ -411,7 +443,7 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
             return {"status": "waybill_sent"}
 
         if intent == "PURCHASE":
-            reply_payload = financial_trust.format_trust_verified_payment_instructions(tenant, 25000.0, f"TRX-{clean_sender[-4:]}")
+            reply_payload = flexible_payment.format_merchant_payment_instructions(tenant, 25000.0, f"TRX-{clean_sender[-4:]}")
             send_whatsapp_message(instance_name, clean_sender, reply_payload)
             return {"status": "payment_instructions_sent"}
 
