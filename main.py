@@ -1004,34 +1004,7 @@ def _process_whatsapp_message_sync(instance_name: str, payload: dict):
             session_memory.append(f"Bot: {reply_payload[:200]}")
             chat_memory[session_key] = session_memory[-20:]  # Keep last 10 turns
 
-        # Fact guard — check for AI uncertainty signals
-        is_valid, _ = zero_guard.verify_response_facts(reply_payload, "")
-        uncertain_signals = ["don't know", "not in catalog", "cannot find", "no information", "i'm not sure"]
-        if not is_valid or any(sig in reply_payload.lower() for sig in uncertain_signals):
-            ai_res["is_human_transfer"] = True
-
-        # ── TIER 8: GUARANTEED HUMAN HANDOFF (Final Safety Net) ─────────
-        # Fires when AI is unsure OR signals HANDOFF_NEEDED.
-        # Never silent — owner always alerted with full context.
-        if ai_res.get("is_human_transfer"):
-            mute_tenant_bot_indefinitely(tenant["id"], clean_sender)
-            asyncio.create_task(asyncio.to_thread(escalation_alert_engine.register_human_handover, instance_name, clean_owner, clean_sender, "⚠️ Unanswered Customer Query", message_text))
-            asyncio.create_task(asyncio.to_thread(
-                owner_alert.send_urgent_owner_alert,
-                instance_name, clean_owner, clean_sender,
-                "⚠️ Customer Query Needs Manager Response",
-                f"Customer asked: '{message_text}'\n\nReply options:\n• `#reply {clean_sender} | Your answer` — respond directly\n• `#add Product | Price | Desc` — add item to catalog\n• `#unmute {clean_sender}` — re-enable AI for this customer"
-            ))
-            handoff_reply = (
-                f"🤖 *[{tenant.get('business_name', 'Store')} AI Assistant]*\n\n"
-                f"Thank you for your enquiry! I've escalated your question directly to our store manager.\n\n"
-                f"📞 *Direct Contact:* +234 807 201 5725\n"
-                f"⏰ *Response Time:* Within 5 minutes during business hours.\n\n"
-                f"💬 You can also reply *#trust* to see our full verification certificate."
-            )
-            send_whatsapp_message(instance_name, clean_sender, handoff_reply)
-            return {"status": "guaranteed_human_handoff"}
-
+        # Send Multi-Dimensional AI Ensemble response directly
         t_lat = (asyncio.get_event_loop().time() - t_start) * 1000.0
         sla_monitor.record_request_latency(t_lat)
 
