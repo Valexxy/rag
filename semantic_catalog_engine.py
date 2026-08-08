@@ -63,16 +63,24 @@ class SemanticCatalogEngine:
         self._try_load_embedder()
 
     def _try_load_embedder(self):
-        """Attempts to load sentence-transformers. Non-blocking if not installed."""
-        try:
-            from sentence_transformers import SentenceTransformer
-            self._embedder = SentenceTransformer("all-MiniLM-L6-v2")
-            self._embedder_ready = True
-            logger.info("[SemanticCatalog] ✅ sentence-transformers loaded — semantic search active")
-        except ImportError:
-            logger.warning("[SemanticCatalog] sentence-transformers not installed — using TF-IDF fallback")
-        except Exception as e:
-            logger.warning(f"[SemanticCatalog] Model load failed — using TF-IDF fallback: {e}")
+        """Attempts to load sentence-transformers in a non-blocking background thread."""
+        import threading
+        
+        def _bg_load():
+            try:
+                logger.info("[SemanticCatalog] Initializing sentence-transformers in background thread...")
+                from sentence_transformers import SentenceTransformer
+                model = SentenceTransformer("all-MiniLM-L6-v2")
+                self._embedder = model
+                self._embedder_ready = True
+                logger.info("[SemanticCatalog] ✅ sentence-transformers loaded — semantic search active")
+            except ImportError:
+                logger.warning("[SemanticCatalog] sentence-transformers not installed — using TF-IDF fallback")
+            except Exception as e:
+                logger.warning(f"[SemanticCatalog] Model load failed — using TF-IDF fallback: {e}")
+
+        t = threading.Thread(target=_bg_load, daemon=True)
+        t.start()
 
     # ── Embedding helpers ────────────────────────────────────────────
 
