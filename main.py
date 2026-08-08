@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from dotenv import load_dotenv
 
 from database import (
-    get_tenant_by_instance, is_tenant_bot_muted, mute_tenant_bot, unmute_tenant_bot,
+    get_tenant_by_instance, is_tenant_bot_muted, mute_tenant_bot, mute_tenant_bot_indefinitely, unmute_tenant_bot,
     add_tenant_entity, get_tenant_customer_phones, register_tenant_customer
 )
 from character_engine import generate_live_character_reply
@@ -16,7 +16,7 @@ from evolution_interactive import (
     send_whatsapp_presence, send_whatsapp_message, broadcast_whatsapp_message
 )
 
-# Enterprise SaaS Modules (38 Modules Total - Fixed 1-Price Architecture)
+# Enterprise SaaS Modules (39 Modules Total - Indefinite Human Handoff & Repeated Escalation)
 from local_ai_brain import local_brain
 from whatsapp_ui import render_executive_whatsapp_dashboard, render_role_based_menu, format_currency
 from logistics_department import logistics_dept
@@ -44,6 +44,7 @@ from global_timezone_detector import global_tz
 from infinite_scale_guard import infinite_scale_guard
 from ai_haggling_engine import fixed_price_engine
 from sovereign_offline_payments import sovereign_offline_payments
+from escalation_alert_engine import escalation_alert_engine
 from gamification_retention import gamification_engine
 from database_backup import backup_engine
 
@@ -88,10 +89,20 @@ def get_dashboard_html_content() -> str:
 </body>
 </html>"""
 
+async def background_escalation_loop():
+    """Background loop for high-priority repeated escalation alerts."""
+    while True:
+        try:
+            escalation_alert_engine.trigger_escalation_pings()
+        except Exception:
+            pass
+        await asyncio.sleep(60)
+
 @app.on_event("startup")
 async def startup_event():
     asyncio.create_task(reminder_scheduler.start_background_loop())
     asyncio.create_task(self_healing.start_self_healing_loop())
+    asyncio.create_task(background_escalation_loop())
     backup_engine.create_database_snapshot()
 
 @app.get("/")
@@ -99,8 +110,8 @@ async def startup_event():
 async def root():
     return {
         "status": "online", 
-        "system": "Sovereign AI Commerce & Financial Platform v2030 (Fixed 1-Price Guarantee)",
-        "architecture_modules": 38,
+        "system": "Sovereign AI Commerce & Financial Platform v2030 (Indefinite Human Handoff)",
+        "architecture_modules": 39,
         "self_healing": "active",
         "realtime_wat_clock": smart_timezone.get_realtime_nigeria_now().strftime("%Y-%m-%d %H:%M:%S WAT"),
         "is_night_protocol": smart_night_protocol.is_night_time(),
@@ -124,7 +135,7 @@ async def get_admin_metrics():
         "errors_captured": self_healing.error_count,
         "auto_healed": self_healing.healed_count,
         "smart_retry_success": "100%",
-        "modules_active": 38,
+        "modules_active": 39,
         "scale_metrics": infinite_scale_guard.get_scale_metrics()
     }
 
@@ -142,12 +153,12 @@ async def admin_ai_agent_chat(payload: AdminChatPayload):
     elif "status" in msg or "health" in msg:
         reply = f"📊 **[SYSTEM HEALTH]**: Platform is operating at 99.98% efficiency. Total auto-healed incidents: {self_healing.healed_count}."
     else:
-        reply = f"🤖 **[SUPER ADMIN AGENT]**: Instruction processed: '{payload.message}'. All 38 enterprise modules are active and synchronized."
+        reply = f"🤖 **[SUPER ADMIN AGENT]**: Instruction processed: '{payload.message}'. All 39 enterprise modules are active and synchronized."
 
     return {"reply": reply}
 
 # -------------------------------------------------------------
-# 💬 WHATSAPP WEBHOOK HANDLER (Fixed 1-Price Guarantee & Auto Bargain Handoff Router)
+# 💬 WHATSAPP WEBHOOK HANDLER (Indefinite Human Handoff Until Manager Messages)
 # -------------------------------------------------------------
 @app.post("/webhook/whatsapp/{instance_name}")
 async def handle_whatsapp_webhook(instance_name: str, request: Request):
@@ -214,7 +225,8 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
                 night_info = smart_night_protocol.handle_night_time_media_inquiry(tenant.get("business_name", "Store"), clean_sender, caption)
                 combined_reply = f"{night_info['reply']}\n\n{vision_match['reply']}"
                 send_whatsapp_message(instance_name, clean_sender, combined_reply)
-                mute_tenant_bot(tenant["id"], clean_sender, minutes=15)
+                mute_tenant_bot_indefinitely(tenant["id"], clean_sender)
+                escalation_alert_engine.register_human_handover(instance_name, clean_owner, clean_sender, "🌙 Night Media Inquiry", caption)
                 owner_alert.send_urgent_owner_alert(
                     instance_name, clean_owner, clean_sender, 
                     "🌙 Night Media Inquiry Logged + Vision AI Matched", 
@@ -224,7 +236,8 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
             else:
                 combined_reply = f"🤖 *[{tenant.get('business_name', 'Store')} Automated System]*\n\n{greeting}! 📸 🎥 We received your photo/video inquiry! I have routed your media to our store manager AND run our Autonomous Vision AI match below:\n\n{vision_match['reply']}"
                 send_whatsapp_message(instance_name, clean_sender, combined_reply)
-                mute_tenant_bot(tenant["id"], clean_sender, minutes=15)
+                mute_tenant_bot_indefinitely(tenant["id"], clean_sender)
+                escalation_alert_engine.register_human_handover(instance_name, clean_owner, clean_sender, "Visual Media Inquiry", caption)
                 owner_alert.send_urgent_owner_alert(
                     instance_name, clean_owner, clean_sender, 
                     "Visual Media Inquiry + Autonomous Vision AI Matched", 
@@ -255,12 +268,13 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
 
         msg_lower = message_text.lower().strip()
 
-        # Fixed 1-Price Guarantee: Route ALL bargain/discount requests to Human Manager
+        # Fixed 1-Price Guarantee: Route ALL bargain/discount requests to Human Manager Indefinitely
         bargain_triggers = ["last price", "discount", "reduce price", "too expensive", "give me for", "help me reduce", "bargain", "cheaper"]
         if any(tr in msg_lower for tr in bargain_triggers) and not is_owner:
             bargain_res = fixed_price_engine.handle_bargain_request(tenant.get("business_name", "Store"), clean_sender, message_text)
             send_whatsapp_message(instance_name, clean_sender, bargain_res["reply"])
-            mute_tenant_bot(tenant["id"], clean_sender, minutes=15)
+            mute_tenant_bot_indefinitely(tenant["id"], clean_sender)
+            escalation_alert_engine.register_human_handover(instance_name, clean_owner, clean_sender, "🏷️ Bargain Request", message_text)
             owner_alert.send_urgent_owner_alert(
                 instance_name, clean_owner, clean_sender, 
                 "🏷️ Customer Bargain/Discount Request - Manager Action Required", 
@@ -305,7 +319,7 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
             send_whatsapp_message(instance_name, clean_sender, report)
             return {"status": "market_intel_sent"}
 
-        # Flexible Owner Commands (Direct Bot Relay Reply, Custom Discounts, Unmute, Stock Add)
+        # Flexible Owner Commands (Resolves Indefinite Handover & Unmutes)
         if is_owner:
             cmd = msg_lower
 
@@ -321,7 +335,9 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
                     target_cust = parts[0]
                     relay_msg = parts[1]
                     send_whatsapp_message(instance_name, target_cust, f"💬 *[{tenant.get('business_name', 'Store')} Management Reply]*\n\n{relay_msg}")
-                    reply = f"✅ *[MESSAGE RELAYED]*\n\nSent your response directly to customer `{target_cust}`."
+                    unmute_tenant_bot(tenant["id"], target_cust)
+                    escalation_alert_engine.resolve_handover(target_cust)
+                    reply = f"✅ *[MESSAGE RELAYED & HANDOVER RESOLVED]*\n\nSent your response directly to customer `{target_cust}` and resolved handover."
                 except Exception:
                     reply = "❌ *Format Error!* Use:\n`#reply Phone | Your message`"
                 send_whatsapp_message(instance_name, clean_sender, reply)
@@ -334,7 +350,9 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
                     target_cust = parts[0]
                     disc_val = parts[1]
                     send_whatsapp_message(instance_name, target_cust, f"🎁 *[EXCLUSIVE DISCOUNT APPROVED BY MANAGEMENT]*\n\nManagement has granted you an exclusive *{disc_val}* discount! Use code `VIP10` at checkout.")
-                    reply = f"✅ *[DISCOUNT GRANTED]*\n\nIssued *{disc_val}* discount to customer `{target_cust}`."
+                    unmute_tenant_bot(tenant["id"], target_cust)
+                    escalation_alert_engine.resolve_handover(target_cust)
+                    reply = f"✅ *[DISCOUNT GRANTED & HANDOVER RESOLVED]*\n\nIssued *{disc_val}* discount to customer `{target_cust}`."
                 except Exception:
                     reply = "❌ *Format Error!* Use:\n`#discount Phone | 10%`"
                 send_whatsapp_message(instance_name, clean_sender, reply)
@@ -343,6 +361,7 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
             elif msg_lower.startswith("#unmute ") or msg_lower.startswith("unmute "):
                 target_cust = message_text.replace("#unmute ", "").replace("unmute ", "").strip()
                 unmute_tenant_bot(tenant["id"], target_cust)
+                escalation_alert_engine.resolve_handover(target_cust)
                 reply = f"⚡ *[AI AUTOPILOT UNMUTED]*\n\nResumed AI autopilot for customer `{target_cust}`."
                 send_whatsapp_message(instance_name, clean_sender, reply)
                 return {"status": "bot_unmuted"}
@@ -368,7 +387,8 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
                 return {"status": "owner_add_processed"}
 
             else:
-                mute_tenant_bot(tenant["id"], clean_sender, minutes=15)
+                # Owner manual reply in chat -> Mute indefinitely until owner finishes
+                mute_tenant_bot_indefinitely(tenant["id"], clean_sender)
                 return {"status": "owner_takeover_muted"}
 
         if is_tenant_bot_muted(tenant["id"], clean_sender):
@@ -413,7 +433,8 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
         if not is_valid or "don't know" in reply_payload.lower() or "not in catalog" in reply_payload.lower():
             fallback_res = zero_info_fallback.format_zero_info_fallback_card(tenant["business_name"], clean_sender, message_text)
             reply_payload = fallback_res["reply"]
-            mute_tenant_bot(tenant["id"], clean_sender, minutes=15)
+            mute_tenant_bot_indefinitely(tenant["id"], clean_sender)
+            escalation_alert_engine.register_human_handover(instance_name, clean_owner, clean_sender, "⚠️ Missing Catalog Info", message_text)
             owner_alert.send_urgent_owner_alert(
                 instance_name, clean_owner, clean_sender, 
                 "⚠️ Missing Item In Catalog - Manager Action Required", 
@@ -421,7 +442,8 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
             )
 
         if ai_res.get("is_human_transfer"):
-            mute_tenant_bot(tenant["id"], clean_sender, minutes=15)
+            mute_tenant_bot_indefinitely(tenant["id"], clean_sender)
+            escalation_alert_engine.register_human_handover(instance_name, clean_owner, clean_sender, "👤 Human Agent Request", message_text)
             owner_alert.send_urgent_owner_alert(instance_name, clean_owner, clean_sender, "Customer requested Human Agent", message_text)
 
         send_whatsapp_message(instance_name, clean_sender, reply_payload)

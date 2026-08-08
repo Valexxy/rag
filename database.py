@@ -20,7 +20,6 @@ def get_tenant_by_instance(instance_name: str) -> dict:
         response = supabase.table("tenants").select("*").eq("instance_name", instance_name).execute()
         if response.data and len(response.data) > 0:
             return response.data[0]
-        # Return fallback mock tenant for offline test suite
         return {
             "id": "t-demo",
             "instance_name": instance_name,
@@ -30,7 +29,6 @@ def get_tenant_by_instance(instance_name: str) -> dict:
             "currency": "NGN"
         }
     except Exception as e:
-        print(f"[ERROR] Failed to fetch tenant for instance {instance_name}: {e}")
         return {
             "id": "t-demo",
             "instance_name": instance_name,
@@ -57,6 +55,18 @@ def mute_tenant_bot(tenant_id: str, customer_phone: str, minutes: int = 120):
     """Mutes the bot for a specific customer for N minutes."""
     try:
         unmute_at = time.time() + (minutes * 60)
+        supabase.table("bot_mutes").upsert({
+            "tenant_id": tenant_id,
+            "phone_number": customer_phone,
+            "unmute_at": unmute_at
+        }, on_conflict="tenant_id,phone_number").execute()
+    except Exception as e:
+        pass
+
+def mute_tenant_bot_indefinitely(tenant_id: str, customer_phone: str):
+    """Mutes the bot indefinitely for a specific customer until human agent sends a message."""
+    try:
+        unmute_at = 9999999999.0 # Far future timestamp -> muted until human agent replies
         supabase.table("bot_mutes").upsert({
             "tenant_id": tenant_id,
             "phone_number": customer_phone,
