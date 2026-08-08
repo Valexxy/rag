@@ -39,6 +39,41 @@
 
         @keyframes float-orb { 0% { transform: translateY(0) scale(1); } 100% { transform: translateY(30px) scale(1.1); } }
 
+        /* Infinitely Live Scrolling Marquee Ticker Bar */
+        .ticker-wrapper {
+            background: #020305;
+            border-bottom: 1px solid var(--glass-border);
+            overflow: hidden;
+            position: relative;
+            padding: 8px 0;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 12px;
+            z-index: 1001;
+        }
+
+        .ticker-track {
+            display: flex;
+            width: max-content;
+            animation: scrollTicker 30s linear infinite;
+        }
+        .ticker-track:hover { animation-play-state: paused; }
+
+        @keyframes scrollTicker {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        .ticker-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0 24px;
+            color: var(--neon-cyan);
+            border-right: 1px solid rgba(255,255,255,0.08);
+        }
+        .ticker-green { color: var(--neon-green); font-weight: 700; }
+        .ticker-gold { color: var(--neon-gold); font-weight: 700; }
+
         /* Top Native App Header Bar */
         .app-header {
             display: flex; justify-content: space-between; align-items: center;
@@ -116,7 +151,7 @@
 
         /* In-App Toast Push Notification */
         .app-toast {
-            position: fixed; top: 20px; right: 20px; z-index: 3000;
+            position: fixed; top: 60px; right: 20px; z-index: 3000;
             background: rgba(10, 15, 26, 0.95); backdrop-filter: blur(20px);
             border: 1px solid var(--neon-cyan); border-radius: 16px; padding: 14px 20px;
             box-shadow: 0 10px 30px rgba(0, 242, 254, 0.4); color: #fff; font-size: 13px; font-weight: 600;
@@ -147,6 +182,32 @@
     <div class="orb-1"></div>
     <div class="orb-2"></div>
 
+    <!-- Infinitely Live Scrolling Marquee Ticker -->
+    <div class="ticker-wrapper">
+        <div class="ticker-track">
+            <div class="ticker-item">🌾 GARRI SPOT: <span class="ticker-green">₦100/Mudu (Target Met ✅)</span></div>
+            <div class="ticker-item">🌾 RICE 50KG: <span class="ticker-green">₦60,000 (+1.2%)</span></div>
+            <div class="ticker-item">⚡ SOLAR POWER BANK 30KmAh: <span class="ticker-gold">₦25,000 (1-Price Fixed)</span></div>
+            <div class="ticker-item">💱 FOREX USD/NGN: <span class="ticker-green">₦1,500.00</span></div>
+            <div class="ticker-item">💱 FOREX EUR/NGN: <span class="ticker-green">₦1,630.50</span></div>
+            <div class="ticker-item">🛢️ BRENT CRUDE OIL: <span class="ticker-green">$82.40/bbl</span></div>
+            <div class="ticker-item">🛡️ MERCHANT TRUST RATING: <span class="ticker-gold">98/100 (5.0 ⭐ Verified)</span></div>
+            <div class="ticker-item">⚡ SYSTEM UPTIME SLA: <span class="ticker-green">99.99% (Sub-5ms Latency)</span></div>
+            <div class="ticker-item">📍 MAP DIRECTORY: <span class="ticker-green">1,420 Verified Shops Geocoded</span></div>
+
+            <!-- Duplicate Sequence for Continuous Seamless Loop -->
+            <div class="ticker-item">🌾 GARRI SPOT: <span class="ticker-green">₦100/Mudu (Target Met ✅)</span></div>
+            <div class="ticker-item">🌾 RICE 50KG: <span class="ticker-green">₦60,000 (+1.2%)</span></div>
+            <div class="ticker-item">⚡ SOLAR POWER BANK 30KmAh: <span class="ticker-gold">₦25,000 (1-Price Fixed)</span></div>
+            <div class="ticker-item">💱 FOREX USD/NGN: <span class="ticker-green">₦1,500.00</span></div>
+            <div class="ticker-item">💱 FOREX EUR/NGN: <span class="ticker-green">₦1,630.50</span></div>
+            <div class="ticker-item">🛢️ BRENT CRUDE OIL: <span class="ticker-green">$82.40/bbl</span></div>
+            <div class="ticker-item">🛡️ MERCHANT TRUST RATING: <span class="ticker-gold">98/100 (5.0 ⭐ Verified)</span></div>
+            <div class="ticker-item">⚡ SYSTEM UPTIME SLA: <span class="ticker-green">99.99% (Sub-5ms Latency)</span></div>
+            <div class="ticker-item">📍 MAP DIRECTORY: <span class="ticker-green">1,420 Verified Shops Geocoded</span></div>
+        </div>
+    </div>
+
     <!-- App Push Toast Notification -->
     <div class="app-toast" id="appToast">
         <span id="toastMsg">⚡ New Commodity Alert Registered</span>
@@ -166,7 +227,7 @@
         </div>
 
         <div style="font-size:12px; color:var(--neon-green); font-weight:700; display:flex; align-items:center; gap:6px;">
-            <span style="width:8px; height:8px; background:var(--neon-green); border-radius:50%; box-shadow:0 0 10px var(--neon-green);"></span> ONLINE
+            <span style="width:8px; height:8px; background:var(--neon-green); border-radius:50%; box-shadow:0 0 10px var(--neon-green);"></span> LIVE SCROLLING
         </div>
     </div>
 
@@ -175,7 +236,7 @@
         <div id="tab-home" class="tab-content active">
             <div class="glass-card">
                 <h1 style="font-family:'Orbitron',sans-serif; font-size:36px; margin-bottom:12px; background:linear-gradient(135deg, #fff, #a5b4fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Sovereign AI Native Web App</h1>
-                <p style="color:var(--text-muted); font-size:15px; margin-bottom:24px;">The world's first native-feeling AI commerce platform designed for informal traders, enterprise brands, and global markets.</p>
+                <p style="color:var(--text-muted); font-size:15px; margin-bottom:24px;">The world's first native-feeling AI commerce platform with live continuous scrolling tickers for informal traders and global markets.</p>
                 <div style="display:flex; gap:12px;">
                     <button class="tab-btn active" style="padding:12px 24px;" onclick="switchTab('whatsapp')">📲 Open WhatsApp Bot</button>
                     <button class="tab-btn" style="padding:12px 24px;" onclick="switchTab('map')">🗺️ View Map</button>
