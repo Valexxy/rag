@@ -1,7 +1,7 @@
 import os
 import json
 import asyncio
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, BackgroundTasks
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -325,7 +325,7 @@ async def get_ai_telemetry():
 # 💬 WHATSAPP WEBHOOK HANDLER (Legal Framework & Monetization Ledger)
 # -------------------------------------------------------------
 @app.post("/webhook/whatsapp/{instance_name}")
-async def handle_whatsapp_webhook(instance_name: str, request: Request):
+async def handle_whatsapp_webhook(instance_name: str, request: Request, background_tasks: BackgroundTasks):
     t_start = asyncio.get_event_loop().time()
     try:
         payload = await request.json()
@@ -333,6 +333,12 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
         self_healing.capture_error("WebhookJSONParser", e)
         return {"status": "invalid_json"}
 
+    background_tasks.add_task(_process_whatsapp_message_async, instance_name, payload)
+    return {"status": "queued"}
+
+
+async def _process_whatsapp_message_async(instance_name: str, payload: dict):
+    t_start = asyncio.get_event_loop().time()
     try:
         tenant = hp_cache.get_cached_tenant(instance_name)
         if tenant:
