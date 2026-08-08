@@ -759,7 +759,7 @@ def _process_whatsapp_message_sync(instance_name: str, payload: dict):
                 # Pass through non-management owner messages so owner can test bot commands & customer queries directly from owner phone
                 pass
 
-        if is_tenant_bot_muted(tenant["id"], clean_sender):
+        if not is_owner and is_tenant_bot_muted(tenant["id"], clean_sender):
             return {"status": "bot_muted"}
 
         send_whatsapp_presence(instance_name, clean_sender, "composing")
