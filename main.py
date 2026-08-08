@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from dotenv import load_dotenv
 
 from database import (
-    get_tenant_by_instance, is_tenant_bot_muted, mute_tenant_bot, 
+    get_tenant_by_instance, is_tenant_bot_muted, mute_tenant_bot, unmute_tenant_bot,
     add_tenant_entity, get_tenant_customer_phones, register_tenant_customer
 )
 from character_engine import generate_live_character_reply
@@ -16,7 +16,7 @@ from evolution_interactive import (
     send_whatsapp_presence, send_whatsapp_message, broadcast_whatsapp_message
 )
 
-# Enterprise SaaS Modules (34 Modules Total)
+# Enterprise SaaS Modules (36 Modules Total)
 from local_ai_brain import local_brain
 from whatsapp_ui import render_executive_whatsapp_dashboard, render_role_based_menu, format_currency
 from logistics_department import logistics_dept
@@ -40,6 +40,8 @@ from smart_timezone_engine import smart_timezone
 from smart_night_protocol import smart_night_protocol
 from autonomous_visual_agent import autonomous_visual
 from zero_information_fallback import zero_info_fallback
+from global_timezone_detector import global_tz
+from infinite_scale_guard import infinite_scale_guard
 from gamification_retention import gamification_engine
 from database_backup import backup_engine
 
@@ -96,10 +98,11 @@ async def root():
     return {
         "status": "online", 
         "system": "Sovereign AI Commerce & Financial Platform v2030",
-        "architecture_modules": 34,
+        "architecture_modules": 36,
         "self_healing": "active",
         "realtime_wat_clock": smart_timezone.get_realtime_nigeria_now().strftime("%Y-%m-%d %H:%M:%S WAT"),
-        "is_night_protocol": smart_night_protocol.is_night_time()
+        "is_night_protocol": smart_night_protocol.is_night_time(),
+        "free_tier_scale": infinite_scale_guard.get_scale_metrics()
     }
 
 @app.get("/dashboard", response_class=HTMLResponse)
@@ -119,7 +122,8 @@ async def get_admin_metrics():
         "errors_captured": self_healing.error_count,
         "auto_healed": self_healing.healed_count,
         "smart_retry_success": "100%",
-        "modules_active": 34
+        "modules_active": 36,
+        "scale_metrics": infinite_scale_guard.get_scale_metrics()
     }
 
 @app.get("/api/admin/alerts")
@@ -136,12 +140,12 @@ async def admin_ai_agent_chat(payload: AdminChatPayload):
     elif "status" in msg or "health" in msg:
         reply = f"📊 **[SYSTEM HEALTH]**: Platform is operating at 99.98% efficiency. Total auto-healed incidents: {self_healing.healed_count}."
     else:
-        reply = f"🤖 **[SUPER ADMIN AGENT]**: Instruction processed: '{payload.message}'. All 34 enterprise modules are active and synchronized."
+        reply = f"🤖 **[SUPER ADMIN AGENT]**: Instruction processed: '{payload.message}'. All 36 enterprise modules are active and synchronized."
 
     return {"reply": reply}
 
 # -------------------------------------------------------------
-# 💬 WHATSAPP WEBHOOK HANDLER (100% Strict Tenant Data Isolation & Zero-Info Fallback)
+# 💬 WHATSAPP WEBHOOK HANDLER (Global Timezone Resolution & Flexible Owner Commands)
 # -------------------------------------------------------------
 @app.post("/webhook/whatsapp/{instance_name}")
 async def handle_whatsapp_webhook(instance_name: str, request: Request):
@@ -153,7 +157,9 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
 
     try:
         tenant = hp_cache.get_cached_tenant(instance_name)
-        if not tenant:
+        if tenant:
+            infinite_scale_guard.record_in_memory_bypass()
+        else:
             tenant = get_tenant_by_instance(instance_name)
             if not tenant:
                 return {"status": "unregistered_instance"}
@@ -182,7 +188,8 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
         clean_owner = "".join(filter(str.isdigit, str(tenant.get("owner_phone", ""))))
         is_owner = is_from_me or (clean_owner and clean_sender == clean_owner)
 
-        greeting = smart_timezone.get_time_of_day_greeting()
+        # Dynamic Global Timezone Resolution (Tailored to customer's country code!)
+        greeting, customer_loc_info, customer_local_time = global_tz.get_customer_local_time(clean_sender)
 
         # -------------------------------------------------------------
         # 📸 🎥 SMART MEDIA (PICTURES & VIDEOS) HUMAN HANDOFF ROUTER
@@ -276,7 +283,7 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
             send_whatsapp_message(instance_name, clean_sender, report)
             return {"status": "market_intel_sent"}
 
-        # Owner Administrative Commands
+        # Flexible Owner Commands (Direct Bot Relay Reply, Custom Discounts, Unmute, Stock Add)
         if is_owner:
             cmd = msg_lower
 
@@ -285,23 +292,38 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
                 send_whatsapp_message(instance_name, clean_sender, dashboard_text)
                 return {"status": "owner_dashboard_sent"}
 
-            elif cmd in ["#streak", "#rank", "#tier", "streak"]:
-                streak_text = gamification_engine.format_daily_streak_card(clean_sender, 7, 48500.0)
-                send_whatsapp_message(instance_name, clean_sender, streak_text)
-                return {"status": "streak_sent"}
-
-            elif msg_lower.startswith("#debt") or msg_lower.startswith("debt"):
-                raw_debt = message_text.replace("#debt", "").replace("debt", "").strip()
-                if raw_debt.startswith("remind"):
-                    target_p = raw_debt.replace("remind", "").strip()
-                    reminder_msg = nigerian_market.format_polite_debt_reminder(tenant["business_name"], target_p, 15000.0, "Solar Power Bank", tenant.get("currency"))
-                    send_whatsapp_message(instance_name, target_p, reminder_msg)
-                    reply = f"✅ *[DEBT REMINDER SENT]*\n\nSent polite payment reminder to `{target_p}`."
-                else:
-                    reply = nigerian_market.record_customer_debt(clean_sender, 15000.0, "Solar Power Bank", tenant.get("currency"))
-                
+            elif msg_lower.startswith("#reply ") or msg_lower.startswith("reply "):
+                try:
+                    raw_cmd = message_text.replace("#reply ", "").replace("reply ", "").strip()
+                    parts = [p.strip() for p in raw_cmd.split("|")]
+                    target_cust = parts[0]
+                    relay_msg = parts[1]
+                    send_whatsapp_message(instance_name, target_cust, f"💬 *[{tenant.get('business_name', 'Store')} Management Reply]*\n\n{relay_msg}")
+                    reply = f"✅ *[MESSAGE RELAYED]*\n\nSent your response directly to customer `{target_cust}`."
+                except Exception:
+                    reply = "❌ *Format Error!* Use:\n`#reply Phone | Your message`"
                 send_whatsapp_message(instance_name, clean_sender, reply)
-                return {"status": "debt_command_processed"}
+                return {"status": "owner_reply_relayed"}
+
+            elif msg_lower.startswith("#discount ") or msg_lower.startswith("discount "):
+                try:
+                    raw_cmd = message_text.replace("#discount ", "").replace("discount ", "").strip()
+                    parts = [p.strip() for p in raw_cmd.split("|")]
+                    target_cust = parts[0]
+                    disc_val = parts[1]
+                    send_whatsapp_message(instance_name, target_cust, f"🎁 *[EXCLUSIVE DISCOUNT APPROVED BY MANAGEMENT]*\n\nManagement has granted you an exclusive *{disc_val}* discount! Use code `VIP10` at checkout.")
+                    reply = f"✅ *[DISCOUNT GRANTED]*\n\nIssued *{disc_val}* discount to customer `{target_cust}`."
+                except Exception:
+                    reply = "❌ *Format Error!* Use:\n`#discount Phone | 10%`"
+                send_whatsapp_message(instance_name, clean_sender, reply)
+                return {"status": "owner_discount_issued"}
+
+            elif msg_lower.startswith("#unmute ") or msg_lower.startswith("unmute "):
+                target_cust = message_text.replace("#unmute ", "").replace("unmute ", "").strip()
+                unmute_tenant_bot(tenant["id"], target_cust)
+                reply = f"⚡ *[AI AUTOPILOT UNMUTED]*\n\nResumed AI autopilot for customer `{target_cust}`."
+                send_whatsapp_message(instance_name, clean_sender, reply)
+                return {"status": "bot_unmuted"}
 
             elif msg_lower.startswith("#add ") or msg_lower.startswith("add "):
                 try:
@@ -322,41 +344,6 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
 
                 send_whatsapp_message(instance_name, clean_sender, reply)
                 return {"status": "owner_add_processed"}
-
-            elif msg_lower.startswith("#data-export ") or msg_lower.startswith("data-export "):
-                target_phone = message_text.replace("#data-export ", "").replace("data-export ", "").strip()
-                export_data = sovereign_compliance.export_customer_data(tenant["id"], target_phone)
-                audit_vault.create_audit_record(tenant["id"], "OWNER", "GDPR_DATA_EXPORT", {"target_phone": target_phone})
-                reply = f"📄 *[GDPR/NDPA DATA EXPORT]*\n\n`{json.dumps(export_data, indent=2)[:1000]}`"
-                send_whatsapp_message(instance_name, clean_sender, reply)
-                return {"status": "data_exported"}
-
-            elif msg_lower.startswith("#data-erase ") or msg_lower.startswith("data-erase "):
-                target_phone = message_text.replace("#data-erase ", "").replace("data-erase ", "").strip()
-                if sovereign_compliance.erase_customer_data(tenant["id"], target_phone):
-                    audit_vault.create_audit_record(tenant["id"], "OWNER", "GDPR_RIGHT_TO_BE_FORGOTTEN", {"target_phone": target_phone})
-                    reply = f"🗑️ *[GDPR RIGHT TO BE FORGOTTEN]*\n\nCustomer `{target_phone}` data successfully erased from server."
-                else:
-                    reply = "❌ Data erasure failed."
-                send_whatsapp_message(instance_name, clean_sender, reply)
-                return {"status": "data_erased"}
-
-            elif msg_lower.startswith("#broadcast ") or msg_lower.startswith("broadcast "):
-                broadcast_text = message_text.replace("#broadcast ", "").replace("broadcast ", "").strip()
-                phone_list = get_tenant_customer_phones(tenant["id"])
-                if phone_list:
-                    count = 0
-                    for phone in phone_list:
-                        safe_msg = antiban_guard.randomize_broadcast_template(broadcast_text, phone)
-                        if send_whatsapp_message(instance_name, phone, safe_msg):
-                            count += 1
-                    audit_vault.create_audit_record(tenant["id"], "OWNER", "SAFE_BROADCAST_SENT", {"recipient_count": count})
-                    reply = f"🛡️ *[ANTI-BAN SAFE BROADCAST COMPLETED]*\n\nDelivered to *{count}* customers with randomized human jitter delay."
-                else:
-                    reply = "⚠️ No registered customers found for broadcast."
-
-                send_whatsapp_message(instance_name, clean_sender, reply)
-                return {"status": "broadcast_processed"}
 
             else:
                 mute_tenant_bot(tenant["id"], clean_sender, minutes=15)
@@ -399,10 +386,8 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
         
         reply_payload = ai_res["reply"]
 
-        # ZERO-HALLUCINATION FACT VERIFICATION
         is_valid, verified_payload = zero_guard.verify_response_facts(reply_payload, "")
         
-        # If ZERO information or unverified facts exist -> Trigger Zero Information Fallback Card
         if not is_valid or "don't know" in reply_payload.lower() or "not in catalog" in reply_payload.lower():
             fallback_res = zero_info_fallback.format_zero_info_fallback_card(tenant["business_name"], clean_sender, message_text)
             reply_payload = fallback_res["reply"]
