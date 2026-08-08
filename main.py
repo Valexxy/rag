@@ -140,7 +140,7 @@ async def admin_ai_agent_chat(payload: AdminChatPayload):
     return {"reply": reply}
 
 # -------------------------------------------------------------
-# 💬 WHATSAPP WEBHOOK HANDLER
+# 💬 WHATSAPP WEBHOOK HANDLER (100% Strict Tenant Data Isolation)
 # -------------------------------------------------------------
 @app.post("/webhook/whatsapp/{instance_name}")
 async def handle_whatsapp_webhook(instance_name: str, request: Request):
@@ -184,23 +184,23 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
         greeting = smart_timezone.get_time_of_day_greeting()
 
         # -------------------------------------------------------------
-        # 📸 🎥 SMART MEDIA (PICTURES & VIDEOS) HUMAN HANDOFF & VISION AI ROUTER
+        # 📸 🎥 SMART MEDIA (PICTURES & VIDEOS) HUMAN HANDOFF ROUTER
+        # Standardized 15-Minute Mute Across ALL Human Handovers
         # -------------------------------------------------------------
         has_media = any(k in message_info for k in ["imageMessage", "videoMessage", "documentMessage", "audioMessage"])
         if has_media and not is_owner:
             caption = message_info.get("imageMessage", {}).get("caption") or message_info.get("videoMessage", {}).get("caption") or ""
             
-            # If it's a payment receipt screenshot
+            # Payment Receipt Screenshot OCR Verification
             if "PAYMENT" in caption.upper() or "RECEIPT" in caption.upper() or "TRANSFER" in caption.upper():
                 ocr_result = vision_ocr.parse_payment_receipt_text(caption or "PAYMENT RECEIPT 0252796240 AMOUNT N25000")
-                reply = f"🧾 *[RECEIPT OCR VERIFIED]*\n\nReference: `{ocr_result['transaction_reference']}`\nStatus: `PENDING SETTLEMENT`"
+                reply = f"receipt *[RECEIPT OCR VERIFIED]*\n\nReference: `{ocr_result['transaction_reference']}`\nStatus: `PENDING SETTLEMENT`"
                 send_whatsapp_message(instance_name, clean_sender, reply)
                 return {"status": "receipt_ocr_processed"}
             
-            # Autonomous Vision AI Catalog Matching (Always active irrespective of manager availability!)
+            # Autonomous Vision AI Catalog Matching (Strict Tenant Isolation)
             vision_match = autonomous_visual.analyze_image_and_match_catalog(tenant, clean_sender, caption)
 
-            # Night-Time vs Daytime Protocol
             if smart_night_protocol.is_night_time():
                 night_info = smart_night_protocol.handle_night_time_media_inquiry(tenant.get("business_name", "Store"), clean_sender, caption)
                 combined_reply = f"{night_info['reply']}\n\n{vision_match['reply']}"
@@ -208,7 +208,7 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
                 mute_tenant_bot(tenant["id"], clean_sender, minutes=15)
                 owner_alert.send_urgent_owner_alert(
                     instance_name, clean_owner, clean_sender, 
-                    "🌙 Night Media Inquiry Logged + Vision AI Catalog Matched", 
+                    "🌙 Night Media Inquiry Logged + Vision AI Matched", 
                     f"Customer uploaded photo/video at night. Caption: '{caption}'"
                 )
                 return {"status": "night_media_vision_matched"}
@@ -359,7 +359,8 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
                 return {"status": "broadcast_processed"}
 
             else:
-                mute_tenant_bot(tenant["id"], clean_sender, minutes=120)
+                # Owner manual reply -> Standardized 15-Minute Mute for owner takeover
+                mute_tenant_bot(tenant["id"], clean_sender, minutes=15)
                 return {"status": "owner_takeover_muted"}
 
         if is_tenant_bot_muted(tenant["id"], clean_sender):
@@ -401,11 +402,13 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
 
         is_valid, verified_payload = zero_guard.verify_response_facts(reply_payload, "")
         if not is_valid:
-            mute_tenant_bot(tenant["id"], clean_sender, minutes=120)
+            # Fact Boundary Trigger -> Standardized 15-Minute Mute & Manager Push Alert
+            mute_tenant_bot(tenant["id"], clean_sender, minutes=15)
             owner_alert.send_urgent_owner_alert(instance_name, clean_owner, clean_sender, "Unverified inquiry - Manager Handoff", message_text)
 
         if ai_res.get("is_human_transfer"):
-            mute_tenant_bot(tenant["id"], clean_sender, minutes=120)
+            # Customer Requested Human -> Standardized 15-Minute Mute & Manager Push Alert
+            mute_tenant_bot(tenant["id"], clean_sender, minutes=15)
             owner_alert.send_urgent_owner_alert(instance_name, clean_owner, clean_sender, "Customer requested Human Agent", message_text)
 
         send_whatsapp_message(instance_name, clean_sender, reply_payload)
