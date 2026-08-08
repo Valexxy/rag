@@ -16,7 +16,7 @@ from evolution_interactive import (
     send_whatsapp_presence, send_whatsapp_message, broadcast_whatsapp_message
 )
 
-# Enterprise SaaS Modules (52 FULL ENTERPRISE PYTHON MODULES TOTAL)
+# Enterprise SaaS Modules (53 FULL ENTERPRISE PYTHON MODULES TOTAL)
 from local_ai_brain import local_brain
 from whatsapp_ui import render_executive_whatsapp_dashboard, render_role_based_menu, format_currency
 from logistics_department import logistics_dept
@@ -51,7 +51,7 @@ from smart_price_alert_engine import smart_price_alert
 from global_market_price_engine import global_market_prices
 from multi_source_verifier import multi_source_verifier
 
-# Global Enterprise Expansion Modules (Modules 44-50)
+# Global Enterprise Expansion & Verification Engine (Modules 44-53)
 from global_tax_vat_engine import global_tax_engine
 from multilingual_translation_matrix import multilingual_matrix
 from cross_border_customs_tariff_engine import customs_tariff_engine
@@ -59,10 +59,9 @@ from multi_currency_forex_engine import forex_engine
 from disaster_recovery_failover import dr_failover_engine
 from enterprise_sla_monitor import sla_monitor
 from fraud_biometric_risk_score import fraud_risk_engine
-
-# Virality & Customer Finder Directory Modules (Modules 51-52)
 from viral_share_generator import viral_share_gen
 from sovereign_directory_engine import sovereign_directory
+from sovereign_trust_score_engine import sovereign_trust_score
 
 from gamification_retention import gamification_engine
 from database_backup import backup_engine
@@ -129,8 +128,8 @@ async def startup_event():
 async def root():
     return {
         "status": "online", 
-        "system": "Sovereign AI Commerce & Financial Platform v2030 (52 Enterprise Modules & Premium Directory)",
-        "architecture_modules": 52,
+        "system": "Sovereign AI Commerce & Financial Platform v2030 (53 Enterprise Modules & Trust Score Shield)",
+        "architecture_modules": 53,
         "self_healing": "active",
         "realtime_wat_clock": smart_timezone.get_realtime_nigeria_now().strftime("%Y-%m-%d %H:%M:%S WAT"),
         "is_night_protocol": smart_night_protocol.is_night_time(),
@@ -156,7 +155,7 @@ async def get_admin_metrics():
         "errors_captured": self_healing.error_count,
         "auto_healed": self_healing.healed_count,
         "smart_retry_success": "100%",
-        "modules_active": 52,
+        "modules_active": 53,
         "scale_metrics": infinite_scale_guard.get_scale_metrics(),
         "sla_metrics": sla_monitor.get_sla_metrics(),
         "failover_status": dr_failover_engine.check_health_and_failover()
@@ -174,14 +173,14 @@ async def admin_ai_agent_chat(payload: AdminChatPayload):
     if "error" in msg or "bug" in msg or "issue" in msg:
         reply = f"🛠️ **[DIAGNOSTIC ANALYSIS]**: Received report '{payload.message}'. Autonomous 24/7 Self-Healing worker has captured stack trace, cleared bad cache keys, and re-established database connection pool."
     elif "status" in msg or "health" in msg:
-        reply = f"📊 **[SYSTEM HEALTH]**: Platform is operating at 99.99% efficiency across 52 Enterprise Modules. Total auto-healed incidents: {self_healing.healed_count}."
+        reply = f"📊 **[SYSTEM HEALTH]**: Platform is operating at 99.99% efficiency across 53 Enterprise Modules. Total auto-healed incidents: {self_healing.healed_count}."
     else:
-        reply = f"🤖 **[SUPER ADMIN AGENT]**: Instruction processed: '{payload.message}'. All 52 enterprise modules are active and synchronized worldwide."
+        reply = f"🤖 **[SUPER ADMIN AGENT]**: Instruction processed: '{payload.message}'. All 53 enterprise modules are active and synchronized worldwide."
 
     return {"reply": reply}
 
 # -------------------------------------------------------------
-# 💬 WHATSAPP WEBHOOK HANDLER (Virality Flex Cards & Premium Customer Finder Directory)
+# 💬 WHATSAPP WEBHOOK HANDLER (Cryptographic Verification & Trust Score Engine)
 # -------------------------------------------------------------
 @app.post("/webhook/whatsapp/{instance_name}")
 async def handle_whatsapp_webhook(instance_name: str, request: Request):
@@ -296,6 +295,12 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
             return {"status": "security_attack_blocked"}
 
         msg_lower = message_text.lower().strip()
+
+        # Public Trust Verification Certificate Command (#trust / #certificate)
+        if msg_lower.startswith("#trust") or msg_lower.startswith("#certificate") or msg_lower == "trust":
+            cert_card = sovereign_trust_score.format_trust_certificate_card(tenant["id"])
+            send_whatsapp_message(instance_name, clean_sender, cert_card)
+            return {"status": "trust_certificate_sent"}
 
         # Gen Z Viral Flex Card Command (#flex)
         if msg_lower.startswith("#flex") or msg_lower == "flex":

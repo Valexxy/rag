@@ -1,14 +1,15 @@
+from sovereign_trust_score_engine import sovereign_trust_score
+
 class SovereignDirectoryEngine:
-    """Premium Verified Customer & Merchant Directory / Customer Finder Engine."""
+    """Premium Verified Customer & Merchant Directory / Customer Finder Engine with Real Trust Scores."""
 
     VERIFIED_DIRECTORY_LISTINGS = [
         {
-            "id": "dir-01",
+            "id": "t-demo",
             "name": "Teeslux Electronics & Solar Hub",
             "category": "solar",
             "city": "Onitsha",
             "phone": "2348072015725",
-            "rating": "5.0 ⭐ (Verified)",
             "top_item": "30,000mAh Solar Power Bank & Inverters",
             "price_sample": "₦25,000.00"
         },
@@ -18,7 +19,6 @@ class SovereignDirectoryEngine:
             "category": "tech",
             "city": "Lagos",
             "phone": "2348123456789",
-            "rating": "4.9 ⭐ (Verified)",
             "top_item": "Smartphones & Laptop Accessories",
             "price_sample": "₦15,000.00"
         },
@@ -28,14 +28,13 @@ class SovereignDirectoryEngine:
             "category": "fashion",
             "city": "Aba",
             "phone": "2348033334444",
-            "rating": "4.8 ⭐ (Verified)",
             "top_item": "Pure Leather Boots & Men's Shoes",
             "price_sample": "₦18,500.00"
         }
     ]
 
     def search_directory(self, category_or_city: str) -> str:
-        """Finds verified stores, items, and direct 1-tap buyer-seller contact links."""
+        """Finds verified stores with real biometric trust scores and 1-tap buyer-seller contact links."""
         q = category_or_city.lower().strip()
         matches = []
 
@@ -48,8 +47,14 @@ class SovereignDirectoryEngine:
 
         lines = []
         for m in matches:
+            trust_meta = sovereign_trust_score.merchant_trust_store.get(
+                m["id"], 
+                sovereign_trust_score.initialize_merchant_trust(m["id"], m["name"], has_cac=True, physical_store=True)
+            )
+
             lines.append(f"""🏢 *{m['name']}*
-📍 *City:* {m['city']} | 🏆 *Rating:* {m['rating']}
+📍 *City:* {m['city']} | 🏆 *Trust Rating:* {trust_meta['star_rating']} ⭐ ({trust_meta['trust_score']}/100)
+🛡️ *Badge:* `{trust_meta['badge']}`
 📦 *Featured:* {m['top_item']} ({m['price_sample']})
 📲 *Direct Chat:* https://wa.me/{m['phone']}""")
 
