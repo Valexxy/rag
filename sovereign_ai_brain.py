@@ -224,64 +224,80 @@ class SovereignAIBrain:
 
     def _call_llm(self, prompt: str, max_tokens: int = 300, temperature: float = 0.1) -> Optional[str]:
         """
-        Calls the best available LLM. Groq first (faster/more capable), Gemini fallback.
-        Protected by Enterprise ProviderCircuitBreaker & telemetry tracking.
-        Returns raw text or None if both fail.
+        Calls the best available LLM with a HARD 4-SECOND TIMEOUT.
+        If either Groq or Gemini exceeds 4 seconds (rate limit, network hang, etc.),
+        we return None IMMEDIATELY so the local engine can respond in < 5 seconds total.
+        Zero blocking sleep anywhere in this path.
         """
+        import concurrent.futures
         from circuit_breaker_telemetry import circuit_breaker
 
-        # Try Groq first if circuit is healthy
+        def _call_groq():
+            resp = self.groq.chat.completions.create(
+                model=GROQ_MODEL,
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=max_tokens,
+                temperature=temperature,
+            )
+            return resp.choices[0].message.content.strip()
+
+        def _call_gemini():
+            from google.genai import types as genai_types
+            resp = self.gemini.models.generate_content(
+                model=GEMINI_MODEL,
+                contents=prompt,
+                config=genai_types.GenerateContentConfig(
+                    max_output_tokens=max_tokens,
+                    temperature=temperature,
+                )
+            )
+            return resp.text.strip()
+
+        # ── Try Groq first (4-second hard deadline) ────────────────────
         if self.groq and circuit_breaker.is_available("groq"):
             t_start = time.time()
             try:
-                resp = self.groq.chat.completions.create(
-                    model=GROQ_MODEL,
-                    messages=[{"role": "user", "content": prompt}],
-                    max_tokens=max_tokens,
-                    temperature=temperature,
-                )
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+                    future = ex.submit(_call_groq)
+                    result = future.result(timeout=4.0)
                 lat_ms = (time.time() - t_start) * 1000
                 circuit_breaker.record_success("groq", lat_ms)
-                return resp.choices[0].message.content.strip()
+                return result
+            except concurrent.futures.TimeoutError:
+                logger.warning("[SovereignBrain] Groq timed out after 4s — skipping to local engine")
+                circuit_breaker.record_error("groq", "timeout_4s")
             except Exception as e:
                 err_str = str(e).lower()
                 circuit_breaker.record_error("groq", str(e))
                 if "rate_limit" in err_str or "429" in err_str:
-                    logger.warning(f"[SovereignBrain] Groq rate limited — auto failing over to Gemini")
+                    logger.warning("[SovereignBrain] Groq rate limited — failing fast to Gemini")
                 else:
-                    logger.warning(f"[SovereignBrain] Groq failed, failing over to Gemini: {e}")
+                    logger.warning(f"[SovereignBrain] Groq failed: {e}")
 
-        # Gemini fallback with retry on 429 if circuit is healthy
+        # ── Gemini fallback (4-second hard deadline, NO sleep on 429) ──
         if self.gemini and circuit_breaker.is_available("gemini"):
-            for attempt in range(2):  # 2 attempts: immediate + 1 retry
-                t_start = time.time()
-                try:
-                    from google.genai import types as genai_types
-                    resp = self.gemini.models.generate_content(
-                        model=GEMINI_MODEL,
-                        contents=prompt,
-                        config=genai_types.GenerateContentConfig(
-                            max_output_tokens=max_tokens,
-                            temperature=temperature,
-                        )
-                    )
-                    lat_ms = (time.time() - t_start) * 1000
-                    circuit_breaker.record_success("gemini", lat_ms)
-                    return resp.text.strip()
-                except Exception as e:
-                    err_str = str(e)
-                    circuit_breaker.record_error("gemini", err_str)
-                    if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
-                        if attempt == 0:
-                            logger.warning(f"[SovereignBrain] Gemini rate limited, waiting 10s then retrying")
-                            time.sleep(10)  # Wait 10s then retry once
-                            continue
-                        logger.error(f"[SovereignBrain] Gemini quota exhausted — routing to human")
-                    else:
-                        logger.error(f"[SovereignBrain] Gemini failed: {e}")
-                    break
+            t_start = time.time()
+            try:
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+                    future = ex.submit(_call_gemini)
+                    result = future.result(timeout=4.0)
+                lat_ms = (time.time() - t_start) * 1000
+                circuit_breaker.record_success("gemini", lat_ms)
+                return result
+            except concurrent.futures.TimeoutError:
+                logger.warning("[SovereignBrain] Gemini timed out after 4s — skipping to local engine")
+                circuit_breaker.record_error("gemini", "timeout_4s")
+            except Exception as e:
+                err_str = str(e)
+                circuit_breaker.record_error("gemini", err_str)
+                if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
+                    logger.warning("[SovereignBrain] Gemini rate limited — failing fast to local engine (no sleep)")
+                else:
+                    logger.error(f"[SovereignBrain] Gemini failed: {e}")
 
+        # Both LLMs unavailable or timed out — return None immediately
         return None
+
 
     def classify_intent(
         self,

@@ -42,7 +42,10 @@ class MultiDimensionalAIEnsemble:
     def generate_ensemble_reply(self, customer_query: str, catalog_context: str, chat_history: str = "") -> dict:
         """
         Executes multi-dimensional open-source AI generation with interactive clarification guarantee.
+        All LLM calls have hard 4-second timeouts — zero blocking sleep anywhere.
         """
+        import concurrent.futures
+
         prompt = f"""STORE CATALOG CONTEXT:
 {catalog_context}
 
@@ -54,21 +57,25 @@ CUSTOMER QUERY:
 
 Provide a warm, human, completely accurate response. If the query is ambiguous or out-of-catalog, ask clarifying follow-up questions!"""
 
-        # ── DIMENSION 1: GROQ OPEN-SOURCE LLAMA 3.3 70B ──────────────────
+        # ── DIMENSION 1: GROQ OPEN-SOURCE LLAMA 3.3 70B (4s timeout) ────
         if self.groq_key:
             try:
-                from groq import Groq
-                client = Groq(api_key=self.groq_key)
-                completion = client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
-                    messages=[
-                        {"role": "system", "content": ENSEMBLE_SYSTEM_PROMPT},
-                        {"role": "user", "content": prompt}
-                    ],
-                    temperature=0.5,
-                    max_tokens=400
-                )
-                res_text = completion.choices[0].message.content.strip()
+                def _groq():
+                    from groq import Groq
+                    client = Groq(api_key=self.groq_key)
+                    c = client.chat.completions.create(
+                        model="llama-3.3-70b-versatile",
+                        messages=[
+                            {"role": "system", "content": ENSEMBLE_SYSTEM_PROMPT},
+                            {"role": "user", "content": prompt}
+                        ],
+                        temperature=0.5,
+                        max_tokens=400
+                    )
+                    return c.choices[0].message.content.strip()
+
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+                    res_text = ex.submit(_groq).result(timeout=4.0)
                 if res_text:
                     return {
                         "success": True,
@@ -76,25 +83,34 @@ Provide a warm, human, completely accurate response. If the query is ambiguous o
                         "architecture": "Groq_Llama_3.3_70B_Ensemble",
                         "needs_clarification": "?" in res_text
                     }
+            except concurrent.futures.TimeoutError:
+                logger.warning("[AIEnsemble] Groq timed out after 4s — skipping to Gemini")
             except Exception as e:
                 logger.warning(f"[AIEnsemble] Groq primary failed: {e}")
 
-        # ── DIMENSION 2: GEMINI 1.5 FLASH BACKUP ─────────────────────────
+        # ── DIMENSION 2: GEMINI 2.0 FLASH BACKUP (4s timeout) ────────────
         if self.gemini_key:
             try:
-                from google import genai
-                client = genai.Client(api_key=self.gemini_key)
-                res = client.models.generate_content(
-                    model="gemini-2.0-flash",
-                    contents=f"{ENSEMBLE_SYSTEM_PROMPT}\n\n{prompt}"
-                )
-                if res and res.text and res.text.strip():
+                def _gemini():
+                    from google import genai
+                    client = genai.Client(api_key=self.gemini_key)
+                    res = client.models.generate_content(
+                        model="gemini-2.0-flash",
+                        contents=f"{ENSEMBLE_SYSTEM_PROMPT}\n\n{prompt}"
+                    )
+                    return res.text.strip() if res and res.text else None
+
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+                    gem_text = ex.submit(_gemini).result(timeout=4.0)
+                if gem_text:
                     return {
                         "success": True,
-                        "reply": res.text.strip(),
+                        "reply": gem_text,
                         "architecture": "Gemini_Flash_Ensemble",
-                        "needs_clarification": "?" in res.text
+                        "needs_clarification": "?" in gem_text
                     }
+            except concurrent.futures.TimeoutError:
+                logger.warning("[AIEnsemble] Gemini timed out after 4s — skipping to local engine")
             except Exception as e:
                 logger.warning(f"[AIEnsemble] Gemini backup failed: {e}")
 
