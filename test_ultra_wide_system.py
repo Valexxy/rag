@@ -60,12 +60,16 @@ def run_subtest(test_id: int, name: str, test_fn):
         results.append({"id": test_id, "name": name, "status": "FAILED", "error": err_msg, "stack": stack})
         failed += 1
 
-# 1. Root API Endpoint
+# 1. Root API & Landing Page Endpoint
 def t1():
-    res = client.get("/")
-    assert res.status_code == 200
-    assert res.json()["status"] == "online"
-run_subtest(1, "Root Status Endpoint", t1)
+    res_html = client.get("/")
+    assert res_html.status_code == 200
+    assert "Sovereign AI Commerce" in res_html.text
+
+    res_api = client.get("/api/status")
+    assert res_api.status_code == 200
+    assert res_api.json()["status"] == "online"
+run_subtest(1, "Root Status & Landing Page Endpoint", t1)
 
 # 2. Executive Web SaaS Dashboard
 def t2():

@@ -90,6 +90,14 @@ chat_memory = {}
 class AdminChatPayload(BaseModel):
     message: str
 
+def get_index_html_content() -> str:
+    """Reads landing page HTML or falls back to inline content."""
+    idx_path = os.path.join(os.path.dirname(__file__), "static", "index.html")
+    if os.path.exists(idx_path):
+        with open(idx_path, "r", encoding="utf-8") as f:
+            return f.read()
+    return "<h2>Sovereign AI Commerce Online</h2>"
+
 def get_dashboard_html_content() -> str:
     """Reads dashboard HTML or falls back to inline content."""
     dash_path = os.path.join(os.path.dirname(__file__), "static", "dashboard.html")
@@ -133,12 +141,18 @@ async def startup_event():
     asyncio.create_task(background_escalation_loop())
     backup_engine.create_database_snapshot()
 
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 @app.head("/")
 async def root():
+    """Serves the primary Full-Stack Website Homepage Landing Page."""
+    return HTMLResponse(content=get_index_html_content())
+
+@app.get("/api/status")
+async def get_api_status():
+    """Returns JSON API status payload for health checks."""
     return {
         "status": "online", 
-        "system": "Sovereign AI Commerce & Financial Platform v2030 (55 Enterprise Modules & Legal Framework)",
+        "system": "Sovereign AI Commerce & Financial Platform v2030 (55 Enterprise Modules)",
         "architecture_modules": 55,
         "self_healing": "active",
         "realtime_wat_clock": smart_timezone.get_realtime_nigeria_now().strftime("%Y-%m-%d %H:%M:%S WAT"),
