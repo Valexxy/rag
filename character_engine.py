@@ -105,41 +105,46 @@ def generate_live_character_reply(
             except Exception as e:
                 logger.warning(f"[CharEngine] Semantic search error: {e}")
 
-        # Generate grounded AI answer
-        ai_result = sovereign_brain.generate_answer(
-            message=latest_query,
-            intent=intent,
-            catalog=full_catalog,
-            matched_product=best_matched_item,
-            conversation_history=conversation_history,
-            tenant=tenant,
+        # ── 3. MULTI-DIMENSIONAL OPEN-SOURCE AI ENSEMBLE ─────────────────
+        from multi_dimensional_ai_ensemble import ai_ensemble
+        cat_summary = "\n".join([f"• {item.get('name')}: ₦{item.get('price'):,}" for item in full_catalog if isinstance(item, dict)])
+        
+        ensemble_res = ai_ensemble.generate_ensemble_reply(
+            customer_query=latest_query,
+            catalog_context=cat_summary,
+            chat_history=conversation_history
         )
 
-        if ai_result["is_human_transfer"] and not is_owner:
-            return _human_handoff_reply(business_name)
-
         return {
-            "reply": ai_result["reply"],
-            "is_human_transfer": ai_result.get("is_human_transfer", False),
+            "reply": ensemble_res["reply"],
+            "is_human_transfer": False,
             "is_high_value": False,
             "detected_tags": [],
-            "buttons": ["🤖 AI Assistant"],
-            "source": ai_result.get("source", "sovereign_brain"),
+            "buttons": ["#1 Catalog", "#human Manager"],
+            "source": ensemble_res.get("architecture", "multi_dimensional_ensemble"),
         }
 
     except Exception as e:
         logger.error(f"[CharEngine] Sovereign Brain error: {e}")
-        # ── 3. SAFE FALLBACK ─────────────────────────────────────────
-        return _human_handoff_reply(business_name)
+        from multi_dimensional_ai_ensemble import ai_ensemble
+        fallback = ai_ensemble.generate_ensemble_reply(latest_query, "Teeslux Global Store")
+        return {
+            "reply": fallback["reply"],
+            "is_human_transfer": False,
+            "is_high_value": False,
+            "detected_tags": [],
+            "buttons": ["#1 Catalog", "#human Manager"],
+            "source": "fallback_ensemble",
+        }
 
 
 def _human_handoff_reply(business_name: str) -> dict:
-    """Returns a clean, professional human handoff reply."""
+    """Returns a clean, professional interactive human handoff reply."""
     return {
         "reply": (
             f"🤖 *[{business_name} AI Assistant]*\n\n"
-            f"Thank you for your message! I've connected you directly with our store manager "
-            f"who will assist you personally right away. Please hold!"
+            f"Thank you for your enquiry! I have notified our store manager to assist you personally.\n\n"
+            f"❓ While our manager reviews your request, is there a specific model, size, or detail you'd like me to look up for you in the meantime?"
         ),
         "is_human_transfer": True,
         "is_high_value": False,
