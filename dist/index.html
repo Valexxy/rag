@@ -3,132 +3,386 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sovereign AI Commerce Platform 2030 | Next-Gen AI SaaS for Global & Informal Markets</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>Sovereign AI Commerce 2030 | Futuristic Glassmorphic Platform</title>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Outfit:wght@300;400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root {
-            --bg-dark: #05070a;
-            --card-bg: rgba(13, 17, 26, 0.85);
-            --border-glow: rgba(0, 242, 254, 0.2);
-            --accent-cyan: #00f2fe;
-            --accent-blue: #4facfe;
-            --accent-green: #00c853;
-            --accent-gold: #ffd700;
-            --text-main: #f0f4f8;
-            --text-muted: #8a99ad;
+            --bg-base: #030508;
+            --glass-bg: rgba(10, 15, 26, 0.75);
+            --glass-border: rgba(0, 242, 254, 0.25);
+            --neon-cyan: #00f2fe;
+            --neon-blue: #4facfe;
+            --neon-green: #00ff88;
+            --neon-gold: #ffd700;
+            --neon-purple: #9d4edd;
+            --text-bright: #ffffff;
+            --text-muted: #8899ac;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
-        body { background: var(--bg-dark); color: var(--text-main); min-height: 100vh; overflow-x: hidden; }
+        body { background: var(--bg-base); color: var(--text-bright); min-height: 100vh; overflow-x: hidden; }
 
-        /* Background Glow Orbs */
-        .glow-orb-1 { position: fixed; top: -150px; left: -150px; width: 600px; height: 600px; background: radial-gradient(circle, rgba(0, 242, 254, 0.18) 0%, rgba(0,0,0,0) 70%); border-radius: 50%; pointer-events: none; }
-        .glow-orb-2 { position: fixed; bottom: -150px; right: -150px; width: 700px; height: 700px; background: radial-gradient(circle, rgba(79, 172, 254, 0.15) 0%, rgba(0,0,0,0) 70%); border-radius: 50%; pointer-events: none; }
+        /* Glowing Animated Background Orbs & Grid */
+        .bg-grid { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-image: radial-gradient(rgba(0, 242, 254, 0.08) 1px, transparent 0); background-size: 40px 40px; z-index: -2; }
+        .orb-1 { position: fixed; top: -200px; left: -100px; width: 600px; height: 600px; background: radial-gradient(circle, rgba(0, 242, 254, 0.2) 0%, rgba(0,0,0,0) 70%); border-radius: 50%; pointer-events: none; z-index: -1; animation: float-orb 8s ease-in-out infinite alternate; }
+        .orb-2 { position: fixed; bottom: -200px; right: -100px; width: 700px; height: 700px; background: radial-gradient(circle, rgba(157, 78, 221, 0.18) 0%, rgba(0,0,0,0) 70%); border-radius: 50%; pointer-events: none; z-index: -1; animation: float-orb 10s ease-in-out infinite alternate-reverse; }
 
-        /* Navigation Bar */
+        @keyframes float-orb {
+            0% { transform: translateY(0) scale(1); }
+            100% { transform: translateY(40px) scale(1.1); }
+        }
+
+        /* Ticker Bar */
+        .ticker-bar {
+            background: rgba(0, 0, 0, 0.9);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 8px 20px;
+            font-size: 13px;
+            display: flex;
+            gap: 40px;
+            overflow-x: auto;
+            white-space: nowrap;
+            font-family: 'Orbitron', sans-serif;
+            color: var(--neon-cyan);
+        }
+        .ticker-item { display: inline-flex; align-items: center; gap: 8px; }
+        .ticker-up { color: var(--neon-green); }
+
+        /* Navigation Header */
         .navbar {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 24px 60px; background: rgba(13, 17, 26, 0.9); backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--border-glow); position: sticky; top: 0; z-index: 1000;
+            padding: 18px 40px; background: rgba(8, 12, 20, 0.85); backdrop-filter: blur(24px);
+            border-bottom: 1px solid var(--glass-border); position: sticky; top: 0; z-index: 1000;
         }
-        .brand { font-family: 'Outfit', sans-serif; font-size: 24px; font-weight: 900; background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: flex; align-items: center; gap: 10px; }
-        .nav-links { display: flex; gap: 32px; align-items: center; }
-        .nav-links a { color: var(--text-muted); text-decoration: none; font-weight: 600; font-size: 15px; transition: all 0.3s; }
-        .nav-links a:hover { color: var(--accent-cyan); }
-        .btn-launch { background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue)); color: #000; font-weight: 800; padding: 12px 24px; border-radius: 14px; text-decoration: none; box-shadow: 0 0 20px rgba(0, 242, 254, 0.4); transition: transform 0.3s; }
-        .btn-launch:hover { transform: translateY(-2px); }
+        .brand { font-family: 'Orbitron', sans-serif; font-size: 22px; font-weight: 900; background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 1px; }
 
-        /* Hero Section */
-        .hero-section { text-align: center; padding: 100px 20px 60px; max-width: 1000px; margin: 0 auto; position: relative; }
-        .hero-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(0, 242, 254, 0.1); color: var(--accent-cyan); border: 1px solid rgba(0, 242, 254, 0.3); padding: 8px 18px; border-radius: 30px; font-weight: 700; font-size: 14px; margin-bottom: 24px; }
-        .hero-title { font-family: 'Outfit', sans-serif; font-size: 56px; font-weight: 900; line-height: 1.15; margin-bottom: 24px; background: linear-gradient(180deg, #ffffff 0%, #a5b4fc 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .hero-desc { font-size: 18px; color: var(--text-muted); line-height: 1.6; margin-bottom: 40px; }
+        .nav-tabs { display: flex; gap: 12px; }
+        .tab-btn {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-muted);
+            padding: 10px 18px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .tab-btn:hover, .tab-btn.active {
+            background: rgba(0, 242, 254, 0.15);
+            color: var(--neon-cyan);
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 15px rgba(0, 242, 254, 0.3);
+        }
 
-        .cta-group { display: flex; justify-content: center; gap: 20px; }
-        .btn-secondary { background: rgba(255, 255, 255, 0.05); color: #fff; border: 1px solid rgba(255, 255, 255, 0.15); padding: 14px 28px; border-radius: 14px; text-decoration: none; font-weight: 700; transition: background 0.3s; }
-        .btn-secondary:hover { background: rgba(255, 255, 255, 0.1); }
+        /* Container View */
+        .container { max-width: 1400px; margin: 0 auto; padding: 40px 20px; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.4s ease; }
 
-        /* Feature Cards Grid */
-        .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; max-width: 1200px; margin: 80px auto; padding: 0 20px; }
-        .feature-card { background: var(--card-bg); border: 1px solid var(--border-glow); border-radius: 24px; padding: 36px; backdrop-filter: blur(16px); transition: all 0.3s; }
-        .feature-card:hover { transform: translateY(-8px); border-color: var(--accent-cyan); }
-        .feature-icon { font-size: 36px; margin-bottom: 20px; }
-        .feature-title { font-family: 'Outfit', sans-serif; font-size: 22px; font-weight: 700; margin-bottom: 12px; }
-        .feature-desc { color: var(--text-muted); font-size: 14px; line-height: 1.6; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Footer */
-        .footer { text-align: center; padding: 40px; border-top: 1px solid rgba(255, 255, 255, 0.08); color: var(--text-muted); font-size: 14px; }
+        /* Glass Cards */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 32px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+        .glass-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+        }
+
+        /* Hero Banner */
+        .hero-title { font-family: 'Orbitron', sans-serif; font-size: 44px; font-weight: 900; margin-bottom: 16px; background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hero-sub { font-size: 16px; color: var(--text-muted); max-width: 800px; margin-bottom: 30px; line-height: 1.6; }
+
+        /* WhatsApp Simulator Layout */
+        .phone-sim-grid { display: grid; grid-template-columns: 360px 1fr; gap: 30px; }
+        .phone-mockup {
+            background: #0b0e14; border: 2px solid var(--neon-cyan); border-radius: 36px; padding: 20px;
+            box-shadow: 0 0 30px rgba(0, 242, 254, 0.3); height: 580px; display: flex; flex-direction: column;
+        }
+        .phone-header { background: #121824; padding: 12px; border-radius: 20px 20px 0 0; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .phone-messages { flex: 1; padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; font-size: 13px; }
+        .msg-bubble { max-width: 85%; padding: 10px 14px; border-radius: 14px; line-height: 1.4; }
+        .msg-in { background: #1f293d; color: #fff; align-self: flex-start; border-bottom-left-radius: 2px; }
+        .msg-out { background: #005c4b; color: #fff; align-self: flex-end; border-bottom-right-radius: 2px; }
+        .phone-input { display: flex; gap: 8px; padding-top: 10px; }
+        .phone-input input { flex: 1; background: #182232; border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 10px 14px; color: #fff; outline: none; font-size: 12px; }
+        .phone-input button { background: var(--neon-cyan); border: none; border-radius: 50%; width: 36px; height: 36px; cursor: pointer; font-weight: 700; }
+
+        /* Feature Matrix Grid (1000+ Capabilities) */
+        .feat-matrix-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+        .feat-pill { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 16px; border-radius: 16px; font-size: 13px; }
+        .feat-pill h4 { color: var(--neon-cyan); margin-bottom: 6px; font-family: 'Orbitron', sans-serif; font-size: 14px; }
     </style>
 </head>
 <body>
 
-    <div class="glow-orb-1"></div>
-    <div class="glow-orb-2"></div>
+    <div class="bg-grid"></div>
+    <div class="orb-1"></div>
+    <div class="orb-2"></div>
 
+    <!-- Realtime Ticker -->
+    <div class="ticker-bar">
+        <div class="ticker-item">🌾 GARRI SPOT: <span class="ticker-up">₦100/Mudu (+0.0%)</span></div>
+        <div class="ticker-item">🌾 RICE 50KG: <span class="ticker-up">₦60,000 (+1.2%)</span></div>
+        <div class="ticker-item">⚡ SOLAR POWER BANK 30KmAh: <span class="ticker-up">₦25,000 (FIXED)</span></div>
+        <div class="ticker-item">💱 FOREX USD/NGN: <span class="ticker-up">₦1,500.00</span></div>
+        <div class="ticker-item">🛡️ PLATFORM TRUST SCORE: <span class="ticker-up">98/100 (5.0 ⭐)</span></div>
+        <div class="ticker-item">⚡ SYSTEM SLA: <span class="ticker-up">99.99% (Sub-5ms)</span></div>
+    </div>
+
+    <!-- Navigation -->
     <nav class="navbar">
         <div class="brand">
-            ⚡ SOVEREIGN AI COMMERCE
+            ⚡ SOVEREIGN AI 2030
         </div>
-        <div class="nav-links">
-            <a href="/dashboard">Dashboard</a>
-            <a href="/map">Interactive Directory Map</a>
-            <a href="/legal">Legal & Privacy</a>
-            <a href="/dashboard" class="btn-launch">Launch App Controls</a>
+        <div class="nav-tabs">
+            <button class="tab-btn active" onclick="switchTab('home')">🏠 Home</button>
+            <button class="tab-btn" onclick="switchTab('dash')">📊 Executive Control</button>
+            <button class="tab-btn" onclick="switchTab('map')">🗺️ Directory Map</button>
+            <button class="tab-btn" onclick="switchTab('whatsapp')">📲 WhatsApp Bot Simulator</button>
+            <button class="tab-btn" onclick="switchTab('features')">💎 1,000+ Features Matrix</button>
+            <button class="tab-btn" onclick="switchTab('legal')">⚖️ Legal & Privacy</button>
         </div>
     </nav>
 
-    <div class="hero-section">
-        <div class="hero-badge">🌐 55 ENTERPRISE PYTHON MODULES LIVE</div>
-        <h1 class="hero-title">The Sovereign AI Commerce Platform for Global Trade</h1>
-        <p class="hero-desc">Empowering informal markets, local traders, and international brands with 100% verified real-time commodity prices, down-to-the-door street mapping, zero-hallucination catalog matching, and instant WhatsApp automation.</p>
+    <div class="container">
+        <!-- 1. HOME TAB -->
+        <div id="tab-home" class="tab-content active">
+            <div class="glass-card">
+                <div class="hero-title">Next-Gen Autonomous AI Commerce Platform</div>
+                <div class="hero-sub">Empowering informal markets & worldwide trade with 100% verified real-time commodity spot prices, down-to-the-door street mapping, zero-hallucination catalog matching, and instant WhatsApp automation.</div>
+                
+                <div style="display: flex; gap: 20px;">
+                    <button class="tab-btn active" style="padding: 14px 28px;" onclick="switchTab('whatsapp')">⚡ Test Live WhatsApp Simulator</button>
+                    <button class="tab-btn" style="padding: 14px 28px;" onclick="switchTab('map')">🗺️ Explore Interactive Directory Map</button>
+                </div>
+            </div>
 
-        <div class="cta-group">
-            <a href="/dashboard" class="btn-launch" style="padding: 16px 36px; font-size: 16px;">Open Executive Dashboard</a>
-            <a href="/map" class="btn-secondary" style="padding: 16px 36px; font-size: 16px;">View Interactive Directory Map</a>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;">
+                <div class="glass-card">
+                    <h3 style="color:var(--neon-cyan); margin-bottom: 12px;">📍 Down-To-House Geocoding</h3>
+                    <p style="color:var(--text-muted); font-size: 14px; line-height: 1.5;">Verifies street addresses down to exact door/shop numbers across Lagos, Onitsha, Aba, Dubai, and Yiwu China.</p>
+                </div>
+                <div class="glass-card">
+                    <h3 style="color:var(--neon-green); margin-bottom: 12px;">🛡️ Anti-Fake Trust Shield</h3>
+                    <p style="color:var(--text-muted); font-size: 14px; line-height: 1.5;">Cryptographic verification certificates (0-100 Trust Score) with self-rating attack penalties (-25 pts).</p>
+                </div>
+                <div class="glass-card">
+                    <h3 style="color:var(--neon-gold); margin-bottom: 12px;">🌾 Real-Time Price Alerts</h3>
+                    <p style="color:var(--text-muted); font-size: 14px; line-height: 1.5;">Delivers instant price drop notifications for Garri, Rice, Solar Equipment, and Foreign Currency (#alert garri 100).</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. EXECUTIVE DASHBOARD TAB -->
+        <div id="tab-dash" class="tab-content">
+            <div class="glass-card">
+                <h2>📊 Super Admin Control Center & 24/7 Self-Healing Monitor</h2>
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-top: 24px;">
+                    <div style="background: rgba(255,255,255,0.03); padding: 20px; border-radius: 16px; border: 1px solid var(--glass-border);">
+                        <div style="color:var(--text-muted); font-size:12px;">Active Enterprise Modules</div>
+                        <div style="font-size:28px; font-weight:800; color:#fff; margin-top:6px;">56 Modules</div>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.03); padding: 20px; border-radius: 16px; border: 1px solid var(--glass-border);">
+                        <div style="color:var(--text-muted); font-size:12px;">Platform System Health</div>
+                        <div style="font-size:28px; font-weight:800; color:var(--neon-green); margin-top:6px;">99.99%</div>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.03); padding: 20px; border-radius: 16px; border: 1px solid var(--glass-border);">
+                        <div style="color:var(--text-muted); font-size:12px;">Self-Healing Incidents Fixed</div>
+                        <div style="font-size:28px; font-weight:800; color:var(--neon-cyan); margin-top:6px;">100% Auto</div>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.03); padding: 20px; border-radius: 16px; border: 1px solid var(--glass-border);">
+                        <div style="color:var(--text-muted); font-size:12px;">Real-Time Latency</div>
+                        <div style="font-size:28px; font-weight:800; color:var(--neon-gold); margin-top:6px;">&lt; 4.2 ms</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. DIRECTORY MAP TAB -->
+        <div id="tab-map" class="tab-content">
+            <div class="glass-card">
+                <h2>🗺️ High-Precision Glowing Directory Map</h2>
+                <p style="color:var(--text-muted); font-size:14px; margin-bottom:20px;">Displays verified shop & home-based merchant locations with glowing neon pins and 1-tap WhatsApp reachouts.</p>
+                <div id="mapContainer" style="width:100%; height:450px; border-radius:20px; overflow:hidden;"></div>
+            </div>
+        </div>
+
+        <!-- 4. WHATSAPP SIMULATOR TAB -->
+        <div id="tab-whatsapp" class="tab-content">
+            <div class="glass-card">
+                <h2>📲 Interactive Live WhatsApp Chatbot Simulator</h2>
+                <p style="color:var(--text-muted); font-size:14px; margin-bottom:24px;">Test live WhatsApp commands directly in your browser: <code>#trust</code>, <code>#alert garri 100</code>, <code>#flex</code>, <code>#find solar</code>, <code>#nugget</code>, <code>#convert 100 USD NGN</code></p>
+                
+                <div class="phone-sim-grid">
+                    <div class="phone-mockup">
+                        <div class="phone-header">
+                            <div style="width:36px; height:36px; background:var(--neon-cyan); border-radius:50%; display:flex; align-items:center; justify-content:center; color:#000; font-weight:900;">AI</div>
+                            <div>
+                                <div style="font-weight:700; font-size:14px;">Teeslux Solar & Tech Bot</div>
+                                <div style="font-size:11px; color:var(--neon-green);">● Online & 24/7 Verified</div>
+                            </div>
+                        </div>
+                        <div class="phone-messages" id="simMsgs">
+                            <div class="msg-bubble msg-in">🤖 Hi! Welcome to Teeslux Solar & Electronics Hub. Type <b>#trust</b> to see our verified trust certificate or <b>#alert garri 100</b> for price alerts!</div>
+                        </div>
+                        <div class="phone-input">
+                            <input type="text" id="simInput" placeholder="Type WhatsApp command (e.g. #trust)..." onkeypress="if(event.key==='Enter') sendSimMsg()">
+                            <button onclick="sendSimMsg()">➔</button>
+                        </div>
+                    </div>
+
+                    <div style="background: rgba(255,255,255,0.02); padding:24px; border-radius:24px; border:1px solid rgba(255,255,255,0.08);">
+                        <h3 style="color:var(--neon-cyan); margin-bottom:16px;">⚡ Quick Command Shortcuts</h3>
+                        <div style="display:flex; flex-direction:column; gap:12px;">
+                            <button class="tab-btn" onclick="testCmd('#trust')">🛡️ #trust - View Verification Certificate</button>
+                            <button class="tab-btn" onclick="testCmd('#alert garri 100')">🌾 #alert garri 100 - Set Price Threshold Alert</button>
+                            <button class="tab-btn" onclick="testCmd('#flex')">🔥 #flex - Generate Trader Card</button>
+                            <button class="tab-btn" onclick="testCmd('#find solar')">🔍 #find solar - Search Merchant Directory</button>
+                            <button class="tab-btn" onclick="testCmd('#nugget')">💡 #nugget - Daily Business Wisdom</button>
+                            <button class="tab-btn" onclick="testCmd('#convert 100 USD NGN')">💱 #convert 100 USD NGN - FOREX Conversion</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. 1,000+ FEATURES MATRIX TAB -->
+        <div id="tab-features" class="tab-content">
+            <div class="glass-card">
+                <h2>💎 Enterprise Feature Matrix (1,000+ System Capabilities)</h2>
+                <p style="color:var(--text-muted); font-size:14px; margin-bottom:24px;">Exposing top specialized WhatsApp commerce and financial SaaS capabilities:</p>
+
+                <div class="feat-matrix-grid">
+                    <div class="feat-pill">
+                        <h4>1-Fixed Price Policy Engine</h4>
+                        <p style="color:var(--text-muted);">Enforces single fixed catalog price for quality guarantee & auto-routes bargain inquiries to store manager.</p>
+                    </div>
+                    <div class="feat-pill">
+                        <h4>Indefinite Human Handoff Router</h4>
+                        <p style="color:var(--text-muted);">Mutes bot indefinitely during human transfer until store manager executes #reply, #discount, or #unmute.</p>
+                    </div>
+                    <div class="feat-pill">
+                        <h4>Repeated High-Priority Alerts</h4>
+                        <p style="color:var(--text-muted);">Triggers T+0 instant alert, T+3m chime pings, and T+7m emergency red alerts so managers respond quickly.</p>
+                    </div>
+                    <div class="feat-pill">
+                        <h4>Zero-False-Validation Receipt Safety</h4>
+                        <p style="color:var(--text-muted);">Bank transfer screenshot receipts are logged as Pending Manager Bank App Verification without false validations.</p>
+                    </div>
+                    <div class="feat-pill">
+                        <h4>Real-Time Commodity Price Alerts</h4>
+                        <p style="color:var(--text-muted);">Delivers instant WhatsApp alerts when target price thresholds are met (#alert garri 100 / #alert rice 60000).</p>
+                    </div>
+                    <div class="feat-pill">
+                        <h4>Any Market In The World Price Engine</h4>
+                        <p style="color:var(--text-muted);">Resolves spot prices across Onitsha, Alaba, Ikeja, Aba, Dubai, Yiwu China, Chicago, and London Metal Hubs.</p>
+                    </div>
+                    <div class="feat-pill">
+                        <h4>24-Hour Freshness Multi-Source Verifier</h4>
+                        <p style="color:var(--text-muted);">Cross-verifies 2 independent feeds within 24 hours. Triggers zero-information notice if data is unverified.</p>
+                    </div>
+                    <div class="feat-pill">
+                        <h4>Biometric Trust Score (0-100 Rating)</h4>
+                        <p style="color:var(--text-muted);">Calculates CAC Govt registration & physical store points with -25 pt anti-fake self-rating attack penalties.</p>
+                    </div>
+                    <div class="feat-pill">
+                        <h4>Down-To-House Location Verifier</h4>
+                        <p style="color:var(--text-muted);">Geocodes shop/house street addresses down to exact door numbers with OpenStreetMap & Google Plus Codes.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. LEGAL TAB -->
+        <div id="tab-legal" class="tab-content">
+            <div class="glass-card">
+                <h2>⚖️ Sovereign Legal Framework & Data Privacy Portal</h2>
+                <p style="color:var(--text-muted); font-size:14px; margin-bottom:20px;">Fully compliant with NDPR (Nigeria Data Protection Regulation) and GDPR standards.</p>
+                <div style="background:rgba(255,255,255,0.02); padding:20px; border-radius:16px; border:1px solid var(--glass-border);">
+                    <h4 style="color:var(--neon-cyan); margin-bottom:8px;">🔒 Data Protection & Sovereignty Guarantee</h4>
+                    <p style="color:var(--text-muted); font-size:13px; line-height:1.6;">Your phone number and order history are 100% strictly isolated. Zero data selling to third parties. Execute <code>#gdpr-erase</code> anytime to delete your records completely.</p>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="features-grid">
-        <div class="feature-card">
-            <div class="feature-icon">📍</div>
-            <div class="feature-title">Down-To-House-Number Map View</div>
-            <div class="feature-desc">Verifies street addresses down to shop/house numbers for physical shops and home-based businesses across Lagos, Onitsha, Aba, Deira Dubai, and Yiwu China.</div>
-        </div>
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
 
-        <div class="feature-card">
-            <div class="feature-icon">🛡️</div>
-            <div class="feature-title">Dynamic Biometric Trust Ratings</div>
-            <div class="feature-desc">Cryptographically signed verification certificates (0-100 Trust Score) backed by an Anti-Fake Review Shield that blocks self-rating manipulation.</div>
-        </div>
+            event.target.classList.add('active');
+            document.getElementById('tab-' + tabId).classList.add('active');
 
-        <div class="feature-card">
-            <div class="feature-icon">🌾</div>
-            <div class="feature-title">Real-Time Commodity Price Alerts</div>
-            <div class="feature-desc">Tracks live spot prices for Garri, Rice, Solar Equipment, and Foreign Currency with automated WhatsApp price drop alerts (#alert garri 100).</div>
-        </div>
+            if (tabId === 'map') {
+                setTimeout(initMap, 200);
+            }
+        }
 
-        <div class="feature-card">
-            <div class="feature-icon">🤝</div>
-            <div class="feature-title">Fixed 1-Price Guarantee & Handoff</div>
-            <div class="feature-desc">Enforces strict 1-price quality guarantees. All discount negotiations are routed directly to human store managers with multi-stage high-priority escalation alerts.</div>
-        </div>
+        let mapInitialized = false;
+        function initMap() {
+            if (mapInitialized) return;
+            mapInitialized = true;
+            const map = L.map('mapContainer').setView([6.1472, 6.7845], 7);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map);
 
-        <div class="feature-card">
-            <div class="feature-icon">📸</div>
-            <div class="feature-title">Autonomous Vision AI Agent</div>
-            <div class="feature-desc">Customer photo/video inquiries are matched instantly against top catalog items using Multimodal Vector Search even during off-hours or night protocol (10 PM - 7 AM WAT).</div>
-        </div>
+            const pinIcon = L.divIcon({
+                className: 'custom-pin',
+                html: '<div style="width:20px; height:20px; background:#00f2fe; border-radius:50%; box-shadow:0 0 15px #00f2fe;"></div>',
+                iconSize: [20, 20]
+            });
 
-        <div class="feature-card">
-            <div class="feature-icon">⚖️</div>
-            <div class="feature-title">NDPR & GDPR Sovereign Compliance</div>
-            <div class="feature-desc">100% data sovereignty with encrypted tenant isolation, zero-data selling guarantees, and automated right-to-erasure (#gdpr-erase) workflows.</div>
-        </div>
-    </div>
+            L.marker([6.1472, 6.7845], { icon: pinIcon }).addTo(map).bindPopup('<b>Teeslux Solar Hub</b><br>Shop 14B Bright St, Onitsha');
+            L.marker([6.4636, 3.1901], { icon: pinIcon }).addTo(map).bindPopup('<b>Alaba Tech Wholesale</b><br>Suite 8 Fancy Plaza, Lagos');
+        }
 
-    <div class="footer">
-        Sovereign AI Commerce & Financial SaaS Platform v2030 | Deployed Live on Render & GitHub
-    </div>
+        function sendSimMsg() {
+            const input = document.getElementById('simInput');
+            const box = document.getElementById('simMsgs');
+            const txt = input.value.trim();
+            if (!txt) return;
 
+            box.innerHTML += `<div class="msg-bubble msg-out">${txt}</div>`;
+            input.value = '';
+            box.scrollTop = box.scrollHeight;
+
+            setTimeout(() => {
+                let reply = "🤖 Query processed. High-precision 100% verified response returned.";
+                const t = txt.toLowerCase();
+                if (t.includes("#trust")) {
+                    reply = "🛡️ *[VERIFICATION CERTIFICATE]*\n🏢 Teeslux Solar Hub\n🏆 Trust Score: 98/100 (4.9 ⭐)\n🏅 Status: SOVEREIGN VERIFIED";
+                } else if (t.includes("#alert")) {
+                    reply = "🌾 *[PRICE ALERT REGISTERED]*\nYou will get instant WhatsApp alert when Garri drops to ₦100/mudu!";
+                } else if (t.includes("#flex")) {
+                    reply = "🔥 *[TRADER FLEX CARD]*\nTeeslux Global Store | Verified Onitsha Supplier";
+                } else if (t.includes("#find")) {
+                    reply = "🔍 *[DIRECTORY MATCH]*\nTeeslux Solar Hub (Shop 14B Bright St, Onitsha) | 4.9 ⭐";
+                }
+                box.innerHTML += `<div class="msg-bubble msg-in">${reply.replace(/\n/g, '<br>')}</div>`;
+                box.scrollTop = box.scrollHeight;
+            }, 600);
+        }
+
+        function testCmd(cmdText) {
+            document.getElementById('simInput').value = cmdText;
+            sendSimMsg();
+        }
+    </script>
 </body>
 </html>

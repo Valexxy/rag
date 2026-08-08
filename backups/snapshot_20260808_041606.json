@@ -1,0 +1,84 @@
+{
+  "timestamp": "2026-08-08T04:16:11.826427",
+  "counts": {
+    "tenants": 2,
+    "entities": 3,
+    "customers": 1,
+    "transactions": 0
+  },
+  "tenants": [
+    {
+      "id": "5d7556d6-6a76-48be-bcf0-ecfd258381ce",
+      "instance_name": "valexxy_store",
+      "business_name": "Valexxy Global Store",
+      "niche": "retail",
+      "ai_persona": null,
+      "is_active": true,
+      "created_at": "2026-08-07T18:09:56.525602+00:00",
+      "phone_number": null,
+      "owner_phone": "2348000000000",
+      "whatsapp_instance": null,
+      "business_niche": "retail",
+      "call_to_action": "place an order"
+    },
+    {
+      "id": "ae885081-3cd5-4ec2-bbe5-7686bd8da9b4",
+      "instance_name": "store-bot",
+      "business_name": "Teeslux",
+      "niche": "retail",
+      "ai_persona": "You are the Lead Client Experience Executive for Valexxy Global Store. Communicate in immaculate, executive English.",
+      "is_active": true,
+      "created_at": "2026-08-06T15:05:12.995963+00:00",
+      "phone_number": null,
+      "owner_phone": "2348072015725",
+      "whatsapp_instance": null,
+      "business_niche": "retail",
+      "call_to_action": "place an order"
+    }
+  ],
+  "entities": [
+    {
+      "id": "7811413f-6926-4fac-923a-a78e5a7c0b2f",
+      "tenant_id": "ae885081-3cd5-4ec2-bbe5-7686bd8da9b4",
+      "name": "20,000 mAh Solar Power Bank",
+      "price": 18500.0,
+      "description": "Dual USB fast charge solar bank",
+      "metadata": {
+        "stock": 15
+      },
+      "created_at": "2026-08-07T17:12:38.967478+00:00"
+    },
+    {
+      "id": "6d5fe24b-5aa4-4503-80b9-a331763b79b1",
+      "tenant_id": "ae885081-3cd5-4ec2-bbe5-7686bd8da9b4",
+      "name": "1.5kVA Dual Solar Generator",
+      "price": 185000.0,
+      "description": "Silent pure sine wave inverter generator",
+      "metadata": {
+        "stock": 10
+      },
+      "created_at": "2026-08-07T18:31:53.684587+00:00"
+    },
+    {
+      "id": "18b4e1fe-8fa8-4258-b85b-c58b6e8b23e3",
+      "tenant_id": "ae885081-3cd5-4ec2-bbe5-7686bd8da9b4",
+      "name": "1.5kVA Dual Solar Generator",
+      "price": 185000.0,
+      "description": "Silent pure sine wave inverter generator",
+      "metadata": {
+        "stock": 10
+      },
+      "created_at": "2026-08-07T18:32:42.595681+00:00"
+    }
+  ],
+  "customers": [
+    {
+      "id": "4e35ca57-0cc2-4248-aaaa-5b39937833d6",
+      "tenant_id": "ae885081-3cd5-4ec2-bbe5-7686bd8da9b4",
+      "customer_phone": "2347061114753",
+      "customer_name": null,
+      "last_active": "2026-08-07T13:39:42.675643+00:00"
+    }
+  ],
+  "transactions": []
+}

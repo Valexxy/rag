@@ -91,58 +91,16 @@ chat_memory = {}
 class AdminChatPayload(BaseModel):
     message: str
 
-# -------------------------------------------------------------
-# 🌐 BULLETPROOF INLINE HTML TEMPLATES (Always loads instantly)
-# -------------------------------------------------------------
-INDEX_HTML_TEMPLATE = """<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sovereign AI Commerce Platform 2030</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { background: #05070a; color: #f0f4f8; font-family: 'Plus Jakarta Sans', sans-serif; padding: 40px; text-align: center; }
-        h1 { font-family: 'Outfit', sans-serif; font-size: 48px; background: linear-gradient(135deg, #00f2fe, #4facfe); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 20px; }
-        p { color: #8a99ad; font-size: 18px; max-width: 700px; margin: 0 auto 30px; line-height: 1.6; }
-        .btn-group { display: flex; justify-content: center; gap: 20px; }
-        .btn { padding: 14px 28px; border-radius: 12px; font-weight: 700; text-decoration: none; }
-        .btn-primary { background: linear-gradient(135deg, #00f2fe, #4facfe); color: #000; }
-        .btn-sec { background: rgba(255,255,255,0.08); color: #fff; border: 1px solid rgba(255,255,255,0.15); }
-    </style>
-</head>
-<body>
-    <h1>⚡ Sovereign AI Commerce Platform 2030</h1>
-    <p>56 Enterprise Python Modules Active. Empowering global informal trade with 100% real-time verified prices, down-to-door street mapping, and zero-latency WhatsApp automation.</p>
-    <div class="btn-group">
-        <a href="/dashboard" class="btn btn-primary">Open Executive Dashboard</a>
-        <a href="/map" class="btn btn-sec">Interactive Directory Map View</a>
-        <a href="/legal" class="btn btn-sec">Legal & Privacy Terms</a>
-    </div>
-</body>
-</html>"""
-
-DASHBOARD_HTML_TEMPLATE = """<!DOCTYPE html>
-<html>
-<head><title>Executive Dashboard</title></head>
-<body style="background:#07090e;color:#fff;font-family:sans-serif;padding:40px;">
-<h2>⚡ SOVEREIGN AI SAAS EXECUTIVE DASHBOARD (56 MODULES ACTIVE)</h2>
-<p>System Online & 100% Operational.</p>
-<p><a href="/map" style="color:#00f2fe;">Go to Interactive Directory Map View</a></p>
-</body>
-</html>"""
-
-MAP_HTML_TEMPLATE = """<!DOCTYPE html>
-<html>
-<head><title>Directory Map View</title></head>
-<body style="background:#07090e;color:#fff;font-family:sans-serif;padding:40px;">
-<h2>🗺️ SOVEREIGN DIRECTORY MAP VIEW ONLINE</h2>
-<p>High-Precision Down-To-House-Number Map Active.</p>
-<p><a href="/dashboard" style="color:#00f2fe;">Back to Dashboard</a></p>
-</body>
-</html>"""
-
-def get_index_html_content() -> str:
+def get_futuristic_html_content() -> str:
+    """Reads static/futuristic_app.html or falls back to static/index.html."""
+    fut_path = os.path.join(os.path.dirname(__file__), "static", "futuristic_app.html")
+    if os.path.exists(fut_path):
+        try:
+            with open(fut_path, "r", encoding="utf-8") as f:
+                return f.read()
+        except Exception:
+            pass
+            
     idx_path = os.path.join(os.path.dirname(__file__), "static", "index.html")
     if os.path.exists(idx_path):
         try:
@@ -150,27 +108,8 @@ def get_index_html_content() -> str:
                 return f.read()
         except Exception:
             pass
-    return INDEX_HTML_TEMPLATE
 
-def get_dashboard_html_content() -> str:
-    dash_path = os.path.join(os.path.dirname(__file__), "static", "dashboard.html")
-    if os.path.exists(dash_path):
-        try:
-            with open(dash_path, "r", encoding="utf-8") as f:
-                return f.read()
-        except Exception:
-            pass
-    return DASHBOARD_HTML_TEMPLATE
-
-def get_map_html_content() -> str:
-    map_path = os.path.join(os.path.dirname(__file__), "static", "directory_map.html")
-    if os.path.exists(map_path):
-        try:
-            with open(map_path, "r", encoding="utf-8") as f:
-                return f.read()
-        except Exception:
-            pass
-    return MAP_HTML_TEMPLATE
+    return "<h2>Sovereign AI Commerce 2030 Platform Online</h2>"
 
 async def background_escalation_loop():
     """Background loop for high-priority repeated escalation alerts."""
@@ -188,18 +127,26 @@ async def startup_event():
     asyncio.create_task(background_escalation_loop())
     backup_engine.create_database_snapshot()
 
+# Multi-Page Futuristic Routes
 @app.get("/", response_class=HTMLResponse)
+@app.get("/dashboard", response_class=HTMLResponse)
+@app.get("/map", response_class=HTMLResponse)
+@app.get("/whatsapp-demo", response_class=HTMLResponse)
+@app.get("/commodities", response_class=HTMLResponse)
+@app.get("/trade-calc", response_class=HTMLResponse)
+@app.get("/trust-portal", response_class=HTMLResponse)
+@app.get("/legal", response_class=HTMLResponse)
 @app.head("/")
-async def root():
-    """Serves the primary Full-Stack Website Homepage Landing Page."""
-    return HTMLResponse(content=get_index_html_content())
+async def serve_futuristic_app():
+    """Serves the Ultra-Futuristic Glassmorphic Multi-Page Platform."""
+    return HTMLResponse(content=get_futuristic_html_content())
 
 @app.get("/api/status")
 async def get_api_status():
     """Returns JSON API status payload for health checks."""
     return {
         "status": "online", 
-        "system": "Sovereign AI Commerce & Financial Platform v2030 (56 Enterprise Modules & 24/7 Revenue Ledger)",
+        "system": "Sovereign AI Commerce & Financial Platform v2030 (56 Enterprise Modules & 1000+ Feature Matrix)",
         "architecture_modules": 56,
         "self_healing": "active",
         "realtime_wat_clock": smart_timezone.get_realtime_nigeria_now().strftime("%Y-%m-%d %H:%M:%S WAT"),
@@ -208,27 +155,6 @@ async def get_api_status():
         "sla_performance": sla_monitor.get_sla_metrics(),
         "monetization": realtime_monetization.get_owner_realtime_analytics()
     }
-
-@app.get("/dashboard", response_class=HTMLResponse)
-@app.get("/dashboard.html", response_class=HTMLResponse)
-@app.get("/admin-dashboard", response_class=HTMLResponse)
-async def get_dashboard():
-    """Serves the Executive Web SaaS Dashboard cleanly across all routes."""
-    return HTMLResponse(content=get_dashboard_html_content())
-
-@app.get("/map", response_class=HTMLResponse)
-@app.get("/directory-map", response_class=HTMLResponse)
-@app.get("/map.html", response_class=HTMLResponse)
-async def get_directory_map():
-    """Serves the Premium Interactive Glowing Directory Map View."""
-    return HTMLResponse(content=get_map_html_content())
-
-@app.get("/legal", response_class=HTMLResponse)
-@app.get("/privacy", response_class=HTMLResponse)
-@app.get("/terms", response_class=HTMLResponse)
-async def get_legal_page():
-    """Serves the Web Legal Terms of Service & Data Protection Privacy Policy Page."""
-    return HTMLResponse(content=sovereign_legal.get_full_legal_terms_html())
 
 @app.get("/revenue")
 @app.get("/api/admin/revenue")
