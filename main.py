@@ -16,7 +16,7 @@ from evolution_interactive import (
     send_whatsapp_presence, send_whatsapp_message, broadcast_whatsapp_message
 )
 
-# Enterprise SaaS Modules (50 FULL ENTERPRISE PYTHON MODULES TOTAL)
+# Enterprise SaaS Modules (52 FULL ENTERPRISE PYTHON MODULES TOTAL)
 from local_ai_brain import local_brain
 from whatsapp_ui import render_executive_whatsapp_dashboard, render_role_based_menu, format_currency
 from logistics_department import logistics_dept
@@ -59,6 +59,10 @@ from multi_currency_forex_engine import forex_engine
 from disaster_recovery_failover import dr_failover_engine
 from enterprise_sla_monitor import sla_monitor
 from fraud_biometric_risk_score import fraud_risk_engine
+
+# Virality & Customer Finder Directory Modules (Modules 51-52)
+from viral_share_generator import viral_share_gen
+from sovereign_directory_engine import sovereign_directory
 
 from gamification_retention import gamification_engine
 from database_backup import backup_engine
@@ -125,8 +129,8 @@ async def startup_event():
 async def root():
     return {
         "status": "online", 
-        "system": "Sovereign AI Commerce & Financial Platform v2030 (50 Full Enterprise Modules)",
-        "architecture_modules": 50,
+        "system": "Sovereign AI Commerce & Financial Platform v2030 (52 Enterprise Modules & Premium Directory)",
+        "architecture_modules": 52,
         "self_healing": "active",
         "realtime_wat_clock": smart_timezone.get_realtime_nigeria_now().strftime("%Y-%m-%d %H:%M:%S WAT"),
         "is_night_protocol": smart_night_protocol.is_night_time(),
@@ -152,7 +156,7 @@ async def get_admin_metrics():
         "errors_captured": self_healing.error_count,
         "auto_healed": self_healing.healed_count,
         "smart_retry_success": "100%",
-        "modules_active": 50,
+        "modules_active": 52,
         "scale_metrics": infinite_scale_guard.get_scale_metrics(),
         "sla_metrics": sla_monitor.get_sla_metrics(),
         "failover_status": dr_failover_engine.check_health_and_failover()
@@ -170,14 +174,14 @@ async def admin_ai_agent_chat(payload: AdminChatPayload):
     if "error" in msg or "bug" in msg or "issue" in msg:
         reply = f"🛠️ **[DIAGNOSTIC ANALYSIS]**: Received report '{payload.message}'. Autonomous 24/7 Self-Healing worker has captured stack trace, cleared bad cache keys, and re-established database connection pool."
     elif "status" in msg or "health" in msg:
-        reply = f"📊 **[SYSTEM HEALTH]**: Platform is operating at 99.99% efficiency across 50 Enterprise Modules. Total auto-healed incidents: {self_healing.healed_count}."
+        reply = f"📊 **[SYSTEM HEALTH]**: Platform is operating at 99.99% efficiency across 52 Enterprise Modules. Total auto-healed incidents: {self_healing.healed_count}."
     else:
-        reply = f"🤖 **[SUPER ADMIN AGENT]**: Instruction processed: '{payload.message}'. All 50 enterprise modules are active and synchronized worldwide."
+        reply = f"🤖 **[SUPER ADMIN AGENT]**: Instruction processed: '{payload.message}'. All 52 enterprise modules are active and synchronized worldwide."
 
     return {"reply": reply}
 
 # -------------------------------------------------------------
-# 💬 WHATSAPP WEBHOOK HANDLER (Worldwide Enterprise Architecture - 50 Modules)
+# 💬 WHATSAPP WEBHOOK HANDLER (Virality Flex Cards & Premium Customer Finder Directory)
 # -------------------------------------------------------------
 @app.post("/webhook/whatsapp/{instance_name}")
 async def handle_whatsapp_webhook(instance_name: str, request: Request):
@@ -292,6 +296,25 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
             return {"status": "security_attack_blocked"}
 
         msg_lower = message_text.lower().strip()
+
+        # Gen Z Viral Flex Card Command (#flex)
+        if msg_lower.startswith("#flex") or msg_lower == "flex":
+            flex_card = viral_share_gen.generate_trader_flex_card(tenant.get("business_name", "Store"), "Lagos")
+            send_whatsapp_message(instance_name, clean_sender, flex_card)
+            return {"status": "trader_flex_sent"}
+
+        # Viral Savings Infographic Command (#savings)
+        if msg_lower.startswith("#saving") or msg_lower in ["savings", "save"]:
+            sav_card = viral_share_gen.generate_daily_savings_infographic(clean_sender)
+            send_whatsapp_message(instance_name, clean_sender, sav_card)
+            return {"status": "savings_card_sent"}
+
+        # Premium Customer & Merchant Directory Command (#find / #directory)
+        if msg_lower.startswith("#find") or msg_lower.startswith("#directory") or msg_lower.startswith("find "):
+            query_term = message_text.replace("#find", "").replace("#directory", "").replace("find", "").strip() or "solar"
+            dir_res = sovereign_directory.search_directory(query_term)
+            send_whatsapp_message(instance_name, clean_sender, dir_res)
+            return {"status": "directory_searched"}
 
         # Global FOREX Converter Command (#forex / #convert)
         if msg_lower.startswith("#forex") or msg_lower.startswith("#convert"):
@@ -543,7 +566,6 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
             return {"status": "waybill_sent"}
 
         if intent == "PURCHASE":
-            # Fraud Risk Score Pre-Check
             risk_eval = fraud_risk_engine.evaluate_order_risk(clean_sender, 25000.0, "NG")
             if risk_eval["risk_level"] == "HIGH_RISK_MANUAL_REVIEW":
                 owner_alert.send_urgent_owner_alert(instance_name, clean_owner, clean_sender, "⚠️ HIGH FRAUD RISK ORDER DETECTED", f"Risk score: {risk_eval['risk_score']}")
@@ -583,7 +605,6 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request):
             escalation_alert_engine.register_human_handover(instance_name, clean_owner, clean_sender, "👤 Human Agent Request", message_text)
             owner_alert.send_urgent_owner_alert(instance_name, clean_owner, clean_sender, "Customer requested Human Agent", message_text)
 
-        # Record SLA latency metrics
         t_lat = (asyncio.get_event_loop().time() - t_start) * 1000.0
         sla_monitor.record_request_latency(t_lat)
 
