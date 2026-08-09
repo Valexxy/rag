@@ -402,6 +402,97 @@ async def test_chat_endpoint(query: str = "1.5kva"):
     ai_reply = generate_ai_reply(query)
     return {"status": "success", "query": query, "reply": ai_reply, "source": "ai_ensemble_fallback"}
 
+# ── META OFFICIAL WHATSAPP CLOUD API WEBHOOKS ─────────────────────────
+META_PHONE_ID = "1237917316076300"
+META_TOKEN = "EAAMgsrreXPYBSHShnLFmxyd49Jf7fW63QtzUmLPYfFNBgaqMsYGfkd26fC3ZAvdEgPtrEacL02KPH9vpe0Rd7YbUe3hsT22aWf8hVv0dXO6uecyIuL180zZCDHlbwQ4eO1KmPFwZCSdPGTztZCj1Wu8eHCRZCoLbODkb2EZBd2NFO0AiCvIjdwHf0ZCezTdfcIZBOAIzgZCiwuNIvb9G6dLbZCcwWY9b4Cguocb3YU48lZBAdMSnwy5hWefygS8syLRAYO5fBpEQwcTV2dQaV46QP4dIwZDZD"
+META_VERIFY_TOKEN = "my_secret_token"
+
+@app.get("/webhook/meta")
+async def meta_webhook_verify(request: Request):
+    params = request.query_params
+    mode = params.get("hub.mode")
+    token = params.get("hub.verify_token")
+    challenge = params.get("hub.challenge")
+
+    if mode == "subscribe" and (token == META_VERIFY_TOKEN or token == "my_secret_token"):
+        logger.info("[Meta Webhook] GET Verification Successful!")
+        return Response(content=challenge, media_type="text/plain", status_code=200)
+    
+    return Response(content="Forbidden", status_code=403)
+
+@app.post("/webhook/meta")
+async def meta_webhook_incoming(request: Request):
+    body = await request.json()
+    logger.info(f"[Meta Webhook Incoming] Payload: {body}")
+    
+    import asyncio
+    asyncio.create_task(process_meta_payload(body))
+    return {"status": "received"}
+
+async def process_meta_payload(payload: dict):
+    try:
+        entries = payload.get("entry", [])
+        if not entries:
+            return
+        changes = entries[0].get("changes", [])
+        if not changes:
+            return
+        val = changes[0].get("value", {})
+        messages = val.get("messages", [])
+        if not messages:
+            return
+        
+        msg = messages[0]
+        sender_phone = msg.get("from", "")
+        text = msg.get("text", {}).get("body", "").strip()
+        
+        if not sender_phone or not text:
+            return
+        
+        logger.info(f"[Meta Incoming Message] From: {sender_phone} | Text: '{text}'")
+
+        fast = fast_catalog_search(text)
+        if fast["matched"]:
+            send_meta_whatsapp_message(sender_phone, fast["reply"])
+            return
+
+        ai_reply = generate_ai_reply(text)
+        if ai_reply:
+            send_meta_whatsapp_message(sender_phone, ai_reply)
+            return
+
+        fallback = f"🤖 *[Teeslux Global Meta Assistant]*\n\nThank you for reaching out regarding '{text}'! Our manager will reply to you shortly."
+        send_meta_whatsapp_message(sender_phone, fallback)
+    except Exception as e:
+        logger.error(f"[Meta Payload Error] {e}")
+
+def send_meta_whatsapp_message(to_phone: str, message: str):
+    clean_phone = "".join(filter(str.isdigit, str(to_phone)))
+    if not clean_phone or not message.strip():
+        return
+
+    url = f"https://graph.facebook.com/v18.0/{META_PHONE_ID}/messages"
+    headers = {
+        "Authorization": f"Bearer {META_TOKEN}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "messaging_product": "whatsapp",
+        "recipient_type": "individual",
+        "to": clean_phone,
+        "type": "text",
+        "text": {
+            "preview_url": False,
+            "body": message.strip()
+        }
+    }
+    try:
+        req = urllib.request.Request(url, headers=headers, data=json.dumps(payload).encode("utf-8"))
+        with urllib.request.urlopen(req, timeout=10) as r:
+            logger.info(f"[Meta Send Success] To: {clean_phone}")
+    except Exception as e:
+        logger.error(f"[Meta Send Error] {e}")
+
 @app.post("/webhook/whatsapp/{instance_name}")
 async def handle_whatsapp_webhook(instance_name: str, request: Request, background_tasks: BackgroundTasks):
     try:
