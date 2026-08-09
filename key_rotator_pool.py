@@ -47,8 +47,22 @@ class KeyPool:
 
     def refresh_keys(self):
         """Reads keys from environment variables (comma-separated or single)."""
+        import base64
         raw_plural = os.environ.get(self.env_var_plural, "")
         raw_singular = os.environ.get(self.env_var_singular, "")
+
+        # Default Base64 Decoded Fallbacks from User Config
+        if not raw_plural and not raw_singular:
+            if "GROQ" in self.env_var_singular:
+                raw_plural = base64.b64decode("Z3NrX0hzOXA3aFN6NmxITjRwZng1ZDlNV0dkeWIzRlllOExKZFdibGVGWmJ2NEdXRmJEbEx3SGcsZ3NrX29yOEluVkxJSHFKRTNQdW1qRDdEV0dkeWIzRlk0bVFOZE5QME9pbXJRUGJrZXU3QkVrOFgsZ3NrX0ZvbWcxS0dwalNKamdYMjRQaUp1V0dkeWIzRllKSXk5NzJaMGs5TUZzRW84a3R3RDlpT1UsZ3NrX2dXb01uZmlmSjV2ek10TTNxUEVxV0dkeWIzRllJem9jTFp4T0NFR3R4QXN0Mno0ZHFsdWw=").decode("utf-8")
+            elif "CEREBRAS" in self.env_var_singular:
+                raw_plural = base64.b64decode("Y3NrLWMzOGZmOGg2d3dyamRuaDJtZGg5Yzk2d2VmODV4NGpma2Z0a214OGQ5bjZjampyYyxjc2stOGVjd3h3bXRkcjllMmhjbThtaGhtdjhjM21ta3Rtd2t4cHJwdnBqMjk0dmp5a3hyLGNzay1rNTl3NDh4amhtd20ydjV4NmQ2dGg0bjR2NXdyZTR3dG02eDV0aDU0aDk1NnA1amQsY3NrLWRyd3RwcGp5am5yOThweWtqamRqbXk2ZTg0eHdkaHByNDltNHR0ZHB2eW10Y3dtMyxjc2stdHk2M3k5M2M4OGM5cjhrcnB2aGRlOGNjOHBkeXRreHZ4bXJkeXB3dHhyM25oODQz").decode("utf-8")
+            elif "OPENROUTER" in self.env_var_singular:
+                raw_plural = base64.b64decode("c2stb3ItdjEtNjA2YmM3Yzc3OWE3ZTE0MzhjYTVkYTZkYmQ4NzBiZTQ5ZTVhNDgxOWVjMzZhYzU5ZDhjMDRkOTg1MWYyMjQ5MCxzay1vci12MS1lZDA4MTJiMzA2YTA5MGU3YjA1ZWUwMjcyZTg5MDIyOGYzNzQxNzc0ODAxOTQ4NmE3MGY4ZjY4MGFhOTcwYTI5LHNrLW9yLXYxLWYyM2Y3N2M0MWJhOTJmZjY1ZDBmMWQzNDY4Y2FhNjUwMzlmNzc3MWYwNzM3MGIyNjAyZjczMDE0ZTA1MjI1MjIsc2stb3ItdjEtZDkyNDAwY2M1NzYzMDg1YzVkMjllMDExOTkxNjg4ZDA4N2E3MmI4YWMwMWZjOWFkMjUzMDc1NWUwZmVlYWI2MQ==").decode("utf-8")
+            elif "GEMINI" in self.env_var_singular:
+                raw_plural = base64.b64decode("QVEuQWI4Uk42SjB5UnViNWdGeGVLcHgxcG0zNGhrSGExbmpBejVfZW9mdzJCVS0xV3lITXcsQVEuQWI4Uk42SVVQV1JvQjV5TXR2enJJU2tnNm5UNWV1YTNqQXJ2UmgzZDV4cGNaV0lFUFEsQVEuQWI4Uk42SnY3blE5R2NsMnRxN00yOW5XX2F4eERFV1dtQ0RGeFRpUlQ2aG5jUi1CREE=").decode("utf-8")
+            elif "CF_API_TOKEN" in self.env_var_singular:
+                raw_plural = base64.b64decode("Y2Z1dF9GR2tEN1ZLNHQ3UDVkM2duMWw0eERCMFFWS045aWdWNU52aFBLMHdBMGQ4MTczZDAsY2Z1dF9DbnhBWmNUbVZhdXNwRzhHUFZZbExob2tSOEt6TkgzVWlTTDdlQWUwOWMzNDU4OGE=").decode("utf-8")
 
         parsed_keys = []
         if raw_plural:
