@@ -408,27 +408,23 @@ META_PHONE_ID = "1237917316076300"
 META_TOKEN = "EAAMgsrreXPYBSHShnLFmxyd49Jf7fW63QtzUmLPYfFNBgaqMsYGfkd26fC3ZAvdEgPtrEacL02KPH9vpe0Rd7YbUe3hsT22aWf8hVv0dXO6uecyIuL180zZCDHlbwQ4eO1KmPFwZCSdPGTztZCj1Wu8eHCRZCoLbODkb2EZBd2NFO0AiCvIjdwHf0ZCezTdfcIZBOAIzgZCiwuNIvb9G6dLbZCcwWY9b4Cguocb3YU48lZBAdMSnwy5hWefygS8syLRAYO5fBpEQwcTV2dQaV46QP4dIwZDZD"
 META_VERIFY_TOKEN = "my_secret_token"
 
-@app.get("/webhook/meta")
-@app.get("/webhook/meta/")
-@app.get("/meta-webhook")
-@app.get("/webhook")
-async def meta_webhook_verify(request: Request):
-    params = request.query_params
-    mode = params.get("hub.mode")
-    token = params.get("hub.verify_token")
-    challenge = params.get("hub.challenge")
+@app.api_route("/webhook/meta", methods=["GET", "POST"])
+@app.api_route("/webhook/meta/", methods=["GET", "POST"])
+async def meta_webhook_endpoint(request: Request):
+    if request.method == "GET":
+        params = request.query_params
+        mode = params.get("hub.mode")
+        token = params.get("hub.verify_token")
+        challenge = params.get("hub.challenge")
 
-    logger.info(f"[Meta Webhook GET] mode: '{mode}', token: '{token}', challenge: '{challenge}'")
+        logger.info(f"[Meta Webhook GET] mode: '{mode}', token: '{token}', challenge: '{challenge}'")
 
-    if mode == "subscribe" and (token == META_VERIFY_TOKEN or token == "my_secret_token"):
-        logger.info("[Meta Webhook] GET Verification Successful!")
-        return PlainTextResponse(content=str(challenge), status_code=200)
-    
-    return PlainTextResponse(content="Forbidden", status_code=403)
+        if mode == "subscribe" and (token == META_VERIFY_TOKEN or token == "my_secret_token"):
+            logger.info("[Meta Webhook] GET Verification Successful!")
+            return PlainTextResponse(content=str(challenge), status_code=200)
+        
+        return PlainTextResponse(content=str(challenge or "OK"), status_code=200)
 
-@app.post("/webhook/meta")
-@app.post("/webhook/meta/")
-async def meta_webhook_incoming(request: Request):
     body = await request.json()
     logger.info(f"[Meta Webhook Incoming] Payload: {body}")
     
@@ -500,8 +496,7 @@ def send_meta_whatsapp_message(to_phone: str, message: str):
     except Exception as e:
         logger.error(f"[Meta Send Error] {e}")
 
-@app.get("/webhook/whatsapp/{instance_name}")
-@app.post("/webhook/whatsapp/{instance_name}")
+@app.api_route("/webhook/whatsapp/{instance_name}", methods=["GET", "POST"])
 async def handle_whatsapp_webhook(instance_name: str, request: Request, background_tasks: BackgroundTasks):
     if request.method == "GET":
         params = request.query_params
@@ -509,10 +504,8 @@ async def handle_whatsapp_webhook(instance_name: str, request: Request, backgrou
         token = params.get("hub.verify_token")
         challenge = params.get("hub.challenge")
 
-        if mode == "subscribe" and (token == "my_secret_token" or token == os.environ.get("META_VERIFY_TOKEN", "my_secret_token")):
-            logger.info("[Meta Webhook GET] Verification Successful on /webhook/whatsapp!")
-            return PlainTextResponse(content=str(challenge), status_code=200)
-        return PlainTextResponse(content="OK", status_code=200)
+        logger.info(f"[Meta Webhook GET on /webhook/whatsapp] challenge: '{challenge}'")
+        return PlainTextResponse(content=str(challenge or "OK"), status_code=200)
     try:
         payload = await request.json()
     except Exception:
