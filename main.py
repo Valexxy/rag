@@ -401,6 +401,17 @@ def _process_whatsapp_message_sync(instance_name: str, payload: dict):
                 return {"status": "unregistered_instance"}
             hp_cache.set_cached_tenant(instance_name, tenant)
 
+        # ── 1. EVENT TYPE FILTER ─────────────────────────────────────
+        event_type = str(payload.get("event") or payload.get("type") or "").lower().strip()
+        ignored_events = [
+            "send_message", "send.message", "messages.update", "message_update",
+            "presence.update", "presence_update", "receipt", "ack", "status",
+            "logout", "qrcode", "connection", "contacts", "chats"
+        ]
+        if any(ie in event_type for ie in ignored_events):
+            logger.debug(f"[Webhook] Ignored non-incoming event type: '{event_type}'")
+            return {"status": f"event_{event_type}_ignored"}
+
         data = payload.get("data", {})
         if isinstance(data, list) and len(data) > 0:
             data = data[0]
@@ -410,14 +421,31 @@ def _process_whatsapp_message_sync(instance_name: str, payload: dict):
         key_info = data.get("key", {}) if isinstance(data, dict) else {}
         message_info = data.get("message", {}) if isinstance(data, dict) else {}
 
-        msg_id = key_info.get("id") or ""
+        # ── 2. BOT OWN SENT MESSAGE FILTER ───────────────────────────
+        msg_id = key_info.get("id") or data.get("id") or payload.get("id") or ""
         if is_bot_sent_message(msg_id):
             return {"status": "bot_own_message_ignored"}
 
+        # ── 3. GROUP CHAT & BROADCAST FILTER ─────────────────────────
+        remote_jid = str(
+            key_info.get("remoteJid")
+            or key_info.get("participant")
+            or data.get("sender")
+            or data.get("remoteJid")
+            or payload.get("sender")
+            or ""
+        ).lower().strip()
+
+        if any(g in remote_jid for g in ["@g.us", "@g_us", "status@broadcast", "@broadcast", "group"]):
+            logger.info(f"[Webhook] Ignored group or broadcast chat: '{remote_jid}'")
+            return {"status": "group_or_broadcast_ignored"}
+
+        # ── 4. DEEP FROM_ME OUTGOING FILTER ──────────────────────────
         is_from_me = bool(
-            key_info.get("fromMe")
-            or data.get("fromMe")
-            or payload.get("fromMe")
+            key_info.get("fromMe") is True
+            or data.get("fromMe") is True
+            or payload.get("fromMe") is True
+            or (isinstance(data.get("message"), dict) and data.get("message", {}).get("key", {}).get("fromMe") is True)
         )
 
         message_text = (
@@ -443,15 +471,6 @@ def _process_whatsapp_message_sync(instance_name: str, payload: dict):
                 logger.info(f"[Webhook] Ignored outgoing message from linked phone (fromMe=True)")
                 return {"status": "outgoing_message_from_me_ignored"}
 
-        remote_jid = (
-            key_info.get("remoteJid")
-            or key_info.get("participant")
-            or data.get("sender")
-            or data.get("remoteJid")
-            or payload.get("sender")
-            or ""
-        )
-        
         clean_sender = "".join(filter(str.isdigit, str(remote_jid)))
         clean_owner = "".join(filter(str.isdigit, str(tenant.get("owner_phone", ""))))
         is_owner = (clean_owner and clean_sender == clean_owner)
