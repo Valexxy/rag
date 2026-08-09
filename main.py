@@ -207,8 +207,14 @@ def process_webhook_async(instance_name: str, payload: dict):
         if msg_id in BOT_SENT_IDS:
             return
 
-        # 3. GROUP CHAT FILTER
+        # 3. GROUP CHAT & LID ADDRESSING MODE RESOLUTION
         remote_jid = str(key_info.get("remoteJid") or data.get("remoteJid") or "").lower().strip()
+        remote_jid_alt = str(key_info.get("remoteJidAlt") or data.get("remoteJidAlt") or key_info.get("participant") or "").lower().strip()
+
+        if "@lid" in remote_jid and remote_jid_alt and "@" in remote_jid_alt:
+            logger.info(f"[LID Resolution] Swapping LID '{remote_jid}' -> Standard JID '{remote_jid_alt}'")
+            remote_jid = remote_jid_alt
+
         if "@g.us" in remote_jid or "broadcast" in remote_jid:
             return
 

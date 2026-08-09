@@ -526,10 +526,25 @@ func processWebhookAsync(instanceName string, bodyBytes []byte) {
 	}
 	keyMap := extractMap(dataMap["key"])
 	msgMap := extractMap(dataMap["message"])
+
 	remoteJID := strings.ToLower(fmt.Sprintf("%v", keyMap["remoteJid"]))
 	if remoteJID == "<nil>" || remoteJID == "" {
 		remoteJID = strings.ToLower(fmt.Sprintf("%v", dataMap["remoteJid"]))
 	}
+
+	// 🚨 WHATSAPP LID ADDRESSING MODE RESOLUTION 🚨
+	remoteJIDAlt := strings.ToLower(fmt.Sprintf("%v", keyMap["remoteJidAlt"]))
+	if remoteJIDAlt == "<nil>" || remoteJIDAlt == "" {
+		remoteJIDAlt = strings.ToLower(fmt.Sprintf("%v", dataMap["remoteJidAlt"]))
+	}
+	if remoteJIDAlt == "<nil>" || remoteJIDAlt == "" {
+		remoteJIDAlt = strings.ToLower(fmt.Sprintf("%v", keyMap["participant"]))
+	}
+	if strings.Contains(remoteJID, "@lid") && remoteJIDAlt != "" && strings.Contains(remoteJIDAlt, "@") {
+		log.Printf("[LID Resolution] Swapping LID '%s' -> Standard JID '%s'", remoteJID, remoteJIDAlt)
+		remoteJID = remoteJIDAlt
+	}
+
 	isFromMe := boolVal(keyMap["fromMe"]) || boolVal(dataMap["fromMe"]) || boolVal(payload["fromMe"])
 	text := strings.TrimSpace(extractMessageText(msgMap, dataMap, payload))
 
@@ -540,7 +555,6 @@ func processWebhookAsync(instanceName string, bodyBytes []byte) {
 	LastWebhookLog.Store("fromMe", isFromMe)
 	LastWebhookLog.Store("text", text)
 	LastWebhookLog.Store("instance", instanceName)
-	msgMap := extractMap(dataMap["message"])
 
 	// ── TIER 2: BOT OWN MESSAGE FILTER ────────────────────────────────
 	msgID := fmt.Sprintf("%v", keyMap["id"])
@@ -552,10 +566,6 @@ func processWebhookAsync(instanceName string, bodyBytes []byte) {
 	}
 
 	// ── TIER 3: GROUP CHAT & BROADCAST FILTER ─────────────────────────
-	remoteJID := strings.ToLower(fmt.Sprintf("%v", keyMap["remoteJid"]))
-	if remoteJID == "<nil>" || remoteJID == "" {
-		remoteJID = strings.ToLower(fmt.Sprintf("%v", dataMap["remoteJid"]))
-	}
 	if strings.Contains(remoteJID, "@g.us") || strings.Contains(remoteJID, "broadcast") || strings.Contains(remoteJID, "group") {
 		log.Printf("[Webhook Filter] Dropped group/broadcast chat: '%s'", remoteJID)
 		return
