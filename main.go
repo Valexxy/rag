@@ -504,11 +504,18 @@ func processWebhookAsync(instanceName string, bodyBytes []byte) {
 		return
 	}
 
+	ownerPhone := getEnv("OWNER_PHONE", "2348072015725")
+	cleanOwner := sanitizePhone(ownerPhone)
+	cleanSender := sanitizePhone(senderPhone)
+
 	if isFromMe {
-		if strings.HasPrefix(text, "#") || strings.HasPrefix(text, "!") {
-			log.Printf("[Webhook Filter] Processing owner command from linked phone: '%s'", text)
+		isOwnerCommand := strings.HasPrefix(text, "#") || strings.HasPrefix(text, "!")
+		isSelfTest := (cleanSender == cleanOwner) || strings.Contains(remoteJID, "self")
+
+		if isOwnerCommand || isSelfTest {
+			log.Printf("[Webhook Filter] Processing owner message/self-test: '%s'", text)
 		} else {
-			log.Printf("[Webhook Filter] Ignored outgoing message from linked phone (fromMe=true)")
+			log.Printf("[Webhook Filter] Ignored personal outgoing message to contact (%s)", senderPhone)
 			return
 		}
 	}

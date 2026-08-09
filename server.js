@@ -248,17 +248,23 @@ app.post('/webhook/whatsapp/:instance', (req, res) => {
       const senderPhone = remoteJid.split('@')[0];
       if (!senderPhone) return;
 
-      // 4. DEEP FROM_ME OUTGOING FILTER
+      // 4. DEEP FROM_ME OUTGOING FILTER WITH OWNER SELF-TEST BYPASS
       const isFromMe = Boolean(key.fromMe || data.fromMe || body.fromMe);
       const messageObj = data.message || {};
       const text = (messageObj.conversation || messageObj.extendedTextMessage?.text || messageObj.imageMessage?.caption || data.body || data.text || "").trim();
       if (!text) return;
 
+      const cleanOwner = String(OWNER_PHONE).replace(/\D/g, '');
+      const cleanSender = String(senderPhone).replace(/\D/g, '');
+
       if (isFromMe) {
-        if (text.startsWith("#") || text.startsWith("!")) {
-          console.log(`[Node.js Webhook] Executing owner command: ${text.substring(0, 30)}`);
+        const isOwnerCommand = text.startsWith("#") || text.startsWith("!");
+        const isSelfTest = (cleanSender === cleanOwner) || remoteJid.includes("self");
+
+        if (isOwnerCommand || isSelfTest) {
+          console.log(`[Node.js Webhook] Processing owner message/self-test: '${text.substring(0, 30)}'`);
         } else {
-          console.log("[Node.js Webhook] Ignored outgoing message from linked phone (fromMe=true)");
+          console.log(`[Node.js Webhook] Ignored personal outgoing message to contact (${senderPhone})`);
           return;
         }
       }

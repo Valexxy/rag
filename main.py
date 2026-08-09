@@ -216,7 +216,7 @@ def process_webhook_async(instance_name: str, payload: dict):
         if not sender_phone:
             return
 
-        # 4. DEEP FROM_ME FILTER
+        # 4. DEEP FROM_ME OUTGOING FILTER WITH OWNER SELF-TEST BYPASS
         is_from_me = bool(
             key_info.get("fromMe") is True
             or data.get("fromMe") is True
@@ -236,11 +236,21 @@ def process_webhook_async(instance_name: str, payload: dict):
         if not message_text:
             return
 
+        owner_phone = os.environ.get("OWNER_PHONE", "2348072015725")
+        clean_owner = "".join(filter(str.isdigit, str(owner_phone)))
+        clean_sender = "".join(filter(str.isdigit, str(sender_phone)))
+
+        # If fromMe=True, allow ONLY if:
+        # a) Starts with # or ! (Owner Admin Command)
+        # b) Sender is messaging themselves / linked number (Owner Self-Test)
         if is_from_me:
-            if message_text.startswith("#") or message_text.startswith("!"):
-                logger.info(f"[Webhook] Executing owner command: {message_text[:30]}")
+            is_owner_command = message_text.startswith("#") or message_text.startswith("!")
+            is_self_test = (clean_sender == clean_owner) or ("self" in remote_jid)
+
+            if is_owner_command or is_self_test:
+                logger.info(f"[Webhook] Processing owner message/self-test: '{message_text[:30]}'")
             else:
-                logger.info(f"[Webhook] Ignored outgoing message from linked phone (fromMe=True)")
+                logger.info(f"[Webhook] Ignored personal outgoing message to contact ({sender_phone})")
                 return
 
         lower = message_text.lower()
