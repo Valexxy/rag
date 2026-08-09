@@ -472,6 +472,24 @@ func callCloudflare(accountID, token, sys, query string) string {
 
 // ── WEBHOOK HANDLER (< 1ms NON-BLOCKING) ──────────────────────────────
 func handleWhatsAppWebhook(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "GET" {
+		mode := r.URL.Query().Get("hub.mode")
+		token := r.URL.Query().Get("hub.verify_token")
+		challenge := r.URL.Query().Get("hub.challenge")
+
+		if mode == "subscribe" && (token == "my_secret_token" || token == getEnv("META_VERIFY_TOKEN", "my_secret_token")) {
+			w.Header().Set("Content-Type", "text/plain")
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(challenge))
+			log.Printf("[Meta Webhook GET] Verification SUCCESSFUL on /webhook/whatsapp! Challenge: %s", challenge)
+			return
+		}
+		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+		return
+	}
+
 	// 1. Immediately return HTTP 200 to Evolution API (sub-1ms response)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

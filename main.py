@@ -500,8 +500,19 @@ def send_meta_whatsapp_message(to_phone: str, message: str):
     except Exception as e:
         logger.error(f"[Meta Send Error] {e}")
 
+@app.get("/webhook/whatsapp/{instance_name}")
 @app.post("/webhook/whatsapp/{instance_name}")
 async def handle_whatsapp_webhook(instance_name: str, request: Request, background_tasks: BackgroundTasks):
+    if request.method == "GET":
+        params = request.query_params
+        mode = params.get("hub.mode")
+        token = params.get("hub.verify_token")
+        challenge = params.get("hub.challenge")
+
+        if mode == "subscribe" and (token == "my_secret_token" or token == os.environ.get("META_VERIFY_TOKEN", "my_secret_token")):
+            logger.info("[Meta Webhook GET] Verification Successful on /webhook/whatsapp!")
+            return PlainTextResponse(content=str(challenge), status_code=200)
+        return PlainTextResponse(content="OK", status_code=200)
     try:
         payload = await request.json()
     except Exception:
