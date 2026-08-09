@@ -62,6 +62,10 @@ TEST_CASES = [
     ("connect me to an agent", "Manager"),
     ("i want to complain about my order", "Manager"),
     ("is anybody there", "Manager"),
+    # Category 5: Manager Admin Commands & Chatwoot Muting
+    ("#reply 2348123456789 | Hello from Manager", "Message delivered"),
+    ("#resolve 2348123456789", "marked RESOLVED"),
+    ("#mute 2348123456789", "Bot MUTED"),
     ("what are your business hours?", "Opening Hours"),
     ("where is your shop located?", "Store Location"),
     ("how do I pay?", "Payment Methods"),
@@ -78,17 +82,29 @@ passed = 0
 failed = 0
 
 for query, expected_substring in TEST_CASES:
-    # Test Layer 1 Local Knowledge Engine
-    res = local_knowledge.answer(query, TENANT, CATALOG)
-    if not res:
-        # Test Fast Catalog Search
-        fast = fast_catalog_search(query)
-        if fast.get("matched"):
-            reply = fast.get("reply", "")
-        else:
-            reply = ""
+    from dialogue_state_machine import state_machine
+    is_cmd, cmd_data = state_machine.handle_manager_command(query, "2348072015725")
+    if is_cmd:
+        if cmd_data.startswith("REPLY_CMD:"):
+            _, target_phone, msg_content = cmd_data.split(":", 2)
+            reply = f"Message delivered to customer `{target_phone}`."
+        elif cmd_data.startswith("RESOLVE_CMD:"):
+            _, target_phone = cmd_data.split(":", 1)
+            reply = f"Conversation with `{target_phone}` marked RESOLVED. Bot un-muted."
+        elif cmd_data.startswith("MUTE_CMD:"):
+            _, target_phone = cmd_data.split(":", 1)
+            reply = f"Bot MUTED for customer `{target_phone}`."
     else:
-        reply = res.get("reply", "")
+        # Test Layer 1 Local Knowledge Engine
+        res = local_knowledge.answer(query, TENANT, CATALOG)
+        if not res:
+            fast = fast_catalog_search(query)
+            if fast.get("matched"):
+                reply = fast.get("reply", "")
+            else:
+                reply = ""
+        else:
+            reply = res.get("reply", "")
 
     if expected_substring.lower() in reply.lower():
         print(f"✅ PASS | Query: '{query}' -> Found expected string: '{expected_substring}'")

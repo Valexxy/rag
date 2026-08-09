@@ -253,7 +253,28 @@ def process_webhook_async(instance_name: str, payload: dict):
                 logger.info(f"[Webhook] Ignored personal outgoing message to contact ({sender_phone})")
                 return
 
-        lower = message_text.lower()
+        # ── STATE MACHINE & CHATWOOT MUTING CHECK ─────────────────────
+        from dialogue_state_machine import state_machine
+
+        # Check if owner sent a manager command (#reply, #resolve, #mute)
+        is_cmd, cmd_data = state_machine.handle_manager_command(message_text, sender_phone)
+        if is_cmd:
+            if cmd_data.startswith("REPLY_CMD:"):
+                _, target_phone, msg_content = cmd_data.split(":", 2)
+                send_whatsapp_message(instance_name, target_phone, f"💬 *[Store Manager]:* {msg_content}")
+                send_whatsapp_message(instance_name, sender_phone, f"✅ Message delivered to customer `{target_phone}`.")
+            elif cmd_data.startswith("RESOLVE_CMD:"):
+                _, target_phone = cmd_data.split(":", 1)
+                send_whatsapp_message(instance_name, sender_phone, f"✅ Conversation with `{target_phone}` marked RESOLVED. Bot un-muted.")
+            elif cmd_data.startswith("MUTE_CMD:"):
+                _, target_phone = cmd_data.split(":", 1)
+                send_whatsapp_message(instance_name, sender_phone, f"🤫 Bot MUTED for customer `{target_phone}`.")
+            return
+
+        # If bot is MUTED for this customer (HUMAN_ESCALATED state), skip bot response!
+        if state_machine.is_bot_muted(remote_jid):
+            logger.info(f"[State Machine] Bot is MUTED for customer '{remote_jid}' (Human Manager Active)")
+            return
 
         # Express Intent Intelligence: Human & Support Request Handler
         human_support_regex = re.compile(
@@ -261,9 +282,11 @@ def process_webhook_async(instance_name: str, payload: dict):
             re.IGNORECASE
         )
         if human_support_regex.search(lower):
+            state_machine.set_state(remote_jid, "HUMAN_ESCALATED")
             owner_phone = os.environ.get("OWNER_PHONE", "2348072015725")
             customer_notice = (
-                f"🚨 *[Teeslux Store — Manager Transfer]*\n\n"
+                f"🚨 *[Teeslux Store — Executive Transfer]*\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
                 f"I understand you need support regarding *'{message_text}'*!\n\n"
                 f"I have escalated your request directly to our Store Manager on top priority. "
                 f"Our manager will reply to your message right here shortly!\n\n"
@@ -272,15 +295,17 @@ def process_webhook_async(instance_name: str, payload: dict):
             send_whatsapp_message(instance_name, sender_phone, customer_notice)
 
             manager_alert = (
-                f"🚨 *[URGENT MANAGER REQUEST]*\n\n"
+                f"🚨 *[URGENT CHATWOOT-GRADE HANDOVER]*\n\n"
                 f"👤 *Customer:* `{sender_phone}`\n"
                 f"❓ *Inquiry:* '{message_text}'\n"
-                f"⚡ *Priority:* HIGHEST\n\n"
-                f"💬 Reply `#reply {sender_phone} | Your message` to respond directly!"
+                f"🔒 *Bot Status:* MUTED (Manager Control Active)\n\n"
+                f"💬 Reply `#reply {sender_phone} | Your message` to reply!\n"
+                f"✅ Reply `#resolve {sender_phone}` to un-mute bot!"
             )
             send_whatsapp_message(instance_name, owner_phone, manager_alert)
-            logger.info(f"[Express Intent] Routed human support query '{message_text}' from {sender_phone}")
+            logger.info(f"[Express Intent] Escalated human support query '{message_text}' from {sender_phone}")
             return
+
 
         # Greetings Quick Action Menu
         if lower in ["hi", "hello", "hey", "good morning", "good afternoon", "good evening", "good day", "how far"]:

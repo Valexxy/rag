@@ -15,8 +15,10 @@ const http = require('http');
 const https = require('https');
 const url = require('url');
 const WhatsAppUIFormatter = require('./whatsapp_ui_formatter');
+const stateMachine = require('./state_machine');
 
 const app = express();
+
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -272,17 +274,38 @@ app.post('/webhook/whatsapp/:instance', (req, res) => {
         }
       }
 
+      // ── STATE MACHINE & CHATWOOT MUTING CHECK ─────────────────────
+      const cmdResult = stateMachine.handleManagerCommand(text);
+      if (cmdResult.isCommand) {
+        if (cmdResult.type === 'REPLY') {
+          await sendWhatsAppMessage(cmdResult.targetPhone, `💬 *[Store Manager]:* ${cmdResult.message}`);
+          await sendWhatsAppMessage(senderPhone, `✅ Message delivered to customer \`${cmdResult.targetPhone}\`.`);
+        } else if (cmdResult.type === 'RESOLVE') {
+          await sendWhatsAppMessage(senderPhone, `✅ Conversation with \`${cmdResult.targetPhone}\` marked RESOLVED. Bot un-muted.`);
+        } else if (cmdResult.type === 'MUTE') {
+          await sendWhatsAppMessage(senderPhone, `🤫 Bot MUTED for customer \`${cmdResult.targetPhone}\`.`);
+        }
+        return;
+      }
+
+      // If bot is MUTED for this customer (HUMAN_ESCALATED state), skip bot response!
+      if (stateMachine.isBotMuted(remoteJid)) {
+        console.log(`[State Machine] Bot is MUTED for customer '${remoteJid}' (Human Manager Active)`);
+        return;
+      }
+
       const lower = text.toLowerCase();
 
       // Express Intent Intelligence: Human & Support Request Handler
       const humanSupportRegex = /\b(support|help|assist|assistance|care|complain|complaint|issue|problem|trouble|faulty|broken|damaged|refund|dispute|human|person|people|agent|rep|representative|manager|boss|director|owner|staff|personnel|team|executive|admin|administrator|head|talk to|speak to|speak with|talk with|connect me|transfer me|reach someone|call me|is anyone there|anybody there|who is there|need someone|want someone|need help|need support|need assistance|asap|urgent|now|emergency)\b/i;
       if (humanSupportRegex.test(lower)) {
+        stateMachine.setState(remoteJid, 'HUMAN_ESCALATED');
         const customerNotice = WhatsAppUIFormatter.formatManagerHandover(text, "Teeslux Global Store", OWNER_PHONE);
         await sendWhatsAppMessage(senderPhone, customerNotice);
 
-        const managerAlert = `🚨 *[URGENT MANAGER REQUEST]*\n\n👤 *Customer:* \`${senderPhone}\`\n❓ *Inquiry:* '${text}'\n⚡ *Priority:* HIGHEST\n\n💬 Reply \`#reply ${senderPhone} \| Your message\` to respond directly!`;
+        const managerAlert = `🚨 *[URGENT CHATWOOT-GRADE HANDOVER]*\n\n👤 *Customer:* \`${senderPhone}\`\n❓ *Inquiry:* '${text}'\n🔒 *Bot Status:* MUTED (Manager Control Active)\n\n💬 Reply \`#reply ${senderPhone} \| Your message\` to reply!\n✅ Reply \`#resolve ${senderPhone}\` to un-mute bot!`;
         await sendWhatsAppMessage(OWNER_PHONE, managerAlert);
-        console.log(`[Express Intent] Routed human support query '${text}' from ${senderPhone}`);
+        console.log(`[Express Intent] Escalated human support query '${text}' from ${senderPhone}`);
         return;
       }
 
