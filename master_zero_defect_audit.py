@@ -55,7 +55,8 @@ TEST_CASES = [
     ("gold", "24K Gold Bar Bullion"),
     ("power bank", "20,000 mAh Solar Power Bank"),
 
-    # Category 4: Operational FAQs
+    # Category 4: Operational FAQs & Manager Requests
+    ("is your manager available for a chat", "Manager Transfer"),
     ("what are your business hours?", "Opening Hours"),
     ("where is your shop located?", "Store Location"),
     ("how do I pay?", "Payment Methods"),

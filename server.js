@@ -265,6 +265,17 @@ app.post('/webhook/whatsapp/:instance', (req, res) => {
 
       const lower = text.toLowerCase();
 
+      // Direct Manager / Human Support Request Handler
+      if (["manager", "human", "representative", "admin", "agent", "talk to human", "speak with manager", "available for a chat", "chat with manager"].some(kw => lower.includes(kw))) {
+        const customerNotice = `🚨 *[Teeslux Store — Manager Transfer]*\n\nYes! Our Store Manager is available.\n\nI have alerted our manager directly on top priority. Our manager will reply to your message here shortly!\n\n📞 You can also reach our manager directly at *+${OWNER_PHONE}*.`;
+        await sendWhatsAppMessage(senderPhone, customerNotice);
+
+        const managerAlert = `🚨 *[URGENT MANAGER REQUEST]*\n\n👤 *Customer:* \`${senderPhone}\`\n❓ *Inquiry:* '${text}'\n⚡ *Priority:* HIGHEST\n\n💬 Reply \`#reply ${senderPhone} \| Your message\` to respond directly!`;
+        await sendWhatsAppMessage(OWNER_PHONE, managerAlert);
+        console.log(`[Manager Request] Handled manager query '${text}' from ${senderPhone}`);
+        return;
+      }
+
       // Greetings Quick Action Menu
       if (["hi", "hello", "hey", "good morning", "good afternoon", "good evening", "good day", "how far"].includes(lower)) {
         const greetingMenu = `☀️ *[Teeslux Global Client Care]*\n\nWelcome to Teeslux Global Electronics & Solar!\n\n1️⃣ *Catalog & Products* — View current prices & items\n2️⃣ *Book Inspection* — Schedule a physical store visit\n3️⃣ *Track Order* — Check status of shipment\n4️⃣ *Human Support* — Speak with manager\n\nReply 1, 2, 3, or 4 to proceed!`;

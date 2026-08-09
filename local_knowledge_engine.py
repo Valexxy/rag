@@ -75,7 +75,21 @@ class LocalKnowledgeEngine:
                 "source": "local_disambiguation"
             }
 
-        # ── 3. CATALOG PRICE LOOKUP ─────────────────────────────────────
+        # ── 3. HUMAN MANAGER HANDOVER (manager, human, representative, talk to human) ────────
+        if any(kw in q for kw in ["manager", "human", "representative", "admin", "agent", "talk to human", "speak with manager", "available for a chat", "chat with manager", "support", "executive"]):
+            return {
+                "reply": (
+                    f"🚨 *[{biz} — Manager Transfer]*\n\n"
+                    f"Yes! Our Store Manager is available.\n\n"
+                    f"I have alerted our manager directly on top priority. "
+                    f"Our manager will reply to your message here shortly!\n\n"
+                    f"📞 You can also reach our manager directly at *+{owner_phone}*."
+                ),
+                "confidence": 1.0,
+                "source": "local_manager_handover"
+            }
+
+        # ── 4. CATALOG PRICE LOOKUP ─────────────────────────────────────
         cat_answer = self._catalog_lookup(q, catalog, biz)
         if cat_answer:
             return cat_answer

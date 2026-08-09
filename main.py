@@ -245,6 +245,29 @@ def process_webhook_async(instance_name: str, payload: dict):
 
         lower = message_text.lower()
 
+        # Direct Manager / Human Support Request Handler
+        if any(kw in lower for kw in ["manager", "human", "representative", "admin", "agent", "talk to human", "speak with manager", "available for a chat", "chat with manager"]):
+            owner_phone = os.environ.get("OWNER_PHONE", "2348072015725")
+            customer_notice = (
+                f"🚨 *[Teeslux Store — Manager Transfer]*\n\n"
+                f"Yes! Our Store Manager is available.\n\n"
+                f"I have alerted our manager directly on top priority. "
+                f"Our manager will reply to your message here shortly!\n\n"
+                f"📞 You can also reach our manager directly at *+{owner_phone}*."
+            )
+            send_whatsapp_message(instance_name, sender_phone, customer_notice)
+
+            manager_alert = (
+                f"🚨 *[URGENT MANAGER REQUEST]*\n\n"
+                f"👤 *Customer:* `{sender_phone}`\n"
+                f"❓ *Inquiry:* '{message_text}'\n"
+                f"⚡ *Priority:* HIGHEST\n\n"
+                f"💬 Reply `#reply {sender_phone} | Your message` to respond directly!"
+            )
+            send_whatsapp_message(instance_name, owner_phone, manager_alert)
+            logger.info(f"[Manager Request] Handled manager query '{message_text}' from {sender_phone}")
+            return
+
         # Greetings Quick Action Menu
         if lower in ["hi", "hello", "hey", "good morning", "good afternoon", "good evening", "good day", "how far"]:
             greeting_menu = (
