@@ -493,6 +493,21 @@ func handleWhatsAppWebhook(w http.ResponseWriter, r *http.Request) {
 	go processWebhookAsync(instanceName, bodyBytes)
 }
 
+var (
+	LastWebhookLog   = sync.Map{}
+	LastWebhookMutex sync.Mutex
+)
+
+func handleLastWebhook(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var result = make(map[string]interface{})
+	LastWebhookLog.Range(func(k, v interface{}) bool {
+		result[fmt.Sprintf("%v", k)] = v
+		return true
+	})
+	json.NewEncoder(w).Encode(result)
+}
+
 func processWebhookAsync(instanceName string, bodyBytes []byte) {
 	var payload map[string]interface{}
 	if err := json.Unmarshal(bodyBytes, &payload); err != nil {
@@ -504,20 +519,27 @@ func processWebhookAsync(instanceName string, bodyBytes []byte) {
 	if eventType == "<nil>" || eventType == "" {
 		eventType = strings.ToLower(fmt.Sprintf("%v", payload["type"]))
 	}
-	ignoredEvents := []string{"send_message", "send.message", "update", "presence", "receipt", "ack", "status", "logout", "qrcode", "connection", "contacts", "chats"}
-	for _, ie := range ignoredEvents {
-		if strings.Contains(eventType, ie) {
-			log.Printf("[Webhook Filter] Dropped non-incoming event: '%s'", eventType)
-			return
-		}
-	}
 
 	dataMap := extractMap(payload["data"])
 	if dataMap == nil {
 		dataMap = payload
 	}
-
 	keyMap := extractMap(dataMap["key"])
+	msgMap := extractMap(dataMap["message"])
+	remoteJID := strings.ToLower(fmt.Sprintf("%v", keyMap["remoteJid"]))
+	if remoteJID == "<nil>" || remoteJID == "" {
+		remoteJID = strings.ToLower(fmt.Sprintf("%v", dataMap["remoteJid"]))
+	}
+	isFromMe := boolVal(keyMap["fromMe"]) || boolVal(dataMap["fromMe"]) || boolVal(payload["fromMe"])
+	text := strings.TrimSpace(extractMessageText(msgMap, dataMap, payload))
+
+	// Record in LastWebhookLog memory
+	LastWebhookLog.Store("timestamp", time.Now().Format("2006-01-02 15:04:05 MST"))
+	LastWebhookLog.Store("event", eventType)
+	LastWebhookLog.Store("remoteJid", remoteJID)
+	LastWebhookLog.Store("fromMe", isFromMe)
+	LastWebhookLog.Store("text", text)
+	LastWebhookLog.Store("instance", instanceName)
 	msgMap := extractMap(dataMap["message"])
 
 	// ── TIER 2: BOT OWN MESSAGE FILTER ────────────────────────────────
@@ -791,6 +813,7 @@ func main() {
 	http.HandleFunc("/api/status", handleStatus)
 	http.HandleFunc("/api/ai-providers", handleAIProviders)
 	http.HandleFunc("/api/test-chat", handleTestChat)
+	http.HandleFunc("/api/last-webhook", handleLastWebhook)
 	http.HandleFunc("/webhook/whatsapp/", handleWhatsAppWebhook)
 
 	log.Printf("🚀 Pure Golang AI Commerce Engine listening on port %s...", port)
