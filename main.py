@@ -227,9 +227,34 @@ def process_webhook_async(instance_name: str, payload: dict):
             send_whatsapp_message(instance_name, sender_phone, fast_match["reply"])
             return
 
-        # AI Engine Ensemble Response
-        ai_reply = generate_ai_reply(message_text)
-        send_whatsapp_message(instance_name, sender_phone, ai_reply)
+        # -------------------------------------------------------------
+        # 🚨 HIGH-PRIORITY MANAGER HANDOVER ROUTER (ZERO DELAY)
+        # If a product is NOT in the database, route directly to Manager!
+        # No advice, no recommendations, just instant high-priority transfer.
+        # -------------------------------------------------------------
+        owner_phone = os.environ.get("OWNER_PHONE", "2348072015725")
+
+        # 1. Send High-Priority Manager Transfer Notice to Customer
+        customer_transfer_notice = (
+            f"🚨 *[Teeslux Store — High-Priority Manager Transfer]*\n\n"
+            f"Thank you for your inquiry regarding *'{message_text}'*!\n\n"
+            f"I have routed your request directly to our Business Manager on highest priority. "
+            f"Our manager will reply to you here shortly!"
+        )
+        send_whatsapp_message(instance_name, sender_phone, customer_transfer_notice)
+
+        # 2. Send Urgent Manager Alert to Store Owner
+        manager_alert = (
+            f"🚨 *[URGENT MANAGER ACTION REQUIRED]*\n\n"
+            f"👤 *Customer:* `{sender_phone}`\n"
+            f"❓ *Out-of-Catalog Inquiry:* '{message_text}'\n"
+            f"⚡ *Priority:* HIGHEST (Instant Routing)\n\n"
+            f"💬 Reply `#reply {sender_phone} | Your message` to respond directly to this customer!"
+        )
+        send_whatsapp_message(instance_name, owner_phone, manager_alert)
+        logger.info(f"[High-Priority Handover] Out-of-catalog query '{message_text}' from {sender_phone} routed to manager {owner_phone}")
+        return
+
 
     except Exception as e:
         logger.error(f"[Webhook Worker Error]: {e}")

@@ -530,9 +530,24 @@ func processWebhookAsync(instanceName string, bodyBytes []byte) {
 		return
 	}
 
-	// Dynamic AI Ensemble Response Engine
-	aiReply := GenerateAIAnswer(text)
-	SendWhatsAppMessage(instanceName, senderPhone, aiReply)
+	// -------------------------------------------------------------
+	// 🚨 HIGH-PRIORITY MANAGER HANDOVER ROUTER (ZERO DELAY)
+	// If a product is NOT in the database, route directly to Manager!
+	// No advice, no recommendations, just instant high-priority transfer.
+	// -------------------------------------------------------------
+	ownerPhone := getEnv("OWNER_PHONE", "2348072015725")
+
+	// 1. Send High-Priority Transfer Notice to Customer
+	customerNotice := fmt.Sprintf("🚨 *[Teeslux Store — High-Priority Manager Transfer]*\n\nThank you for your inquiry regarding *'%s'*!\n\nI have routed your request directly to our Business Manager on highest priority. Our manager will reply to you here shortly!", text)
+	SendWhatsAppMessage(instanceName, senderPhone, customerNotice)
+
+	// 2. Send Urgent Action Alert to Store Manager / Owner Phone
+	managerAlert := fmt.Sprintf("🚨 *[URGENT MANAGER ACTION REQUIRED]*\n\n👤 *Customer:* `%s`\n❓ *Out-of-Catalog Inquiry:* '%s'\n⚡ *Priority:* HIGHEST (Instant Routing)\n\n💬 Reply `#reply %s | Your message` to respond directly to this customer!", senderPhone, text, senderPhone)
+	SendWhatsAppMessage(instanceName, ownerPhone, managerAlert)
+
+	log.Printf("[High-Priority Handover] Out-of-catalog query '%s' from %s routed to manager %s", text, senderPhone, ownerPhone)
+	return
+
 }
 
 // ── UTILITY HELPERS ──────────────────────────────────────────────────
