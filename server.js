@@ -14,8 +14,10 @@ const express = require('express');
 const http = require('http');
 const https = require('https');
 const url = require('url');
+const WhatsAppUIFormatter = require('./whatsapp_ui_formatter');
 
 const app = express();
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -172,10 +174,11 @@ function fastCatalogSearch(text) {
 
   // Ambiguous Category Queries -> Disambiguation Menu
   if (q === "solar" || q === "generator" || q === "inverter") {
+    const options = [CATALOG[0], CATALOG[2], CATALOG[5]];
     return {
       matched: true,
       type: "disambiguation",
-      reply: `🤔 *[Teeslux Store — Multiple Options Found]*\n\nI found a few items matching your request!\n\n1️⃣ *550W Monocrystalline Solar Panel* (₦120,000.00)\n2️⃣ *1.5kVA Dual Solar Generator* (₦185,000.00)\n3️⃣ *3.5kVA Hybrid Solar Inverter System* (₦340,000.00)\n\n💬 Reply *1*, *2*, or *3* to view details, or reply *#buy* to place an order!`
+      reply: WhatsAppUIFormatter.formatDisambiguationCarousel(options, q, "Teeslux Global Store")
     };
   }
 
@@ -214,12 +217,12 @@ app.get('/api/test-chat', async (req, res) => {
       return res.json({ status: "success", query, reply: fast.reply, source: "fast_disambiguation" });
     } else {
       const item = fast.item;
-      const card = `🛍️ *[Teeslux Store — Product Found]*\n\n✅ *${item.name}*\n💰 *Fixed Price:* ₦${item.price.toLocaleString()}.00\n📦 *Status:* In Stock\n📝 *Details:* ${item.desc}\n\n💬 Reply *#buy* to place your order, or *#human* to speak with our manager.`;
+      const card = WhatsAppUIFormatter.formatProductCard(item, "Teeslux Global Store");
       return res.json({ status: "success", query, reply: card, source: "fast_catalog_matched" });
     }
   }
 
-  const notice = `🚨 *[Teeslux Store — High-Priority Manager Transfer]*\n\nThank you for your inquiry regarding *'${query}'*!\n\nI have routed your request directly to our Business Manager on highest priority. Our manager will reply to you here shortly!`;
+  const notice = WhatsAppUIFormatter.formatManagerHandover(query, "Teeslux Global Store", OWNER_PHONE);
   return res.json({ status: "success", query, reply: notice, source: "instant_manager_handover" });
 });
 
@@ -274,7 +277,7 @@ app.post('/webhook/whatsapp/:instance', (req, res) => {
       // Express Intent Intelligence: Human & Support Request Handler
       const humanSupportRegex = /\b(support|help|assist|assistance|care|complain|complaint|issue|problem|trouble|faulty|broken|damaged|refund|dispute|human|person|people|agent|rep|representative|manager|boss|director|owner|staff|personnel|team|executive|admin|administrator|head|talk to|speak to|speak with|talk with|connect me|transfer me|reach someone|call me|is anyone there|anybody there|who is there|need someone|want someone|need help|need support|need assistance|asap|urgent|now|emergency)\b/i;
       if (humanSupportRegex.test(lower)) {
-        const customerNotice = `🚨 *[Teeslux Store — Manager Transfer]*\n\nI understand you need support regarding *'${text}'*!\n\nI have escalated your request directly to our Store Manager on top priority. Our manager will reply to your message right here shortly!\n\n📞 You can also reach our manager directly at *+${OWNER_PHONE}*.`;
+        const customerNotice = WhatsAppUIFormatter.formatManagerHandover(text, "Teeslux Global Store", OWNER_PHONE);
         await sendWhatsAppMessage(senderPhone, customerNotice);
 
         const managerAlert = `🚨 *[URGENT MANAGER REQUEST]*\n\n👤 *Customer:* \`${senderPhone}\`\n❓ *Inquiry:* '${text}'\n⚡ *Priority:* HIGHEST\n\n💬 Reply \`#reply ${senderPhone} \| Your message\` to respond directly!`;
@@ -285,7 +288,7 @@ app.post('/webhook/whatsapp/:instance', (req, res) => {
 
       // Greetings Quick Action Menu
       if (["hi", "hello", "hey", "good morning", "good afternoon", "good evening", "good day", "how far"].includes(lower)) {
-        const greetingMenu = `☀️ *[Teeslux Global Client Care]*\n\nWelcome to Teeslux Global Electronics & Solar!\n\n1️⃣ *Catalog & Products* — View current prices & items\n2️⃣ *Book Inspection* — Schedule a physical store visit\n3️⃣ *Track Order* — Check status of shipment\n4️⃣ *Human Support* — Speak with manager\n\nReply 1, 2, 3, or 4 to proceed!`;
+        const greetingMenu = `☀️ *[Teeslux Global Client Care]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nWelcome to Teeslux Global Electronics & Solar!\n\n1️⃣ *Catalog & Products* — View current prices & items\n2️⃣ *Book Inspection* — Schedule a physical store visit\n3️⃣ *Track Order* — Check status of shipment\n4️⃣ *Human Support* — Speak with manager\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nReply 1, 2, 3, or 4 to proceed!`;
         await sendWhatsAppMessage(senderPhone, greetingMenu);
         return;
       }
@@ -297,7 +300,7 @@ app.post('/webhook/whatsapp/:instance', (req, res) => {
           await sendWhatsAppMessage(senderPhone, fast.reply);
         } else {
           const item = fast.item;
-          const card = `🛍️ *[Teeslux Store — Product Found]*\n\n✅ *${item.name}*\n💰 *Fixed Price:* ₦${item.price.toLocaleString()}.00\n📦 *Status:* In Stock\n📝 *Details:* ${item.desc}\n\n💬 Reply *#buy* to place your order, or *#human* to speak with our manager.`;
+          const card = WhatsAppUIFormatter.formatProductCard(item, "Teeslux Global Store");
           await sendWhatsAppMessage(senderPhone, card);
         }
         return;
@@ -305,15 +308,11 @@ app.post('/webhook/whatsapp/:instance', (req, res) => {
 
       // -------------------------------------------------------------
       // 🚨 HIGH-PRIORITY MANAGER HANDOVER ROUTER (ZERO DELAY)
-      // If a product is NOT in the database, route directly to Manager!
-      // No advice, no recommendations, just instant high-priority transfer.
       // -------------------------------------------------------------
-      const customerNotice = `🚨 *[Teeslux Store — High-Priority Manager Transfer]*\n\nThank you for your inquiry regarding *'${text}'*!\n\nI have routed your request directly to our Business Manager on highest priority. Our manager will reply to you here shortly!`;
+      const customerNotice = WhatsAppUIFormatter.formatManagerHandover(text, "Teeslux Global Store", OWNER_PHONE);
       await sendWhatsAppMessage(senderPhone, customerNotice);
 
       // Avoid duplicate alert collision if sender is owner self-testing
-      const cleanOwner = String(OWNER_PHONE).replace(/\D/g, '');
-      const cleanSender = String(senderPhone).replace(/\D/g, '');
       if (cleanSender !== cleanOwner) {
         await new Promise(r => setTimeout(r, 500));
         const managerAlert = `🚨 *[URGENT MANAGER ACTION REQUIRED]*\n\n👤 *Customer:* \`${senderPhone}\`\n❓ *Out-of-Catalog Inquiry:* '${text}'\n⚡ *Priority:* HIGHEST (Instant Routing)\n\n💬 Reply \`#reply ${senderPhone} \| Your message\` to respond directly to this customer!`;

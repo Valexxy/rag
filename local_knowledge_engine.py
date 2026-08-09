@@ -10,6 +10,7 @@ Sub-1ms response time, always available, works when all LLMs are down.
 import re
 import logging
 from typing import Optional
+from whatsapp_ui import whatsapp_ui
 
 logger = logging.getLogger(__name__)
 
@@ -37,13 +38,7 @@ class LocalKnowledgeEngine:
             intent_res = express_intent.classify_intent(query)
             if intent_res.get("intent") == "HUMAN_SUPPORT":
                 return {
-                    "reply": (
-                        f"🚨 *[{biz} — Manager Handoff]*\n\n"
-                        f"I understand you need support regarding *'{query}'*!\n\n"
-                        f"I have escalated your request directly to our Store Manager on top priority. "
-                        f"Our manager will reply to your message right here shortly!\n\n"
-                        f"📞 You can also reach our manager directly at *+{owner_phone}*."
-                    ),
+                    "reply": whatsapp_ui.format_manager_handover(query, biz, owner_phone),
                     "confidence": 1.0,
                     "source": "express_intent_human_support"
                 }
@@ -62,147 +57,100 @@ class LocalKnowledgeEngine:
         if q in num_map and catalog and len(catalog) > num_map[q]:
             item = catalog[num_map[q]]
             if isinstance(item, dict):
-                name = item.get("name", "Product")
-                price = item.get("price", 0)
-                desc = item.get("description", "")
-                status = item.get("status", "In Stock")
                 return {
-                    "reply": (
-                        f"🛍️ *[{biz} — Product Details]*\n\n"
-                        f"✅ *{name}*\n"
-                        f"💰 *Fixed Price:* ₦{price:,.0f}\n"
-                        f"📦 *Status:* {status}\n"
-                        f"📝 *Details:* {desc}\n\n"
-                        f"💬 Reply *#buy* to place your order, or *#human* to speak with our manager."
-                    ),
+                    "reply": whatsapp_ui.format_product_card(item, biz),
                     "confidence": 1.0,
                     "source": "local_numeric_menu_select"
                 }
 
         # ── 2. BROAD CATEGORY DISAMBIGUATION (solar, generator, inverter) ────────────
         if q in ["solar", "generator", "inverter"]:
+            options = [catalog[0], catalog[2], catalog[5]] if catalog and len(catalog) >= 6 else []
             return {
-                "reply": (
-                    f"🤔 *[{biz} — Multiple Options Found]*\n\n"
-                    f"I found a few solar & power items matching your request!\n\n"
-                    f"1️⃣ *550W Monocrystalline Solar Panel* (₦120,000.00)\n"
-                    f"2️⃣ *1.5kVA Dual Solar Generator* (₦185,000.00)\n"
-                    f"3️⃣ *3.5kVA Hybrid Solar Inverter System* (₦340,000.00)\n\n"
-                    f"💬 Reply *1*, *2*, or *3* to view details, or reply *#buy* to place an order!"
-                ),
+                "reply": whatsapp_ui.format_disambiguation_carousel(options, q, biz),
                 "confidence": 1.0,
                 "source": "local_disambiguation"
             }
 
-        # ── 3. HUMAN MANAGER HANDOVER (manager, human, representative, talk to human) ────────
-        if any(kw in q for kw in ["manager", "human", "representative", "admin", "agent", "talk to human", "speak with manager", "available for a chat", "chat with manager", "support", "executive"]):
-            return {
-                "reply": (
-                    f"🚨 *[{biz} — Manager Transfer]*\n\n"
-                    f"Yes! Our Store Manager is available.\n\n"
-                    f"I have alerted our manager directly on top priority. "
-                    f"Our manager will reply to your message here shortly!\n\n"
-                    f"📞 You can also reach our manager directly at *+{owner_phone}*."
-                ),
-                "confidence": 1.0,
-                "source": "local_manager_handover"
-            }
-
-        # ── 4. CATALOG PRICE LOOKUP ─────────────────────────────────────
+        # ── 3. CATALOG PRICE LOOKUP ─────────────────────────────────────
         cat_answer = self._catalog_lookup(q, catalog, biz)
         if cat_answer:
             return cat_answer
 
-        # ── 3. BUSINESS HOURS ───────────────────────────────────────────
+        # ── 4. BUSINESS HOURS ───────────────────────────────────────────
         if any(kw in q for kw in ["open", "close", "hour", "time", "when do you", "working hour", "business hour"]):
             return {
                 "reply": (
-                    f"⏰ *[{biz} — Opening Hours]*\n\n"
-                    f"🗓️ *Monday – Saturday:* 8:00 AM – 6:00 PM WAT\n"
-                    f"🚫 *Sunday:* Closed (Public Holidays may vary)\n\n"
+                    f"⏰ *[{biz} — Opening Hours]*\n"
+                    f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+                    f"🗓️ *Monday – Saturday:* `8:00 AM – 6:00 PM WAT`\n"
+                    f"🚫 *Sunday:* `Closed (Public Holidays may vary)`\n\n"
                     f"📍 *Location:* {addr}\n\n"
-                    f"💬 Walk in anytime during business hours or reply *#human* to schedule a visit!"
+                    f"💬 Walk in anytime or reply `#human` to schedule a visit!"
                 ),
                 "confidence": 1.0,
                 "source": "local_hours"
             }
 
-        # ── 4. ADDRESS / LOCATION / DIRECTIONS ─────────────────────────
+        # ── 5. ADDRESS / LOCATION / DIRECTIONS ─────────────────────────
         if any(kw in q for kw in ["address", "location", "where are you", "how to find", "direction", "find your shop", "your shop", "where is", "locate"]):
             return {
                 "reply": (
-                    f"📍 *[{biz} — Store Location]*\n\n"
-                    f"🏬 *Address:* {addr}\n"
+                    f"📍 *[{biz} — Store Location]*\n"
+                    f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+                    f"🏬 *Address:* `{addr}`\n"
                     f"🗺️ *Landmark:* Onitsha Main Market, Anambra State, Nigeria\n\n"
-                    f"📞 *Contact:* +{owner_phone} (call/WhatsApp)\n"
+                    f"📞 *Contact:* `+{owner_phone}` (Call/WhatsApp)\n"
                     f"⏰ *Hours:* Mon–Sat, 8 AM – 6 PM\n\n"
-                    f"💬 Reply *#human* if you need someone to guide you directly!"
+                    f"💬 Reply `#human` if you need someone to guide you directly!"
                 ),
                 "confidence": 1.0,
                 "source": "local_address"
             }
 
-        # ── 5. PAYMENT METHODS ──────────────────────────────────────────
+        # ── 6. PAYMENT METHODS ──────────────────────────────────────────
         if any(kw in q for kw in ["pay", "payment", "bank transfer", "transfer", "pos", "cash", "card", "ussd", "opay", "palmpay", "kuda", "flutterwave", "paystack", "how do i pay", "how to pay"]):
             return {
-                "reply": (
-                    f"💳 *[{biz} — Payment Methods]*\n\n"
-                    f"We accept all major payment methods:\n\n"
-                    f"✅ *Bank Transfer* — Direct to our GTBank / First Bank account\n"
-                    f"✅ *Cash* — Pay on delivery or in-store\n"
-                    f"✅ *POS Terminal* — Available in-store\n"
-                    f"✅ *Mobile Money* — OPay, PalmPay, Kuda supported\n"
-                    f"✅ *USSD* — *737# (GTBank), *894# (First Bank)\n\n"
-                    f"💬 Reply *#buy* to get our bank account details for your order, "
-                    f"or *#human* to speak with our manager!"
-                ),
+                "reply": whatsapp_ui.format_payment_card(biz, owner_phone),
                 "confidence": 1.0,
                 "source": "local_payment"
             }
 
-        # ── 6. DELIVERY / SHIPPING ──────────────────────────────────────
+        # ── 7. DELIVERY / SHIPPING ──────────────────────────────────────
         if any(kw in q for kw in ["deliver", "delivery", "shipping", "ship", "send to", "transport", "waybill", "dispatch", "courier", "logistics", "abuja", "lagos", "kano", "enugu", "portharcourt", "port harcourt", "nationwide"]):
             return {
-                "reply": (
-                    f"🚚 *[{biz} — Delivery & Shipping]*\n\n"
-                    f"Yes! We deliver nationwide across Nigeria 🇳🇬\n\n"
-                    f"📦 *Delivery Options:*\n"
-                    f"• *Onitsha & Anambra State:* Same-day delivery (₦500–₦2,000)\n"
-                    f"• *Lagos, Abuja, PH, Enugu:* 1–2 business days via GIG / ABC Transport\n"
-                    f"• *Nationwide (Any State):* 2–5 business days\n\n"
-                    f"🔐 *Every order* comes with a waybill ID and 4-digit OTP delivery verification!\n\n"
-                    f"💬 Reply *#3* to track an existing order, or *#human* to arrange special delivery!"
-                ),
+                "reply": whatsapp_ui.format_delivery_card(biz),
                 "confidence": 1.0,
                 "source": "local_delivery"
             }
 
-        # ── 7. RETURNS / WARRANTY / EXCHANGE ───────────────────────────
+        # ── 8. RETURNS / WARRANTY / EXCHANGE ───────────────────────────
         if any(kw in q for kw in ["return", "refund", "exchange", "warranty", "guarantee", "broken", "damaged", "faulty", "defect", "replace", "replacement"]):
             return {
                 "reply": (
-                    f"🛡️ *[{biz} — Warranty & Returns Policy]*\n\n"
-                    f"All products come with manufacturer warranty:\n\n"
-                    f"⚡ *Solar Panels:* 25-year performance warranty\n"
-                    f"🔋 *Inverters & Generators:* 12-month warranty\n"
-                    f"📦 *All Other Items:* 7-day return/exchange policy\n\n"
-                    f"🔁 *Returns Process:* Bring item to store (or arrange pickup) with proof of purchase.\n"
-                    f"📞 Call *+{owner_phone}* to arrange — we resolve all issues within 24 hours!\n\n"
-                    f"💬 Reply *#human* now and our manager will handle your case immediately."
+                    f"🛡️ *[{biz} — Warranty & Returns Policy]*\n"
+                    f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+                    f"All products come with verified manufacturer warranty:\n\n"
+                    f"⚡ *Solar Panels:* `25-Year Performance Warranty`\n"
+                    f"🔋 *Inverters & Generators:* `12-Month Warranty`\n"
+                    f"📦 *All Other Items:* `7-Day Exchange Policy`\n\n"
+                    f"📞 Call `+{owner_phone}` for immediate resolution!\n\n"
+                    f"💬 Reply `#human` now to speak directly with our manager."
                 ),
                 "confidence": 1.0,
                 "source": "local_returns"
             }
 
-        # ── 8. CONTACT / PHONE / CALL ───────────────────────────────────
+        # ── 9. CONTACT / PHONE / CALL ───────────────────────────────────
         if any(kw in q for kw in ["contact", "phone number", "call you", "your number", "reach you", "how to contact", "email", "whatsapp number"]):
             return {
                 "reply": (
-                    f"📞 *[{biz} — Contact Details]*\n\n"
-                    f"📱 *WhatsApp/Call:* +{owner_phone}\n"
-                    f"📍 *Store:* {addr}\n"
+                    f"📞 *[{biz} — Contact Details]*\n"
+                    f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+                    f"📱 *WhatsApp/Call:* `+{owner_phone}`\n"
+                    f"📍 *Store Address:* `{addr}`\n"
                     f"⏰ *Hours:* Mon–Sat, 8 AM – 6 PM WAT\n\n"
-                    f"💬 Or simply reply *#human* right here and our manager will respond personally!"
+                    f"💬 Reply `#human` to connect directly with our manager!"
                 ),
                 "confidence": 1.0,
                 "source": "local_contact"
@@ -242,19 +190,8 @@ class LocalKnowledgeEngine:
                 best_match = item
 
         if best_match and best_score >= 3:
-            name = best_match.get("name", "Product")
-            price = best_match.get("price", 0)
-            desc = best_match.get("description", "")
-            status = best_match.get("status", "In Stock")
             return {
-                "reply": (
-                    f"🛍️ *[{biz} — Product Details]*\n\n"
-                    f"✅ *{name}*\n"
-                    f"💰 *Fixed Price:* ₦{price:,.0f}\n"
-                    f"📦 *Status:* {status}\n"
-                    f"📝 *Details:* {desc}\n\n"
-                    f"💬 Reply *#buy* to place your order, or *#human* to speak with our manager."
-                ),
+                "reply": whatsapp_ui.format_product_card(best_match, biz),
                 "confidence": 1.0,
                 "source": "local_catalog_match"
             }

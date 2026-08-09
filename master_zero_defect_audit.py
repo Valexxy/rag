@@ -43,9 +43,9 @@ TEST_CASES = [
     ("6", "20,000 mAh Solar Power Bank"),
 
     # Category 2: Disambiguation
-    ("solar", "Multiple Options Found"),
-    ("generator", "Multiple Options Found"),
-    ("inverter", "Multiple Options Found"),
+    ("solar", "Options Available"),
+    ("generator", "Options Available"),
+    ("inverter", "Options Available"),
 
     # Category 3: Spec Keywords
     ("1.5kva", "1.5kVA Dual Solar Generator"),
