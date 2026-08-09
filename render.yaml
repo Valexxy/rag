@@ -1,23 +1,29 @@
 services:
   - type: web
     name: sovereign-ai-commerce-backend
-    env: python
+    env: go
     region: frankfurt
     plan: free
-    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    buildCommand: go build -o server main.go
+    startCommand: ./server
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.0
+      - key: GO_VERSION
+        value: 1.22.5
       - key: PORT
-        value: 10000
+        value: 8000
       - key: GROQ_API_KEY
+        sync: false
+      - key: CEREBRAS_API_KEY
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: MISTRAL_API_KEY
         sync: false
       - key: GEMINI_API_KEY
         sync: false
-      - key: SUPABASE_URL
+      - key: CF_ACCOUNT_ID
         sync: false
-      - key: SUPABASE_SERVICE_ROLE_KEY
+      - key: CF_API_TOKEN
         sync: false
       - key: EVOLUTION_API_URL
         value: https://evolution-api-latest-gxue.onrender.com
