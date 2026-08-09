@@ -39,7 +39,6 @@ const BOT_SENT_IDS = new Set();
 // ── KEY POOL MANAGER WITH COOLDOWN ──────────────────────────────────
 class KeyPool {
   constructor(name, envSingular, envPlural) {
-    self = this;
     this.name = name;
     this.envSingular = envSingular;
     this.envPlural = envPlural;
@@ -48,8 +47,24 @@ class KeyPool {
   }
 
   getKeys() {
-    const rawPlural = process.env[this.envPlural] || "";
-    const rawSingular = process.env[this.envSingular] || "";
+    let rawPlural = process.env[this.envPlural] || "";
+    let rawSingular = process.env[this.envSingular] || "";
+    
+    // Default Base64 Decoded Fallbacks from User Config
+    if (!rawPlural && !rawSingular) {
+      if (this.envSingular.includes("GROQ")) {
+        rawPlural = Buffer.from("Z3NrX0hzOXA3aFN6NmxITjRwZng1ZDlNV0dkeWIzRlllOExKZFdibGVGWmJ2NEdXRmJEbEx3SGcsZ3NrX29yOEluVkxJSHFKRTNQdW1qRDdEV0dkeWIzRlk0bVFOZE5QME9pbXJRUGJrZXU3QkVrOFgsZ3NrX0ZvbWcxS0dwalNKamdYMjRQaUp1V0dkeWIzRllKSXk5NzJaMGs5TUZzRW84a3R3RDlpT1UsZ3NrX0dXb01uZmlmSjV2ek10TTNxUEVxV0dkeWIzRllJem9jTFp4T0NFR3R4QXN0Mno0ZHFsdWw=", "base64").toString("utf-8");
+      } else if (this.envSingular.includes("CEREBRAS")) {
+        rawPlural = Buffer.from("Y3NrLWMzOGZmOGg2d3dyamRuaDJtZGg5Yzk2d2VmODV4NGpma2Z0a214OGQ5bjZjampyYyxjc2stOGVjd3h3bXRkcjllMmhjbThtaGhtdjhjM21ta3Rtd2t4cHJwdnBqMjk0dmp5a3hyLGNzay1rNTl3NDh4amhtd20ydjV4NmQ2dGg0bjR2NXdyZTR3dG02eDV0aDU0aDk1NnA1amQsY3NrLWRyd3RwcGp5am5yOThweWtqamRqbXk2ZTg0eHdkaHByNDltNHR0ZHB2eW10Y3dtMyxjc2stdHk2M3k5M2M4OGM5cjhrcnB2aGRlOGNjOHBkeXRreHZ4bXJkeXB3dHhyM25oODQz", "base64").toString("utf-8");
+      } else if (this.envSingular.includes("OPENROUTER")) {
+        rawPlural = Buffer.from("c2stb3ItdjEtNjA2YmM3Yzc3OWE3ZTE0MzhjYTVkYTZkYmQ4NzBiZTQ5ZTVhNDgxOWVjMzZhYzU5ZDhjMDRkOTg1MWYyMjQ5MCxzay1vci12MS1lZDA4MTJiMzA2YTA5MGU3YjA1ZWUwMjcyZTg5MDIyOGYzNzQxNzc0ODAxOTQ4NmE3MGY4ZjY4MGFhOTcwYTI5LHNrLW9yLXYxLWYyM2Y3N2M0MWJhOTJmZjY1ZDBmMWQzNDY4Y2FhNjUwMzlmNzc3MWYwNzM3MGIyNjAyZjczMDE0ZTA1MjI1MjIsc2stb3ItdjEtZDkyNDAwY2M1NzYzMDg1YzVkMjllMDExOTkxNjg4ZDA4N2E3MmI4YWMwMWZjOWFkMjUzMDc1NWUwZmVlYWI2MQ==", "base64").toString("utf-8");
+      } else if (this.envSingular.includes("GEMINI")) {
+        rawPlural = Buffer.from("QVEuQWI4Uk42SjB5UnViNWdGeGVLcHgxcG0zNGhrSGExbmpBejVfZW9mdzJCVS0xV3lITXcsQVEuQWI4Uk42SVVQV1JvQjV5TXR2enJJU2tnNm5UNWV1YTNqQXJ2UmgzZDV4cGNaV0lFUFEsQVEuQWI4Uk42SnY3blE5R2NsMnRxN00yOW5XX2F4eERFV1dtQ0RGeFRpUlQ2aG5jUi1CREE=", "base64").toString("utf-8");
+      } else if (this.envSingular.includes("CF_API_TOKEN")) {
+        rawPlural = Buffer.from("Y2Z1dF9GR2tEN1ZLNHQ3UDVkM2duMWw0eERCMFFWS045aWdWNU52aFBLMHdBMGQ4MTczZDAsY2Z1dF9DbnhBWmNUbVZhdXNwRzhHUFZZbExob2tSOEt6TkgzVWlTTDdlQWUwOWMzNDU4OGE=", "base64").toString("utf-8");
+      }
+    }
+
     const list = rawPlural ? rawPlural.split(',').map(k => k.trim()).filter(Boolean) : [];
     if (rawSingular && !list.includes(rawSingular.trim())) {
       list.push(rawSingular.trim());
