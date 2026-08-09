@@ -40,6 +40,44 @@ STORE_CATALOG = [
 def fast_catalog_search(query: str) -> dict:
     q = query.lower().strip()
 
+    # Exact Number Selection
+    if q == "1":
+        item = STORE_CATALOG[0] # 550W Monocrystalline Solar Panel
+        return {
+            "matched": True, "type": "single",
+            "reply": f"🛍️ *[Teeslux Store — Product Found]*\n\n✅ *{item['name']}*\n💰 *Fixed Price:* ₦{item['price']:,}.00\n📦 *Status:* In Stock\n📝 *Details:* {item['desc']}\n\n💬 Reply *#buy* to place your order, or *#human* to speak with our manager."
+        }
+    if q == "2":
+        item = STORE_CATALOG[2] # 1.5kVA Dual Solar Generator
+        return {
+            "matched": True, "type": "single",
+            "reply": f"🛍️ *[Teeslux Store — Product Found]*\n\n✅ *{item['name']}*\n💰 *Fixed Price:* ₦{item['price']:,}.00\n📦 *Status:* In Stock\n📝 *Details:* {item['desc']}\n\n💬 Reply *#buy* to place your order, or *#human* to speak with our manager."
+        }
+    if q == "3":
+        item = STORE_CATALOG[5] # 3.5kVA Hybrid Solar Inverter System
+        return {
+            "matched": True, "type": "single",
+            "reply": f"🛍️ *[Teeslux Store — Product Found]*\n\n✅ *{item['name']}*\n💰 *Fixed Price:* ₦{item['price']:,}.00\n📦 *Status:* In Stock\n📝 *Details:* {item['desc']}\n\n💬 Reply *#buy* to place your order, or *#human* to speak with our manager."
+        }
+    if q == "4":
+        item = STORE_CATALOG[3] # 50kg Premium White Rice Bag
+        return {
+            "matched": True, "type": "single",
+            "reply": f"🛍️ *[Teeslux Store — Product Found]*\n\n✅ *{item['name']}*\n💰 *Fixed Price:* ₦{item['price']:,}.00\n📦 *Status:* In Stock\n📝 *Details:* {item['desc']}\n\n💬 Reply *#buy* to place your order, or *#human* to speak with our manager."
+        }
+    if q == "5":
+        item = STORE_CATALOG[4] # 24K Gold Bar Bullion
+        return {
+            "matched": True, "type": "single",
+            "reply": f"🛍️ *[Teeslux Store — Product Found]*\n\n✅ *{item['name']}*\n💰 *Fixed Price:* ₦{item['price']:,}.00\n📦 *Status:* In Stock\n📝 *Details:* {item['desc']}\n\n💬 Reply *#buy* to place your order, or *#human* to speak with our manager."
+        }
+    if q == "6":
+        item = STORE_CATALOG[1] # 20,000 mAh Solar Power Bank
+        return {
+            "matched": True, "type": "single",
+            "reply": f"🛍️ *[Teeslux Store — Product Found]*\n\n✅ *{item['name']}*\n💰 *Fixed Price:* ₦{item['price']:,}.00\n📦 *Status:* In Stock\n📝 *Details:* {item['desc']}\n\n💬 Reply *#buy* to place your order, or *#human* to speak with our manager."
+        }
+
     # Exact Spec Boosts
     if "1.5kva" in q or "1.5 kva" in q:
         item = STORE_CATALOG[2]

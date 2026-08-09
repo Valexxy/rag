@@ -151,10 +151,18 @@ function sendWhatsAppMessage(phone, text) {
   });
 }
 
-// ── FAST IN-MEMORY CATALOG MATCHING (< 1ms) ─────────────────────────
 function fastCatalogSearch(text) {
   const q = text.toLowerCase().trim();
   
+  // Exact Item Number Selectors (from Disambiguation & Menu options)
+  if (q === "1") return { matched: true, type: "single", item: CATALOG[0] }; // 550W Monocrystalline Solar Panel
+  if (q === "2") return { matched: true, type: "single", item: CATALOG[2] }; // 1.5kVA Dual Solar Generator
+  if (q === "3") return { matched: true, type: "single", item: CATALOG[5] }; // 3.5kVA Hybrid Solar Inverter System
+  if (q === "4") return { matched: true, type: "single", item: CATALOG[3] }; // 50kg Premium White Rice Bag
+  if (q === "5") return { matched: true, type: "single", item: CATALOG[4] }; // 24K Gold Bar Bullion
+  if (q === "6") return { matched: true, type: "single", item: CATALOG[1] }; // 20,000 mAh Solar Power Bank
+
+  // Spec Keyword Matches
   if (q.includes("1.5kva") || q.includes("1.5 kva")) return { matched: true, type: "single", item: CATALOG[2] };
   if (q.includes("3.5kva") || q.includes("3.5 kva")) return { matched: true, type: "single", item: CATALOG[5] };
   if (q.includes("24k gold") || q.includes("gold bar")) return { matched: true, type: "single", item: CATALOG[4] };
@@ -162,6 +170,7 @@ function fastCatalogSearch(text) {
   if (q.includes("power bank") || q.includes("powerbank")) return { matched: true, type: "single", item: CATALOG[1] };
   if (q.includes("panel") || q.includes("550w")) return { matched: true, type: "single", item: CATALOG[0] };
 
+  // Ambiguous Category Queries -> Disambiguation Menu
   if (q === "solar" || q === "generator" || q === "inverter") {
     return {
       matched: true,
