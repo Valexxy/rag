@@ -409,6 +409,8 @@ META_VERIFY_TOKEN = "my_secret_token"
 
 @app.get("/webhook/meta")
 @app.get("/webhook/meta/")
+@app.get("/meta-webhook")
+@app.get("/webhook")
 async def meta_webhook_verify(request: Request):
     params = request.query_params
     mode = params.get("hub.mode")

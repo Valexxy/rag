@@ -984,6 +984,8 @@ func main() {
 	http.HandleFunc("/webhook/whatsapp/", handleWhatsAppWebhook)
 	http.HandleFunc("/webhook/meta", handleMetaWebhook)
 	http.HandleFunc("/webhook/meta/", handleMetaWebhook)
+	http.HandleFunc("/meta-webhook", handleMetaWebhook)
+	http.HandleFunc("/webhook", handleMetaWebhook)
 
 	log.Printf("🚀 Pure Golang AI Commerce Engine listening on port %s...", port)
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
