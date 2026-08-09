@@ -22,22 +22,50 @@ class LocalKnowledgeEngine:
     """
 
     def answer(self, query: str, tenant: dict, catalog: list) -> Optional[dict]:
-        """
-        Attempts to answer the query from local data alone.
-        Returns a dict with 'reply' and 'confidence', or None if unsure.
-        """
-        q = query.lower().strip()
-        biz = tenant.get("business_name", "our store")
-        addr = tenant.get("store_address", "Shop 14B Bright Street, Onitsha Main Market, Anambra State")
-        owner_phone = tenant.get("owner_phone", "")
-        niche = (tenant.get("business_niche") or "retail").lower()
+        if not query:
+            return None
 
-        # ── 1. CATALOG PRICE LOOKUP ─────────────────────────────────────
+        q = query.strip().lower()
+        tenant = tenant or {}
+        biz = tenant.get("business_name", "Teeslux Global Electronics & Solar")
+        owner_phone = tenant.get("owner_phone", "2348072015725")
+        addr = tenant.get("store_address", "Onitsha Main Market, Anambra State, Nigeria")
+
+        # ── 1. EXACT NUMERIC ITEM SELECTION (Menu Replies 1, 2, 3, 4, 5, 6) ─────────────
+        num_map = {
+            "1": 0, # 550W Monocrystalline Solar Panel
+            "2": 2, # 1.5kVA Dual Solar Generator
+            "3": 5, # 3.5kVA Hybrid Solar Inverter System
+            "4": 3, # 50kg Premium White Rice Bag
+            "5": 4, # 24K Gold Bar Bullion
+            "6": 1  # 20,000 mAh Solar Power Bank
+        }
+        if q in num_map and catalog and len(catalog) > num_map[q]:
+            item = catalog[num_map[q]]
+            if isinstance(item, dict):
+                name = item.get("name", "Product")
+                price = item.get("price", 0)
+                desc = item.get("description", "")
+                status = item.get("status", "In Stock")
+                return {
+                    "reply": (
+                        f"🛍️ *[{biz} — Product Details]*\n\n"
+                        f"✅ *{name}*\n"
+                        f"💰 *Fixed Price:* ₦{price:,.0f}\n"
+                        f"📦 *Status:* {status}\n"
+                        f"📝 *Details:* {desc}\n\n"
+                        f"💬 Reply *#buy* to place your order, or *#human* to speak with our manager."
+                    ),
+                    "confidence": 1.0,
+                    "source": "local_numeric_menu_select"
+                }
+
+        # ── 2. CATALOG PRICE LOOKUP ─────────────────────────────────────
         cat_answer = self._catalog_lookup(q, catalog, biz)
         if cat_answer:
             return cat_answer
 
-        # ── 2. BUSINESS HOURS ───────────────────────────────────────────
+        # ── 3. BUSINESS HOURS ───────────────────────────────────────────
         if any(kw in q for kw in ["open", "close", "hour", "time", "when do you", "working hour", "business hour"]):
             return {
                 "reply": (
@@ -51,7 +79,7 @@ class LocalKnowledgeEngine:
                 "source": "local_hours"
             }
 
-        # ── 3. ADDRESS / LOCATION / DIRECTIONS ─────────────────────────
+        # ── 4. ADDRESS / LOCATION / DIRECTIONS ─────────────────────────
         if any(kw in q for kw in ["address", "location", "where are you", "how to find", "direction", "find your shop", "your shop", "where is", "locate"]):
             return {
                 "reply": (
@@ -66,7 +94,7 @@ class LocalKnowledgeEngine:
                 "source": "local_address"
             }
 
-        # ── 4. PAYMENT METHODS ──────────────────────────────────────────
+        # ── 5. PAYMENT METHODS ──────────────────────────────────────────
         if any(kw in q for kw in ["pay", "payment", "bank transfer", "transfer", "pos", "cash", "card", "ussd", "opay", "palmpay", "kuda", "flutterwave", "paystack", "how do i pay", "how to pay"]):
             return {
                 "reply": (
@@ -84,7 +112,7 @@ class LocalKnowledgeEngine:
                 "source": "local_payment"
             }
 
-        # ── 5. DELIVERY / SHIPPING ──────────────────────────────────────
+        # ── 6. DELIVERY / SHIPPING ──────────────────────────────────────
         if any(kw in q for kw in ["deliver", "delivery", "shipping", "ship", "send to", "transport", "waybill", "dispatch", "courier", "logistics", "abuja", "lagos", "kano", "enugu", "portharcourt", "port harcourt", "nationwide"]):
             return {
                 "reply": (
@@ -101,7 +129,7 @@ class LocalKnowledgeEngine:
                 "source": "local_delivery"
             }
 
-        # ── 6. RETURNS / WARRANTY / EXCHANGE ───────────────────────────
+        # ── 7. RETURNS / WARRANTY / EXCHANGE ───────────────────────────
         if any(kw in q for kw in ["return", "refund", "exchange", "warranty", "guarantee", "broken", "damaged", "faulty", "defect", "replace", "replacement"]):
             return {
                 "reply": (
@@ -118,7 +146,7 @@ class LocalKnowledgeEngine:
                 "source": "local_returns"
             }
 
-        # ── 7. CONTACT / PHONE / CALL ───────────────────────────────────
+        # ── 8. CONTACT / PHONE / CALL ───────────────────────────────────
         if any(kw in q for kw in ["contact", "phone number", "call you", "your number", "reach you", "how to contact", "email", "whatsapp number"]):
             return {
                 "reply": (
@@ -132,58 +160,9 @@ class LocalKnowledgeEngine:
                 "source": "local_contact"
             }
 
-        # ── 8. OUT-OF-CATALOG ITEMS (Smart Natural Referral) ────────────
-        out_of_cat_items = {
-            "cigarette": "We specialize in electronics & solar energy — cigarettes aren't in our line. You can find them at any nearby provision store in Onitsha Market.",
-            "radio": "We don't currently stock radios, but we do have solar-powered electronics! 🌞 For radios, try the electronics section of Onitsha Main Market (Upper Iweka Road).",
-            "computer": "We focus on solar energy systems, not computers. For laptops/desktops, try Computer Village in Onitsha or Slot stores nearby.",
-            "oil": "We sell solar energy products, not cooking oil 😊. For groundnut oil, head to Ochanja Market or New Market in Onitsha — great prices there!",
-            "food": "We specialize in electronics & solar energy, not food items. Onitsha Main Market has a large foodstuff section — best prices in the Southeast!",
-            "cloth": "Clothing is not our area — we're a solar & electronics store. For fabrics and fashion, Onitsha Main Market (Textile section) is one of the largest in West Africa!",
-            "phone": "We don't currently sell phones, but we carry power banks, solar panels, and inverters to keep your phones charged 24/7! Reply *#1* to see our full catalog.",
-            "drug": "We don't sell medications — please visit a licensed pharmacy nearby. We specialize in solar energy & electronics.",
-            "medicine": "We don't sell medications — please visit a licensed pharmacy nearby. We specialize in solar energy & electronics.",
-        }
-        for keyword, response in out_of_cat_items.items():
-            if keyword in q:
-                return {
-                    "reply": (
-                        f"😊 *[{biz} — Store Update]*\n\n"
-                        f"{response}\n\n"
-                        f"💡 Is there anything from our solar or electronics range I can help you with? "
-                        f"Reply *#1* to see what we currently have in stock!"
-                    ),
-                    "confidence": 0.95,
-                    "source": "local_out_of_catalog"
-                }
-
-        # ── 9. CATALOG LISTING REQUEST ──────────────────────────────────
-        if any(kw in q for kw in ["catalog", "catalogue", "product list", "what do you sell", "what do you have", "show me", "list", "items", "stock", "price list"]):
-            if catalog:
-                lines = []
-                for i, item in enumerate(catalog[:10], 1):
-                    if isinstance(item, dict):
-                        lines.append(f"{i}️⃣ *{item.get('name', 'Product')}* — ₦{item.get('price', 0):,.0f}")
-                cat_list = "\n".join(lines)
-                return {
-                    "reply": (
-                        f"📦 *[{biz} — Full Product Catalog]*\n\n"
-                        f"{cat_list}\n\n"
-                        f"💬 Reply the item number or name to get full details & place an order!\n"
-                        f"Reply *#buy* to order or *#human* to speak with our manager."
-                    ),
-                    "confidence": 1.0,
-                    "source": "local_catalog_list"
-                }
-
-        # Could not answer locally — return None to let LLMs handle it
         return None
 
     def _catalog_lookup(self, q: str, catalog: list, biz: str) -> Optional[dict]:
-        """
-        Searches catalog items by keyword match.
-        Returns a formatted product card if matched.
-        """
         if not catalog:
             return None
 
@@ -200,7 +179,6 @@ class LocalKnowledgeEngine:
                 keywords = [str(k).lower() for k in keywords]
 
             score = 0
-            # Check if query words appear in name/description/keywords
             for word in q.split():
                 if len(word) < 3:
                     continue
@@ -222,7 +200,7 @@ class LocalKnowledgeEngine:
             status = best_match.get("status", "In Stock")
             return {
                 "reply": (
-                    f"🛍️ *[{biz} — Product Found]*\n\n"
+                    f"🛍️ *[{biz} — Product Details]*\n\n"
                     f"✅ *{name}*\n"
                     f"💰 *Fixed Price:* ₦{price:,.0f}\n"
                     f"📦 *Status:* {status}\n"
@@ -231,22 +209,6 @@ class LocalKnowledgeEngine:
                 ),
                 "confidence": 1.0,
                 "source": "local_catalog_match"
-            }
-
-        # Multiple weak matches — list top options
-        multi = [i for i in catalog if isinstance(i, dict) and best_score >= 1 and
-                 any(w in (i.get("name") or "").lower() for w in q.split() if len(w) >= 3)]
-        if len(multi) >= 2:
-            lines = [f"• *{i.get('name')}* — ₦{i.get('price', 0):,.0f}" for i in multi[:4]]
-            return {
-                "reply": (
-                    f"🤔 *[{biz} — Multiple Options Found]*\n\n"
-                    f"I found a few items matching your request!\n\n"
-                    + "\n".join(lines) +
-                    f"\n\n💬 Which one are you looking for? Reply the product name or *#1* to see our full catalog!"
-                ),
-                "confidence": 0.85,
-                "source": "local_multi_match"
             }
 
         return None
