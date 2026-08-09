@@ -532,6 +532,12 @@ func processWebhookAsync(instanceName string, bodyBytes []byte) {
 		remoteJID = strings.ToLower(fmt.Sprintf("%v", dataMap["remoteJid"]))
 	}
 
+	// ── TIER 1.5: GROUP CHAT & BROADCAST INSTANT FILTER ──────────────
+	if strings.Contains(remoteJID, "@g.us") || strings.Contains(remoteJID, "broadcast") || strings.Contains(remoteJID, "group") {
+		log.Printf("[Webhook Filter] Dropped group/broadcast chat: '%s'", remoteJID)
+		return
+	}
+
 	// 🚨 WHATSAPP LID ADDRESSING MODE RESOLUTION 🚨
 	remoteJIDAlt := strings.ToLower(fmt.Sprintf("%v", keyMap["remoteJidAlt"]))
 	if remoteJIDAlt == "<nil>" || remoteJIDAlt == "" {
@@ -563,12 +569,6 @@ func processWebhookAsync(instanceName string, bodyBytes []byte) {
 			log.Printf("[Webhook Filter] Dropped bot's own sent message: '%s'", msgID)
 			return
 		}
-	}
-
-	// ── TIER 3: GROUP CHAT & BROADCAST FILTER ─────────────────────────
-	if strings.Contains(remoteJID, "@g.us") || strings.Contains(remoteJID, "broadcast") || strings.Contains(remoteJID, "group") {
-		log.Printf("[Webhook Filter] Dropped group/broadcast chat: '%s'", remoteJID)
-		return
 	}
 
 	senderPhone := strings.Split(remoteJID, "@")[0]
