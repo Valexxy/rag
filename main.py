@@ -24,6 +24,7 @@ EVO_URL = os.environ.get("EVOLUTION_API_URL", "https://evolution-api-latest-gxue
 EVO_KEY = os.environ.get("EVOLUTION_API_KEY", "F84B4F845BC6-464A-AD0E-553FD1046981")
 
 BOT_SENT_IDS = set()
+LAST_WEBHOOK_EVENT = {"timestamp": "None", "payload": None, "sender": None, "text": None}
 
 # ── TENANT CATALOG ────────────────────────────────────────────────────
 STORE_CATALOG = [
@@ -428,9 +429,23 @@ async def meta_webhook_endpoint(request: Request):
     body = await request.json()
     logger.info(f"[Meta Webhook Incoming] Payload: {body}")
     
+    global LAST_WEBHOOK_EVENT
+    LAST_WEBHOOK_EVENT["timestamp"] = time.strftime("%Y-%m-%d %H:%M:%S WAT")
+    LAST_WEBHOOK_EVENT["payload"] = body
+    try:
+        msg = body["entry"][0]["changes"][0]["value"]["messages"][0]
+        LAST_WEBHOOK_EVENT["sender"] = msg.get("from")
+        LAST_WEBHOOK_EVENT["text"] = msg.get("text", {}).get("body")
+    except Exception:
+        pass
+
     import asyncio
     asyncio.create_task(process_meta_payload(body))
     return {"status": "received"}
+
+@app.get("/api/last-webhook")
+async def get_last_webhook():
+    return LAST_WEBHOOK_EVENT
 
 async def process_meta_payload(payload: dict):
     try:
