@@ -408,11 +408,14 @@ META_TOKEN = "EAAMgsrreXPYBSHShnLFmxyd49Jf7fW63QtzUmLPYfFNBgaqMsYGfkd26fC3ZAvdEg
 META_VERIFY_TOKEN = "my_secret_token"
 
 @app.get("/webhook/meta")
+@app.get("/webhook/meta/")
 async def meta_webhook_verify(request: Request):
     params = request.query_params
     mode = params.get("hub.mode")
     token = params.get("hub.verify_token")
     challenge = params.get("hub.challenge")
+
+    logger.info(f"[Meta Webhook GET] mode: '{mode}', token: '{token}', challenge: '{challenge}'")
 
     if mode == "subscribe" and (token == META_VERIFY_TOKEN or token == "my_secret_token"):
         logger.info("[Meta Webhook] GET Verification Successful!")
@@ -421,6 +424,7 @@ async def meta_webhook_verify(request: Request):
     return PlainTextResponse(content="Forbidden", status_code=403)
 
 @app.post("/webhook/meta")
+@app.post("/webhook/meta/")
 async def meta_webhook_incoming(request: Request):
     body = await request.json()
     logger.info(f"[Meta Webhook Incoming] Payload: {body}")
