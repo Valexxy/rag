@@ -245,14 +245,18 @@ def process_webhook_async(instance_name: str, payload: dict):
 
         lower = message_text.lower()
 
-        # Direct Manager / Human Support Request Handler
-        if any(kw in lower for kw in ["manager", "human", "representative", "admin", "agent", "talk to human", "speak with manager", "available for a chat", "chat with manager"]):
+        # Express Intent Intelligence: Human & Support Request Handler
+        human_support_regex = re.compile(
+            r"\b(support|help|assist|assistance|care|complain|complaint|issue|problem|trouble|faulty|broken|damaged|refund|dispute|human|person|people|agent|rep|representative|manager|boss|director|owner|staff|personnel|team|executive|admin|administrator|head|talk to|speak to|speak with|talk with|connect me|transfer me|reach someone|call me|is anyone there|anybody there|who is there|need someone|want someone|need help|need support|need assistance|asap|urgent|now|emergency)\b",
+            re.IGNORECASE
+        )
+        if human_support_regex.search(lower):
             owner_phone = os.environ.get("OWNER_PHONE", "2348072015725")
             customer_notice = (
                 f"🚨 *[Teeslux Store — Manager Transfer]*\n\n"
-                f"Yes! Our Store Manager is available.\n\n"
-                f"I have alerted our manager directly on top priority. "
-                f"Our manager will reply to your message here shortly!\n\n"
+                f"I understand you need support regarding *'{message_text}'*!\n\n"
+                f"I have escalated your request directly to our Store Manager on top priority. "
+                f"Our manager will reply to your message right here shortly!\n\n"
                 f"📞 You can also reach our manager directly at *+{owner_phone}*."
             )
             send_whatsapp_message(instance_name, sender_phone, customer_notice)
@@ -265,7 +269,7 @@ def process_webhook_async(instance_name: str, payload: dict):
                 f"💬 Reply `#reply {sender_phone} | Your message` to respond directly!"
             )
             send_whatsapp_message(instance_name, owner_phone, manager_alert)
-            logger.info(f"[Manager Request] Handled manager query '{message_text}' from {sender_phone}")
+            logger.info(f"[Express Intent] Routed human support query '{message_text}' from {sender_phone}")
             return
 
         # Greetings Quick Action Menu

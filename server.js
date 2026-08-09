@@ -265,14 +265,15 @@ app.post('/webhook/whatsapp/:instance', (req, res) => {
 
       const lower = text.toLowerCase();
 
-      // Direct Manager / Human Support Request Handler
-      if (["manager", "human", "representative", "admin", "agent", "talk to human", "speak with manager", "available for a chat", "chat with manager"].some(kw => lower.includes(kw))) {
-        const customerNotice = `🚨 *[Teeslux Store — Manager Transfer]*\n\nYes! Our Store Manager is available.\n\nI have alerted our manager directly on top priority. Our manager will reply to your message here shortly!\n\n📞 You can also reach our manager directly at *+${OWNER_PHONE}*.`;
+      // Express Intent Intelligence: Human & Support Request Handler
+      const humanSupportRegex = /\b(support|help|assist|assistance|care|complain|complaint|issue|problem|trouble|faulty|broken|damaged|refund|dispute|human|person|people|agent|rep|representative|manager|boss|director|owner|staff|personnel|team|executive|admin|administrator|head|talk to|speak to|speak with|talk with|connect me|transfer me|reach someone|call me|is anyone there|anybody there|who is there|need someone|want someone|need help|need support|need assistance|asap|urgent|now|emergency)\b/i;
+      if (humanSupportRegex.test(lower)) {
+        const customerNotice = `🚨 *[Teeslux Store — Manager Transfer]*\n\nI understand you need support regarding *'${text}'*!\n\nI have escalated your request directly to our Store Manager on top priority. Our manager will reply to your message right here shortly!\n\n📞 You can also reach our manager directly at *+${OWNER_PHONE}*.`;
         await sendWhatsAppMessage(senderPhone, customerNotice);
 
         const managerAlert = `🚨 *[URGENT MANAGER REQUEST]*\n\n👤 *Customer:* \`${senderPhone}\`\n❓ *Inquiry:* '${text}'\n⚡ *Priority:* HIGHEST\n\n💬 Reply \`#reply ${senderPhone} \| Your message\` to respond directly!`;
         await sendWhatsAppMessage(OWNER_PHONE, managerAlert);
-        console.log(`[Manager Request] Handled manager query '${text}' from ${senderPhone}`);
+        console.log(`[Express Intent] Routed human support query '${text}' from ${senderPhone}`);
         return;
       }
 

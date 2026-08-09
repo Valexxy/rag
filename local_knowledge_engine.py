@@ -31,6 +31,25 @@ class LocalKnowledgeEngine:
         owner_phone = tenant.get("owner_phone", "2348072015725")
         addr = tenant.get("store_address", "Onitsha Main Market, Anambra State, Nigeria")
 
+        # ── 0. EXPRESS INTENT RECOGNITION (HUMAN_SUPPORT) ──────────────────────────
+        try:
+            from express_intent_engine import express_intent
+            intent_res = express_intent.classify_intent(query)
+            if intent_res.get("intent") == "HUMAN_SUPPORT":
+                return {
+                    "reply": (
+                        f"🚨 *[{biz} — Manager Handoff]*\n\n"
+                        f"I understand you need support regarding *'{query}'*!\n\n"
+                        f"I have escalated your request directly to our Store Manager on top priority. "
+                        f"Our manager will reply to your message right here shortly!\n\n"
+                        f"📞 You can also reach our manager directly at *+{owner_phone}*."
+                    ),
+                    "confidence": 1.0,
+                    "source": "express_intent_human_support"
+                }
+        except Exception as e:
+            logger.warning(f"[LocalKnowledge] Express intent failed: {e}")
+
         # ── 1. EXACT NUMERIC ITEM SELECTION (Menu Replies 1, 2, 3, 4, 5, 6) ─────────────
         num_map = {
             "1": 0, # 550W Monocrystalline Solar Panel
