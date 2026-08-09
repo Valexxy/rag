@@ -311,9 +311,16 @@ app.post('/webhook/whatsapp/:instance', (req, res) => {
       const customerNotice = `🚨 *[Teeslux Store — High-Priority Manager Transfer]*\n\nThank you for your inquiry regarding *'${text}'*!\n\nI have routed your request directly to our Business Manager on highest priority. Our manager will reply to you here shortly!`;
       await sendWhatsAppMessage(senderPhone, customerNotice);
 
-      const managerAlert = `🚨 *[URGENT MANAGER ACTION REQUIRED]*\n\n👤 *Customer:* \`${senderPhone}\`\n❓ *Out-of-Catalog Inquiry:* '${text}'\n⚡ *Priority:* HIGHEST (Instant Routing)\n\n💬 Reply \`#reply ${senderPhone} \| Your message\` to respond directly to this customer!`;
-      await sendWhatsAppMessage(OWNER_PHONE, managerAlert);
+      // Avoid duplicate alert collision if sender is owner self-testing
+      const cleanOwner = String(OWNER_PHONE).replace(/\D/g, '');
+      const cleanSender = String(senderPhone).replace(/\D/g, '');
+      if (cleanSender !== cleanOwner) {
+        await new Promise(r => setTimeout(r, 500));
+        const managerAlert = `🚨 *[URGENT MANAGER ACTION REQUIRED]*\n\n👤 *Customer:* \`${senderPhone}\`\n❓ *Out-of-Catalog Inquiry:* '${text}'\n⚡ *Priority:* HIGHEST (Instant Routing)\n\n💬 Reply \`#reply ${senderPhone} \| Your message\` to respond directly to this customer!`;
+        await sendWhatsAppMessage(OWNER_PHONE, managerAlert);
+      }
       console.log(`[High-Priority Handover] Out-of-catalog query '${text}' from ${senderPhone} routed to manager ${OWNER_PHONE}`);
+
 
     } catch (e) {
       console.error("[Node.js Webhook Error]:", e);

@@ -318,15 +318,19 @@ def process_webhook_async(instance_name: str, payload: dict):
         )
         send_whatsapp_message(instance_name, sender_phone, customer_transfer_notice)
 
-        # 2. Send Urgent Manager Alert to Store Owner
-        manager_alert = (
-            f"🚨 *[URGENT MANAGER ACTION REQUIRED]*\n\n"
-            f"👤 *Customer:* `{sender_phone}`\n"
-            f"❓ *Out-of-Catalog Inquiry:* '{message_text}'\n"
-            f"⚡ *Priority:* HIGHEST (Instant Routing)\n\n"
-            f"💬 Reply `#reply {sender_phone} | Your message` to respond directly to this customer!"
-        )
-        send_whatsapp_message(instance_name, owner_phone, manager_alert)
+        # 2. Send Urgent Manager Alert to Store Owner (only if customer is not owner self-testing)
+        clean_owner = "".join(filter(str.isdigit, str(owner_phone)))
+        clean_sender = "".join(filter(str.isdigit, str(sender_phone)))
+        if clean_sender != clean_owner:
+            time.sleep(0.5)
+            manager_alert = (
+                f"🚨 *[URGENT MANAGER ACTION REQUIRED]*\n\n"
+                f"👤 *Customer:* `{sender_phone}`\n"
+                f"❓ *Out-of-Catalog Inquiry:* '{message_text}'\n"
+                f"⚡ *Priority:* HIGHEST (Instant Routing)\n\n"
+                f"💬 Reply `#reply {sender_phone} | Your message` to respond directly to this customer!"
+            )
+            send_whatsapp_message(instance_name, owner_phone, manager_alert)
         logger.info(f"[High-Priority Handover] Out-of-catalog query '{message_text}' from {sender_phone} routed to manager {owner_phone}")
         return
 
