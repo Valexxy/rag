@@ -271,6 +271,13 @@ def process_webhook_async(instance_name: str, payload: dict):
                 send_whatsapp_message(instance_name, sender_phone, f"🤫 Bot MUTED for customer `{target_phone}`.")
             return
 
+        # If customer sends reset, greeting, or menu commands, auto-unmute bot!
+        lower = message_text.lower().strip()
+        auto_unmute_cmds = ["reset", "#reset", "unmute", "#unmute", "hello", "hi", "hey", "menu", "#switch", "change store", "1", "2", "3", "4", "5", "6"]
+        if lower in auto_unmute_cmds:
+            state_machine.unmute_bot(remote_jid)
+            logger.info(f"[State Machine] Auto-unmuted bot for '{remote_jid}' due to user command '{lower}'")
+
         # If bot is MUTED for this customer (HUMAN_ESCALATED state), skip bot response!
         if state_machine.is_bot_muted(remote_jid):
             logger.info(f"[State Machine] Bot is MUTED for customer '{remote_jid}' (Human Manager Active)")

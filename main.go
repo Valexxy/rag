@@ -571,6 +571,16 @@ func processWebhookAsync(instanceName string, bodyBytes []byte) {
 	// ── BUSINESS LOGIC & RESPONSE ROUTER ──────────────────────────────
 	lowerText := strings.ToLower(text)
 
+	// Auto-Unmute Bot if customer sends reset / greeting / menu commands
+	autoUnmuteCmds := []string{"reset", "#reset", "unmute", "#unmute", "hello", "hi", "hey", "menu", "#switch", "change store", "1", "2", "3", "4", "5", "6"}
+	for _, auc := range autoUnmuteCmds {
+		if lowerText == auc {
+			SetCustomerState(remoteJID, StateIdle)
+			log.Printf("[State Machine] Auto-unmuted bot for '%s' via user command '%s'", remoteJID, auc)
+			break
+		}
+	}
+
 	// Frustration / Anger Detection -> Instant Red Alert
 	frustrationRegex := regexp.MustCompile(`(?i)\b(rubbish|scam|scammer|thief|cheat|stole|fraud|stupid|useless|horrible|terrible|frustrated|frustration|angry|mad|waste of time|fool|bad service|worst)\b`)
 	if frustrationRegex.MatchString(lowerText) {
