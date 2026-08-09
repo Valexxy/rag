@@ -68,6 +68,11 @@ TEST_CASES = [
     ("#mute 2348123456789", "Bot MUTED"),
     ("#switch", "Multi-Store Hub"),
     ("change store", "Multi-Store Hub"),
+
+    # Category 6: Multi-Niche Global Business Greetings
+    ("hi real_estate", "Real Estate"),
+    ("hi salon", "Beauty Salon"),
+
     ("what are your business hours?", "Opening Hours"),
     ("where is your shop located?", "Store Location"),
     ("how do I pay?", "Payment Methods"),
@@ -86,8 +91,13 @@ failed = 0
 for query, expected_substring in TEST_CASES:
     from dialogue_state_machine import state_machine
     from store_switching_engine import store_router
-    
-    if query.lower() in ["#switch", "#store", "change store", "switch store"]:
+    from universal_multi_niche_engine import multi_niche_engine
+
+    if query.lower() == "hi real_estate":
+        reply = multi_niche_engine.format_niche_greeting("GRA Prime Properties Ltd", "real_estate", "Good Afternoon 🌤️", "02:30 PM WAT")
+    elif query.lower() == "hi salon":
+        reply = multi_niche_engine.format_niche_greeting("Queens Beauty Salon & Spa", "salon", "Good Afternoon 🌤️", "02:30 PM WAT")
+    elif query.lower() in ["#switch", "#store", "change store", "switch store"]:
         demo_tenants = [
             {"business_name": "Teeslux Global Electronics & Solar", "niche": "retail"},
             {"business_name": "Valexxy Luxury Store", "niche": "retail"},
