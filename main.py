@@ -449,13 +449,12 @@ async def get_last_webhook():
 
 async def process_meta_payload(payload: dict):
     try:
-        entries = payload.get("entry", [])
-        if not entries:
-            return
-        changes = entries[0].get("changes", [])
-        if not changes:
-            return
-        val = changes[0].get("value", {})
+        val = payload.get("value", {})
+        if not val and payload.get("entry"):
+            entries = payload.get("entry", [])
+            changes = entries[0].get("changes", []) if entries else []
+            val = changes[0].get("value", {}) if changes else {}
+        
         messages = val.get("messages", [])
         if not messages:
             return
