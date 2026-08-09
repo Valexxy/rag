@@ -383,8 +383,9 @@ def process_webhook_async(instance_name: str, payload: dict):
 async def status_endpoint():
     return {
         "status": "online",
-        "system": "Sovereign AI Commerce Platform v2026 (FastAPI & Golang Hybrid Engine)",
-        "concurrency": "Non-Blocking Async Event-Loop + Goroutine Ready",
+        "system": "Meta Official WhatsApp Cloud API Platform v2030-META-OFFICIAL-LIVE",
+        "version": "v2030-META-OFFICIAL-LIVE",
+        "meta_webhook": "/webhook/meta",
         "time": time.strftime("%Y-%m-%d %H:%M:%S WAT")
     }
 

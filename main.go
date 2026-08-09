@@ -770,10 +770,11 @@ func getEnv(key, defaultVal string) string {
 func handleStatus(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"status":    "online",
-		"engine":    "Pure Golang Ultra-Fast AI Commerce Engine (v2026)",
-		"concurrency": "Goroutines (Zero GIL, Sub-1ms Latency)",
-		"time":      time.Now().Format(time.RFC3339),
+		"status":       "online",
+		"system":       "Meta Official WhatsApp Cloud API Platform v2030-META-OFFICIAL-LIVE",
+		"version":      "v2030-META-OFFICIAL-LIVE",
+		"meta_webhook": "/webhook/meta",
+		"time":         time.Now().Format(time.RFC3339),
 	})
 }
 
