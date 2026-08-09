@@ -433,7 +433,13 @@ async def meta_webhook_endpoint(request: Request):
     LAST_WEBHOOK_EVENT["timestamp"] = time.strftime("%Y-%m-%d %H:%M:%S WAT")
     LAST_WEBHOOK_EVENT["payload"] = body
     try:
-        msg = body["entry"][0]["changes"][0]["value"]["messages"][0]
+        val = body.get("value", {})
+        if not val and body.get("entry"):
+            entries = body.get("entry", [])
+            changes = entries[0].get("changes", []) if entries else []
+            val = changes[0].get("value", {}) if changes else {}
+        
+        msg = val.get("messages", [{}])[0]
         LAST_WEBHOOK_EVENT["sender"] = msg.get("from")
         LAST_WEBHOOK_EVENT["text"] = msg.get("text", {}).get("body")
     except Exception:
