@@ -349,6 +349,31 @@ async def test_chat_endpoint(query: str = "1.5kva", phone: str = "2348072015725"
         "is_transfer": res.get("is_human_transfer")
     }
 
+@app.get("/api/ai-providers")
+async def ai_providers_status():
+    """
+    Live status of all AI provider integrations.
+    Shows which free providers have API keys configured.
+    Green = ready, Red = no key (add to Render env vars).
+    """
+    from free_ai_hub import free_ai_hub
+    hub_status = free_ai_hub.status()
+    return {
+        "status": "ok",
+        "providers": {
+            "cerebras":    {"configured": hub_status["cerebras"],   "model": "llama-3.3-70b",              "tier": "free", "tokens_per_day": "~1M"},
+            "openrouter":  {"configured": hub_status["openrouter"],  "model": "llama-3.3-70b:free + deepseek:free", "tier": "free", "tokens_per_day": "50-1000 req/day"},
+            "mistral":     {"configured": hub_status["mistral"],     "model": "mistral-small-latest",       "tier": "free", "tokens_per_day": "~1 req/sec"},
+            "groq":        {"configured": bool(os.environ.get("GROQ_API_KEY")),   "model": "llama-3.3-70b-versatile",    "tier": "free"},
+            "gemini":      {"configured": bool(os.environ.get("GEMINI_API_KEY")), "model": "gemini-2.0-flash",           "tier": "free"},
+        },
+        "active_layers": sum([
+            hub_status["cerebras"], hub_status["openrouter"], hub_status["mistral"],
+            bool(os.environ.get("GROQ_API_KEY")), bool(os.environ.get("GEMINI_API_KEY"))
+        ]),
+        "note": "Add CEREBRAS_API_KEY, OPENROUTER_API_KEY, MISTRAL_API_KEY to Render env vars for full coverage."
+    }
+
 # -------------------------------------------------------------
 # 💬 WHATSAPP WEBHOOK HANDLER (Legal Framework & Monetization Ledger)
 # -------------------------------------------------------------
@@ -389,7 +414,35 @@ def _process_whatsapp_message_sync(instance_name: str, payload: dict):
         if is_bot_sent_message(msg_id):
             return {"status": "bot_own_message_ignored"}
 
-        is_from_me = key_info.get("fromMe", False)
+        is_from_me = bool(
+            key_info.get("fromMe")
+            or data.get("fromMe")
+            or payload.get("fromMe")
+        )
+
+        message_text = (
+            message_info.get("conversation")
+            or message_info.get("extendedTextMessage", {}).get("text")
+            or message_info.get("imageMessage", {}).get("caption")
+            or message_info.get("videoMessage", {}).get("caption")
+            or data.get("body")
+            or data.get("text")
+            or payload.get("text")
+            or ""
+        ).strip()
+
+        # -------------------------------------------------------------
+        # 🚨 CRITICAL GUARDIAN: IGNORE OUTGOING MESSAGES FROM LINKED PHONE
+        # Prevent bot from responding when merchant chats with friends/family!
+        # Only allow outgoing messages if they are owner '#' or '!' commands.
+        # -------------------------------------------------------------
+        if is_from_me:
+            if message_text.startswith("#") or message_text.startswith("!"):
+                logger.info(f"[Webhook] Processing owner command from linked phone: '{message_text[:30]}'")
+            else:
+                logger.info(f"[Webhook] Ignored outgoing message from linked phone (fromMe=True)")
+                return {"status": "outgoing_message_from_me_ignored"}
+
         remote_jid = (
             key_info.get("remoteJid")
             or key_info.get("participant")
@@ -402,6 +455,7 @@ def _process_whatsapp_message_sync(instance_name: str, payload: dict):
         clean_sender = "".join(filter(str.isdigit, str(remote_jid)))
         clean_owner = "".join(filter(str.isdigit, str(tenant.get("owner_phone", ""))))
         is_owner = (clean_owner and clean_sender == clean_owner)
+
 
         # Dynamic Global Timezone Resolution
         greeting, customer_loc_info, customer_local_time = global_tz.get_customer_local_time(clean_sender)

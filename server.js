@@ -178,13 +178,20 @@ app.post('/webhook/whatsapp/store-bot', (req, res) => {
 
       if (BOT_SENT_IDS.has(msgId)) return;
 
-      const remoteJid = key.remoteJid || "";
-      const senderPhone = remoteJid.split('@')[0];
-      if (!senderPhone) return;
-
+      const isFromMe = Boolean(key.fromMe || data.fromMe || body.fromMe);
       const messageObj = data.message || {};
       const text = (messageObj.conversation || messageObj.extendedTextMessage?.text || "").trim();
       if (!text) return;
+
+      // Ignore all outgoing messages sent by merchant from linked phone unless it's a '#' or '!' owner command
+      if (isFromMe && !text.startsWith("#") && !text.startsWith("!")) {
+        console.log("[Node.js Webhook] Ignored outgoing message from linked phone (fromMe=true)");
+        return;
+      }
+
+      const remoteJid = key.remoteJid || "";
+      const senderPhone = remoteJid.split('@')[0];
+      if (!senderPhone) return;
 
       const lower = text.toLowerCase();
 

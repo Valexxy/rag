@@ -68,6 +68,32 @@ class MultiDimensionalAIEnsemble:
             except Exception as e:
                 logger.warning(f"[Ensemble] Layer 1 local engine failed: {e}")
 
+        # ── LAYER 2: CLOUDFLARE WORKERS AI — Llama 3.3 70B on CF GPU ────
+        # 10K neurons/day free, resets daily, fast CF edge GPU.
+        # No token restrictions within daily allowance.
+        # Requires: CF_ACCOUNT_ID + CF_API_TOKEN in Render env vars.
+        try:
+            from cloudflare_ai_engine import cloudflare_ai
+            if cloudflare_ai.is_configured:
+                cf_res = cloudflare_ai.generate_reply(customer_query, tenant or {}, catalog or [], chat_history)
+                if cf_res and cf_res.get("reply"):
+                    logger.info(f"[Ensemble] Layer 2 (CloudflareAI) answered")
+                    return cf_res
+        except Exception as e:
+            logger.warning(f"[Ensemble] Layer 2 CloudflareAI failed: {e}")
+
+        # ── LAYER 3: FREE AI HUB — Cerebras + OpenRouter + Mistral ──────
+        # Completely separate quota from Groq and Gemini.
+        try:
+            from free_ai_hub import free_ai_hub
+            hub_res = free_ai_hub.generate_reply(customer_query, tenant or {}, catalog or [], chat_history)
+            if hub_res and hub_res.get("reply"):
+                logger.info(f"[Ensemble] Layer 3 (FreeAIHub) answered: {hub_res['architecture']}")
+                return hub_res
+        except Exception as e:
+            logger.warning(f"[Ensemble] Layer 3 FreeAIHub failed: {e}")
+
+
         prompt = f"""STORE CATALOG CONTEXT:
 {catalog_context}
 

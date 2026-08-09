@@ -1,0 +1,220 @@
+"""
+====================================================================
+FREE AI HUB — Cerebras + OpenRouter + Mistral Unified Reasoning Engine
+====================================================================
+Three completely separate free AI providers chained as one hub:
+
+  1. Cerebras AI  — llama-3.3-70b @ ~1M tokens/day, ~2000 tok/s (fastest free AI)
+  2. OpenRouter   — llama-3.3-70b:free / deepseek-chat:free (50+ models, rotating)
+  3. Mistral AI   — mistral-small-latest (free experiment tier, ~1 req/sec)
+
+All use the same OpenAI-compatible API format.
+All have 4-second hard timeouts — no blocking sleep anywhere.
+All are completely separate from Groq and Gemini quotas.
+
+HOW TO GET FREE API KEYS:
+  Cerebras:  https://cloud.cerebras.ai       (email signup, no CC)
+  OpenRouter: https://openrouter.ai          (email signup, no CC)
+  Mistral:   https://console.mistral.ai      (select "Experiment" plan)
+"""
+
+import os
+import json
+import logging
+import urllib.request
+import urllib.error
+import concurrent.futures
+
+logger = logging.getLogger(__name__)
+
+# ── API Keys (set these in Render environment variables) ─────────────
+CEREBRAS_API_KEY  = os.environ.get("CEREBRAS_API_KEY", "")
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
+MISTRAL_API_KEY   = os.environ.get("MISTRAL_API_KEY", "")
+
+# ── Provider configurations ───────────────────────────────────────────
+PROVIDERS = [
+    {
+        "name": "Cerebras",
+        "key_env": "CEREBRAS_API_KEY",
+        "base_url": "https://api.cerebras.ai/v1/chat/completions",
+        "model": "llama-3.3-70b",
+        "headers": lambda key: {
+            "Authorization": f"Bearer {key}",
+            "Content-Type": "application/json",
+        },
+    },
+    {
+        "name": "OpenRouter_Llama",
+        "key_env": "OPENROUTER_API_KEY",
+        "base_url": "https://openrouter.ai/api/v1/chat/completions",
+        "model": "meta-llama/llama-3.3-70b-instruct:free",
+        "headers": lambda key: {
+            "Authorization": f"Bearer {key}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://rag-403h.onrender.com",
+            "X-Title": "Sovereign AI Commerce",
+        },
+    },
+    {
+        "name": "OpenRouter_DeepSeek",
+        "key_env": "OPENROUTER_API_KEY",
+        "base_url": "https://openrouter.ai/api/v1/chat/completions",
+        "model": "deepseek/deepseek-chat-v3-0324:free",
+        "headers": lambda key: {
+            "Authorization": f"Bearer {key}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://rag-403h.onrender.com",
+            "X-Title": "Sovereign AI Commerce",
+        },
+    },
+    {
+        "name": "Mistral",
+        "key_env": "MISTRAL_API_KEY",
+        "base_url": "https://api.mistral.ai/v1/chat/completions",
+        "model": "mistral-small-latest",
+        "headers": lambda key: {
+            "Authorization": f"Bearer {key}",
+            "Content-Type": "application/json",
+        },
+    },
+]
+
+
+STORE_SYSTEM_PROMPT = """You are a warm, highly knowledgeable Nigerian store sales consultant for {business_name} in Onitsha, Anambra State.
+
+Current store catalog:
+{catalog}
+
+Business hours: Monday–Saturday, 8:00 AM–6:00 PM WAT
+Store address: {address}
+
+RULES:
+1. Answer warmly and naturally like a real Nigerian store rep.
+2. For catalog items → give exact price and details from the catalog above.
+3. If item is NOT in catalog → politely explain what you specialize in, suggest where to find it in Onitsha, and ask if you can help with something else.
+4. If query is broad or unclear → ask a friendly clarifying question.
+5. Never be silent. Never drop the customer. Keep response concise (3-5 sentences).
+6. Use ₦ for all prices. Warm, friendly tone."""
+
+
+class FreeAIHub:
+    """
+    Unified hub for Cerebras + OpenRouter + Mistral free AI APIs.
+    Tries providers in order, uses first successful response.
+    All calls have 4-second hard timeouts.
+    """
+
+    def __init__(self):
+        self._keys = {
+            "CEREBRAS_API_KEY":   CEREBRAS_API_KEY,
+            "OPENROUTER_API_KEY": OPENROUTER_API_KEY,
+            "MISTRAL_API_KEY":    MISTRAL_API_KEY,
+        }
+
+    def _refresh_keys(self):
+        """Re-read env vars in case they were set after module import."""
+        self._keys = {
+            "CEREBRAS_API_KEY":   os.environ.get("CEREBRAS_API_KEY", ""),
+            "OPENROUTER_API_KEY": os.environ.get("OPENROUTER_API_KEY", ""),
+            "MISTRAL_API_KEY":    os.environ.get("MISTRAL_API_KEY", ""),
+        }
+
+    def generate_reply(
+        self,
+        query: str,
+        tenant: dict,
+        catalog: list,
+        chat_history: str = ""
+    ) -> dict | None:
+        """
+        Tries Cerebras → OpenRouter (Llama) → OpenRouter (DeepSeek) → Mistral.
+        Returns the first successful response or None if all fail.
+        """
+        self._refresh_keys()
+
+        business_name = (tenant or {}).get("business_name", "Teeslux Global Store")
+        address = (tenant or {}).get("store_address", "Onitsha, Anambra State")
+        cat_lines = "\n".join([
+            f"- {i.get('name', 'Item')}: ₦{i.get('price', 0):,.0f} — {i.get('description', '')}"
+            for i in (catalog or [])[:12] if isinstance(i, dict)
+        ])
+
+        system = STORE_SYSTEM_PROMPT.format(
+            business_name=business_name,
+            catalog=cat_lines or "(No items listed yet)",
+            address=address
+        )
+        history = f"\nRecent chat:\n{chat_history[-400:]}\n" if chat_history else ""
+        user_msg = f"{history}Customer: {query}"
+
+        for provider in PROVIDERS:
+            key = self._keys.get(provider["key_env"], "")
+            if not key:
+                logger.debug(f"[FreeAIHub] Skipping {provider['name']} — no API key set")
+                continue
+
+            result = self._call(provider, key, system, user_msg)
+            if result:
+                logger.info(f"[FreeAIHub] ✅ {provider['name']} responded successfully")
+                return {
+                    "success": True,
+                    "reply": result,
+                    "architecture": f"FreeAIHub_{provider['name']}",
+                    "needs_clarification": "?" in result,
+                }
+
+        return None  # All providers failed
+
+    def _call(self, provider: dict, key: str, system: str, user_msg: str) -> str | None:
+        """
+        Makes a single HTTP POST to the provider with a 4-second timeout.
+        Uses stdlib urllib only — no extra dependencies.
+        """
+        def _do_request():
+            payload = json.dumps({
+                "model": provider["model"],
+                "messages": [
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user_msg},
+                ],
+                "max_tokens": 400,
+                "temperature": 0.4,
+            }).encode("utf-8")
+
+            headers = provider["headers"](key)
+            req = urllib.request.Request(
+                provider["base_url"],
+                data=payload,
+                headers=headers,
+                method="POST"
+            )
+            with urllib.request.urlopen(req, timeout=4) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                text = data["choices"][0]["message"]["content"].strip()
+                return text if text else None
+
+        try:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+                return ex.submit(_do_request).result(timeout=4.5)
+        except concurrent.futures.TimeoutError:
+            logger.warning(f"[FreeAIHub] {provider['name']} timed out after 4s")
+            return None
+        except urllib.error.HTTPError as e:
+            logger.warning(f"[FreeAIHub] {provider['name']} HTTP {e.code}: {e.reason}")
+            return None
+        except Exception as e:
+            logger.warning(f"[FreeAIHub] {provider['name']} failed: {type(e).__name__}: {str(e)[:80]}")
+            return None
+
+    def status(self) -> dict:
+        """Returns which providers are currently configured with API keys."""
+        self._refresh_keys()
+        return {
+            "cerebras":   bool(self._keys.get("CEREBRAS_API_KEY")),
+            "openrouter": bool(self._keys.get("OPENROUTER_API_KEY")),
+            "mistral":    bool(self._keys.get("MISTRAL_API_KEY")),
+        }
+
+
+free_ai_hub = FreeAIHub()
