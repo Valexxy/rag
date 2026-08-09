@@ -994,17 +994,16 @@ func processMetaWebhookAsync(bodyBytes []byte) {
 func main() {
 	port := getEnv("PORT", DefaultPort)
 
-	// Route Handlers
-	http.HandleFunc("/", handleStatus)
+	// Explicit Webhook and API Route Handlers
+	http.HandleFunc("/webhook/meta", handleMetaWebhook)
+	http.HandleFunc("/webhook/meta/", handleMetaWebhook)
+	http.HandleFunc("/meta-webhook", handleMetaWebhook)
+	http.HandleFunc("/webhook/whatsapp/", handleWhatsAppWebhook)
 	http.HandleFunc("/api/status", handleStatus)
 	http.HandleFunc("/api/ai-providers", handleAIProviders)
 	http.HandleFunc("/api/test-chat", handleTestChat)
 	http.HandleFunc("/api/last-webhook", handleLastWebhook)
-	http.HandleFunc("/webhook/whatsapp/", handleWhatsAppWebhook)
-	http.HandleFunc("/webhook/meta", handleMetaWebhook)
-	http.HandleFunc("/webhook/meta/", handleMetaWebhook)
-	http.HandleFunc("/meta-webhook", handleMetaWebhook)
-	http.HandleFunc("/webhook", handleMetaWebhook)
+	http.HandleFunc("/", handleStatus)
 
 	log.Printf("🚀 Pure Golang AI Commerce Engine listening on port %s...", port)
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
