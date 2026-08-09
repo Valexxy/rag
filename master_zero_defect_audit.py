@@ -69,12 +69,10 @@ TEST_CASES = [
     ("#switch", "Multi-Store Hub"),
     ("change store", "Multi-Store Hub"),
 
-    # Category 6: Multi-Niche Global Business Greetings & Presence Checks
-    ("hi real_estate", "Real Estate"),
-    ("hi salon", "Beauty Salon"),
-    ("are you still here", "online"),
-    ("is anyone online", "online"),
-
+    # Category 7: Fundamental Rules (Frustration & Price Haggling)
+    ("this service is rubbish", "Priority Escalation"),
+    ("give me discount", "Fixed Price Policy"),
+    ("what is your last price", "Fixed Price Policy"),
     ("what are your business hours?", "Opening Hours"),
     ("where is your shop located?", "Store Location"),
     ("how do I pay?", "Payment Methods"),

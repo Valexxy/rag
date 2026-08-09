@@ -571,9 +571,32 @@ func processWebhookAsync(instanceName string, bodyBytes []byte) {
 	// ── BUSINESS LOGIC & RESPONSE ROUTER ──────────────────────────────
 	lowerText := strings.ToLower(text)
 
+	// Frustration / Anger Detection -> Instant Red Alert
+	frustrationRegex := regexp.MustCompile(`(?i)\b(rubbish|scam|scammer|thief|cheat|stole|fraud|stupid|useless|horrible|terrible|frustrated|frustration|angry|mad|waste of time|fool|bad service|worst)\b`)
+	if frustrationRegex.MatchString(lowerText) {
+		SetCustomerState(remoteJID, StateHumanEscalated)
+		customerNotice := "🚨 *[Teeslux Global Store — Priority Escalation]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nI apologize for any inconvenience. I have flagged your issue directly to our Store Manager on **URGENT RED ALERT**. Our manager will contact you immediately!\n\n📞 Direct Call/WhatsApp: `+" + ownerPhone + "`"
+		SendWhatsAppMessage(instanceName, senderPhone, customerNotice)
+
+		if cleanSender != cleanOwner {
+			time.Sleep(500 * time.Millisecond)
+			managerAlert := fmt.Sprintf("🚨 *[URGENT RED ALERT: ANGRY CUSTOMER DETECTED]*\n\n👤 *Customer:* `%s`\n💬 *Issue:* '%s'\n⚡ *Action Required:* Call/reply immediately!\n\n💬 Reply `#reply %s | Your message`", senderPhone, text, senderPhone)
+			SendWhatsAppMessage(instanceName, ownerPhone, managerAlert)
+		}
+		return
+	}
+
+	// Price Haggling Guardrail
+	hagglingRegex := regexp.MustCompile(`(?i)\b(discount|reduce|reduction|last price|how much last|cheaper|lower price|bargain|slash|cut price|best price)\b`)
+	if hagglingRegex.MatchString(lowerText) {
+		hagglingReply := "💡 *[Teeslux Global — Fixed Price Policy & Bundled Value]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nAll our catalog prices are fixed wholesale rates to ensure 100% genuine quality!\n\n🎁 *Bonus Perks Included:*\n• Free delivery across Onitsha\n• Extended warranty & installation support\n\n💬 Reply *1* to view our products or *#human* to discuss bulk order discounts with our manager!"
+		SendWhatsAppMessage(instanceName, senderPhone, hagglingReply)
+		return
+	}
+
 	// Greetings Quick Action Menu
 	if isGreeting(lowerText) {
-		greetingMenu := "☀️ *[Teeslux Global Client Care]*\n\nWelcome to Teeslux Global Electronics & Solar!\n\n1️⃣ *Catalog & Products* — View current prices & items\n2️⃣ *Book Inspection* — Schedule a physical store visit\n3️⃣ *Track Order* — Check status of shipment\n4️⃣ *Human Support* — Speak with manager\n\nReply 1, 2, 3, or 4 to proceed!"
+		greetingMenu := FormatMultiNicheGreeting("Teeslux Global Electronics & Solar", "retail", "Good Afternoon 🌤️", "02:30 PM WAT")
 		SendWhatsAppMessage(instanceName, senderPhone, greetingMenu)
 		return
 	}

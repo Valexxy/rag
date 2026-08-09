@@ -32,29 +32,41 @@ class LocalKnowledgeEngine:
         owner_phone = tenant.get("owner_phone", "2348072015725")
         addr = tenant.get("store_address", "Onitsha Main Market, Anambra State, Nigeria")
 
-        # ── 0. EXPRESS INTENT & PRESENCE CHECK ──────────────────────────────────────
-        if any(p in q for p in ["are you still here", "are you there", "is anyone online", "is anyone there", "anyone online", "anyone there", "are you available"]):
-            return {
-                "reply": (
-                    f"☀️ *[{biz} — Client Experience]*\n"
-                    f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-                    f"Yes! We are online and ready to assist you right now!\n\n"
-                    f"How may we serve your request today?\n\n"
-                    f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                    f"1️⃣ *Catalog & Products* — View prices & inventory\n"
-                    f"2️⃣ *Book Physical Inspection* — Schedule store visit\n"
-                    f"3️⃣ *Track Order Shipment* — Delivery status\n"
-                    f"4️⃣ *Store Manager* — Executive client care\n\n"
-                    f"💬 Reply 1, 2, 3, or 4 to proceed!"
-                ),
-                "confidence": 1.0,
-                "source": "local_presence_check"
-            }
-
+        # ── 0. EXPRESS INTENT & FRUSTRATION / HAGGLING RECOGNITION ─────────────────────
         try:
             from express_intent_engine import express_intent
             intent_res = express_intent.classify_intent(query)
-            if intent_res.get("intent") == "HUMAN_SUPPORT":
+            intent_name = intent_res.get("intent")
+
+            if intent_name == "FRUSTRATION_ANGRY_CUSTOMER":
+                return {
+                    "reply": (
+                        f"🚨 *[{biz} — Priority Escalation]*\n"
+                        f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+                        f"I apologize for any inconvenience! I have flagged your complaint directly to our Store Manager on **URGENT RED ALERT**.\n\n"
+                        f"Our manager will contact you immediately!\n\n"
+                        f"📞 *Direct Call/WhatsApp:* `+{owner_phone}`"
+                    ),
+                    "confidence": 1.0,
+                    "source": "express_intent_frustration"
+                }
+
+            if intent_name == "PRICE_HAGGLING":
+                return {
+                    "reply": (
+                        f"💡 *[{biz} — Fixed Price Policy & Bundled Value]*\n"
+                        f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+                        f"All our catalog prices are fixed wholesale rates to ensure 100% genuine quality!\n\n"
+                        f"🎁 *Bonus Perks Included:*\n"
+                        f"• Free delivery across Onitsha\n"
+                        f"• Extended warranty & installation support\n\n"
+                        f"💬 Reply *1* to view products or reply `#human` to discuss bulk order discounts with our manager!"
+                    ),
+                    "confidence": 1.0,
+                    "source": "express_intent_haggling"
+                }
+
+            if intent_name == "HUMAN_SUPPORT":
                 return {
                     "reply": whatsapp_ui.format_manager_handover(query, biz, owner_phone),
                     "confidence": 1.0,

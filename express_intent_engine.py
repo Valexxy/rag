@@ -1,16 +1,12 @@
 """
 ====================================================================
-EXPRESS INTENT INTELLIGENCE ENGINE (v2026)
+EXPRESS INTENT ENGINE v2030 — World-Class Customer Care Matrix
 ====================================================================
-Deep Intent Recognition & Semantic Routing Matrix for Online Commerce & Customer Care.
-Understands millions of customer phrasing variations across 6 Core Intent Classes:
-
-1. HUMAN_SUPPORT: Any request for human assistance, help, support, complaint, issue, escalation, person, agent, manager, staff, representative, urgent help.
-2. CATALOG_INQUIRY: Inquiries about buying, products, stock, prices, models, specs.
-3. OUT_OF_CATALOG: Items not sold in store (oil, cigarettes, clothes, etc.).
-4. STORE_OPERATIONS: Hours, location, directions, payment, delivery, warranty, contact.
-5. GREETING: Hi, hello, good morning, hey, how far.
-6. GENERAL_AI_ADVICE: Product recommendations, sizing, technical questions.
+Includes:
+- Frustration & Anger Detection
+- Nigerian Pidgin & E-Commerce Slang Matching
+- Price Haggling & Bargaining Guardrails
+- Human Escalation Classification
 """
 
 import re
@@ -19,87 +15,73 @@ from typing import Dict, Any
 
 logger = logging.getLogger(__name__)
 
-# ── SEMANTIC INTENT PATTERNS (Covers millions of natural phrasings) ────
-HUMAN_SUPPORT_PATTERNS = [
-    # Support & Assistance Intent
-    r"\bsupport\b", r"\bhelp\b", r"\bassist\b", r"\bassistance\b", r"\bcare\b",
-    r"\bcomplain\b", r"\bcomplaint\b", r"\bissue\b", r"\bproblem\b", r"\btrouble\b",
-    r"\bfaulty\b", r"\bbroken\b", r"\bdamaged\b", r"\brefund\b", r"\bdispute\b",
-    
-    # Human Person & Staff Intent
-    r"\bhuman\b", r"\bperson\b", r"\bpeople\b", r"\bagent\b", r"\brep\b",
-    r"\brepresentative\b", r"\bmanager\b", r"\bboss\b", r"\bdirector\b",
-    r"\bowner\b", r"\bstaff\b", r"\bpersonnel\b", r"\bteam\b", r"\bexecutive\b",
-    r"\badmin\b", r"\badministrator\b", r"\bhead\b", r"\bin charge\b",
-    
-    # Action & Direct Connection Intent
-    r"\btalk to\b", r"\bspeak to\b", r"\bspeak with\b", r"\btalk with\b",
-    r"\bconnect me\b", r"\btransfer me\b", r"\breach someone\b", r"\bcall me\b",
-    r"\bis anyone there\b", r"\banybody there\b", r"\bwho is there\b",
-    r"\bneed someone\b", r"\bwant someone\b", r"\bneed help\b", r"\bneed support\b",
-    r"\bneed assistance\b", r"\basap\b", r"\burgent\b", r"\bnow\b", r"\bemergency\b"
-]
+# Frustration & Anger Keywords
+FRUSTRATION_REGEX = re.compile(
+    r"\b(rubbish|scam|scammer|thief|cheat|stole|fraud|stupid|useless|horrible|terrible|frustrated|frustration|angry|mad|waste of time|fool|bad service|worst|lawyer|police|sue)\b",
+    re.IGNORECASE
+)
 
-HUMAN_SUPPORT_REGEX = re.compile("|".join(HUMAN_SUPPORT_PATTERNS), re.IGNORECASE)
+# Price Haggling Keywords
+HAGGLING_REGEX = re.compile(
+    r"\b(discount|reduce|reduction|last price|how much last|cheaper|lower price|bargain|slash|cut price|best price)\b",
+    re.IGNORECASE
+)
+
+# Human Support Escalation Keywords
+HUMAN_SUPPORT_REGEX = re.compile(
+    r"\b(support|help|assist|assistance|care|complain|complaint|issue|problem|trouble|faulty|broken|damaged|refund|dispute|human|person|people|agent|rep|representative|manager|boss|director|owner|staff|personnel|team|executive|admin|administrator|head|talk to|speak to|speak with|talk with|connect me|transfer me|reach someone|call me|is anyone there|anybody there|who is there|need someone|want someone|need help|need support|need assistance|asap|urgent|now|emergency)\b",
+    re.IGNORECASE
+)
+
+# Nigerian Pidgin Commerce Slang
+PIDGIN_COMMERCE_REGEX = re.compile(
+    r"\b(how far|how much be|you get|make i buy|abeg|where your shop dey|i wan buy|wetin be|how much last|choko|shishi)\b",
+    re.IGNORECASE
+)
+
 
 class ExpressIntentEngine:
-    """Zero-Latency Express Intent Classification Engine."""
+    """World-Class Customer Care Intent Classifier."""
 
     def classify_intent(self, text: str) -> Dict[str, Any]:
         if not text:
             return {"intent": "UNKNOWN", "confidence": 0.0}
 
-        q = text.strip().lower()
+        q = text.strip()
 
-        # 1. HUMAN_SUPPORT INTENT (Top Priority)
+        # 1. Frustration / Anger Detection -> Priority 1 Escalation
+        if FRUSTRATION_REGEX.search(q):
+            return {
+                "intent": "FRUSTRATION_ANGRY_CUSTOMER",
+                "confidence": 1.0,
+                "action": "URGENT_MANAGER_ESCALATION"
+            }
+
+        # 2. Explicit Human Support Request
         if HUMAN_SUPPORT_REGEX.search(q):
             return {
                 "intent": "HUMAN_SUPPORT",
                 "confidence": 1.0,
-                "action": "ROUTE_TO_MANAGER",
-                "priority": "HIGHEST"
+                "action": "MANAGER_HANDOVER"
             }
 
-        # 2. GREETING INTENT
-        greetings = ["hi", "hello", "hey", "good morning", "good afternoon", "good evening", "good day", "how far", "yo", "wassup"]
-        if q in greetings or any(q.startswith(g + " ") for g in greetings):
+        # 3. Price Haggling / Bargaining Request
+        if HAGGLING_REGEX.search(q):
             return {
-                "intent": "GREETING",
-                "confidence": 1.0,
-                "action": "SHOW_CLIENT_CARE_MENU"
-            }
-
-        # 3. NUMERIC SELECTOR INTENT
-        if q in ["1", "2", "3", "4", "5", "6"]:
-            return {
-                "intent": "NUMERIC_SELECTION",
-                "confidence": 1.0,
-                "selection": q,
-                "action": "SHOW_PRODUCT_DETAILS"
-            }
-
-        # 4. DISAMBIGUATION CATEGORY INTENT
-        if q in ["solar", "generator", "inverter"]:
-            return {
-                "intent": "DISAMBIGUATION_CATEGORY",
-                "confidence": 1.0,
-                "category": q,
-                "action": "SHOW_DISAMBIGUATION_MENU"
-            }
-
-        # 5. STORE OPERATIONS INTENT
-        ops_keywords = ["hours", "open", "close", "address", "location", "where", "pay", "payment", "deliver", "shipping", "warranty", "contact", "phone number"]
-        if any(kw in q for kw in ops_keywords):
-            return {
-                "intent": "STORE_OPERATIONS",
+                "intent": "PRICE_HAGGLING",
                 "confidence": 0.95,
-                "action": "ANSWER_OPERATIONAL_FAQ"
+                "action": "HAGGLING_GUARDRAIL"
             }
 
-        return {
-            "intent": "GENERAL_INQUIRY",
-            "confidence": 0.8,
-            "action": "CHECK_CATALOG_OR_AI"
-        }
+        # 4. Nigerian Pidgin Commerce Request
+        if PIDGIN_COMMERCE_REGEX.search(q):
+            return {
+                "intent": "PIDGIN_COMMERCE",
+                "confidence": 0.90,
+                "action": "PIDGIN_RESPONSE"
+            }
+
+        return {"intent": "GENERAL_INQUIRY", "confidence": 0.5}
+
 
 express_intent = ExpressIntentEngine()
