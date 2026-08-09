@@ -13,7 +13,7 @@ import urllib.request
 import urllib.error
 import concurrent.futures
 from fastapi import FastAPI, Request, BackgroundTasks
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response, PlainTextResponse
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("SovereignAI")
@@ -416,9 +416,9 @@ async def meta_webhook_verify(request: Request):
 
     if mode == "subscribe" and (token == META_VERIFY_TOKEN or token == "my_secret_token"):
         logger.info("[Meta Webhook] GET Verification Successful!")
-        return Response(content=challenge, media_type="text/plain", status_code=200)
+        return PlainTextResponse(content=str(challenge), status_code=200)
     
-    return Response(content="Forbidden", status_code=403)
+    return PlainTextResponse(content="Forbidden", status_code=403)
 
 @app.post("/webhook/meta")
 async def meta_webhook_incoming(request: Request):
