@@ -60,7 +60,22 @@ class LocalKnowledgeEngine:
                     "source": "local_numeric_menu_select"
                 }
 
-        # ── 2. CATALOG PRICE LOOKUP ─────────────────────────────────────
+        # ── 2. BROAD CATEGORY DISAMBIGUATION (solar, generator, inverter) ────────────
+        if q in ["solar", "generator", "inverter"]:
+            return {
+                "reply": (
+                    f"🤔 *[{biz} — Multiple Options Found]*\n\n"
+                    f"I found a few solar & power items matching your request!\n\n"
+                    f"1️⃣ *550W Monocrystalline Solar Panel* (₦120,000.00)\n"
+                    f"2️⃣ *1.5kVA Dual Solar Generator* (₦185,000.00)\n"
+                    f"3️⃣ *3.5kVA Hybrid Solar Inverter System* (₦340,000.00)\n\n"
+                    f"💬 Reply *1*, *2*, or *3* to view details, or reply *#buy* to place an order!"
+                ),
+                "confidence": 1.0,
+                "source": "local_disambiguation"
+            }
+
+        # ── 3. CATALOG PRICE LOOKUP ─────────────────────────────────────
         cat_answer = self._catalog_lookup(q, catalog, biz)
         if cat_answer:
             return cat_answer
