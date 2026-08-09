@@ -873,10 +873,13 @@ func handleMetaWebhook(w http.ResponseWriter, r *http.Request) {
 		token := r.URL.Query().Get("hub.verify_token")
 		challenge := r.URL.Query().Get("hub.challenge")
 
+		log.Printf("[Meta Webhook Verification GET] mode: '%s', token: '%s', challenge: '%s'", mode, token, challenge)
+
 		if mode == "subscribe" && (token == "my_secret_token" || token == getEnv("META_VERIFY_TOKEN", "my_secret_token")) {
+			w.Header().Set("Content-Type", "text/plain")
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte(challenge))
-			log.Printf("[Meta Webhook] GET Verification Successful!")
+			log.Printf("[Meta Webhook GET] Verification SUCCESSFUL! Challenge: %s", challenge)
 			return
 		}
 		http.Error(w, "Forbidden", http.StatusForbidden)
@@ -980,6 +983,7 @@ func main() {
 	http.HandleFunc("/api/last-webhook", handleLastWebhook)
 	http.HandleFunc("/webhook/whatsapp/", handleWhatsAppWebhook)
 	http.HandleFunc("/webhook/meta", handleMetaWebhook)
+	http.HandleFunc("/webhook/meta/", handleMetaWebhook)
 
 	log.Printf("🚀 Pure Golang AI Commerce Engine listening on port %s...", port)
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
