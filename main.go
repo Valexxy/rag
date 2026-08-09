@@ -614,9 +614,13 @@ func processWebhookAsync(instanceName string, bodyBytes []byte) {
 
 // ── UTILITY HELPERS ──────────────────────────────────────────────────
 func isGreeting(s string) bool {
-	greetings := []string{"hi", "hello", "hey", "good morning", "good afternoon", "good evening", "good day", "how far"}
+	greetings := []string{
+		"hi", "hello", "hey", "good morning", "good afternoon", "good evening", "good day", "how far",
+		"are you still here", "are you there", "is anyone there", "is anyone online", "is anyone here",
+		"hello are you there", "are you available", "anyone there", "anyone online",
+	}
 	for _, g := range greetings {
-		if s == g {
+		if strings.Contains(s, g) || s == g {
 			return true
 		}
 	}

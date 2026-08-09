@@ -32,7 +32,25 @@ class LocalKnowledgeEngine:
         owner_phone = tenant.get("owner_phone", "2348072015725")
         addr = tenant.get("store_address", "Onitsha Main Market, Anambra State, Nigeria")
 
-        # ── 0. EXPRESS INTENT RECOGNITION (HUMAN_SUPPORT) ──────────────────────────
+        # ── 0. EXPRESS INTENT & PRESENCE CHECK ──────────────────────────────────────
+        if any(p in q for p in ["are you still here", "are you there", "is anyone online", "is anyone there", "anyone online", "anyone there", "are you available"]):
+            return {
+                "reply": (
+                    f"☀️ *[{biz} — Client Experience]*\n"
+                    f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+                    f"Yes! We are online and ready to assist you right now!\n\n"
+                    f"How may we serve your request today?\n\n"
+                    f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                    f"1️⃣ *Catalog & Products* — View prices & inventory\n"
+                    f"2️⃣ *Book Physical Inspection* — Schedule store visit\n"
+                    f"3️⃣ *Track Order Shipment* — Delivery status\n"
+                    f"4️⃣ *Store Manager* — Executive client care\n\n"
+                    f"💬 Reply 1, 2, 3, or 4 to proceed!"
+                ),
+                "confidence": 1.0,
+                "source": "local_presence_check"
+            }
+
         try:
             from express_intent_engine import express_intent
             intent_res = express_intent.classify_intent(query)

@@ -69,9 +69,11 @@ TEST_CASES = [
     ("#switch", "Multi-Store Hub"),
     ("change store", "Multi-Store Hub"),
 
-    # Category 6: Multi-Niche Global Business Greetings
+    # Category 6: Multi-Niche Global Business Greetings & Presence Checks
     ("hi real_estate", "Real Estate"),
     ("hi salon", "Beauty Salon"),
+    ("are you still here", "online"),
+    ("is anyone online", "online"),
 
     ("what are your business hours?", "Opening Hours"),
     ("where is your shop located?", "Store Location"),
