@@ -479,7 +479,8 @@ async def test_chat_endpoint(query: str = "1.5kva"):
     if fast["matched"]:
         return {"status": "success", "query": query, "reply": fast["reply"], "source": "fast_catalog_search"}
 
-    ai_reply = generate_ai_reply(query)
+    tenant = {"business_name": "Teeslux Global Electronics & Solar", "store_address": "Onitsha, Anambra State"}
+    ai_reply = generate_ai_reply(query, tenant=tenant)
     return {"status": "success", "query": query, "reply": ai_reply, "source": "ai_ensemble_fallback"}
 
 # ── MULTI-TENANT ONBOARDING ENDPOINTS ────────────────────────────────
