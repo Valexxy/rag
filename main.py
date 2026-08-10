@@ -524,7 +524,18 @@ async def process_meta_payload(payload: dict):
         
         msg = messages[0]
         sender_phone = msg.get("from", "")
-        text = msg.get("text", {}).get("body", "").strip()
+        
+        msg_type = msg.get("type", "text")
+        text = ""
+        if msg_type == "interactive":
+            interactive_obj = msg.get("interactive", {})
+            itype = interactive_obj.get("type", "")
+            if itype == "button_reply":
+                text = interactive_obj.get("button_reply", {}).get("title", "")
+            elif itype == "list_reply":
+                text = interactive_obj.get("list_reply", {}).get("title", "")
+        else:
+            text = msg.get("text", {}).get("body", "").strip()
         
         if not sender_phone or not text:
             return
