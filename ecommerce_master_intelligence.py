@@ -94,26 +94,30 @@ class EcommerceMasterIntelligence:
                 "manager_alert": None
             }
 
-        # ── 4. INTERSTATE LOGISTICS & DELIVERY TIMELINES ─────────────────
+        # ── 4. INTERSTATE LOGISTICS & DYNAMIC COST HUMAN HANDOVER ──────────
         logistics_keywords = [
             "ship", "shipping", "deliver", "delivery", "waybill", "transport", "send", "send to", "ship to", "deliver to",
             "ibadan", "lagos", "abuja", "kano", "port harcourt", "enugu", "benin", "delta", "calabar", "owerri",
-            "jos", "kaduna", "sokoto", "asaba", "warri", "ondo", "osun", "ogun", "ekiti", "kogi", "kwara"
+            "jos", "kaduna", "sokoto", "asaba", "warri", "ondo", "osun", "ogun", "ekiti", "kogi", "kwara", "cost", "fee", "how much to send", "package", "packaging"
         ]
         if any(w in q for w in logistics_keywords):
             return {
-                "type": "logistics",
+                "type": "logistics_human_handoff",
                 "customer_reply": (
-                    f"🚚 *[{biz_name} — Nationwide Delivery Matrix]*\n"
+                    f"🚚 *[{biz_name} — Delivery & Order Confirmation]*\n"
                     f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-                    f"Yes! We deliver nationwide across Nigeria & West Africa (including Ibadan, Lagos, Abuja, Kano, PH, Enugu & all 36 states)!\n\n"
-                    f"📍 *Delivery Timelines & Rates:*\n"
-                    f"• *Local (Onitsha/Anambra):* Same-Day Delivery (₦3,000 – ₦5,000)\n"
-                    f"• *Major Cities (Ibadan, Lagos, Abuja, PH, Kano):* 24 – 48 Hours via Waybill/Park Delivery\n"
-                    f"• *Other States & Towns:* 48 – 72 Hours door-to-door\n\n"
-                    f"📞 Our Logistics Manager (`+{manager_phone}`) will confirm exact waybill fee to your location!"
+                    f"Yes! We deliver nationwide across Nigeria & West Africa.\n\n"
+                    f"⚠️ *Live Delivery Fee & Price Confirmation:* Because shipping fees and market prices change dynamically, our Store Manager (`+{manager_phone}`) is joining this chat right now to confirm the exact live delivery fee and order total for your location!\n\n"
+                    f"💬 Please hold on for a moment while our manager confirms your order terms."
                 ),
-                "manager_alert": None
+                "manager_alert": (
+                    f"🚨 *[DELIVERY & PRICE CONFIRMATION REQUIRED]* 🚨\n"
+                    f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+                    f"🏪 *Store:* {biz_name}\n"
+                    f"👤 *Customer:* `+{customer_phone}`\n"
+                    f"💬 *Inquiry:* '{text}'\n\n"
+                    f"⚡ *ACTION REQUIRED:* Please reply to `+{customer_phone}` to confirm live delivery fee & final price!"
+                )
             }
 
         # ── 5. INSTALLATION & TECHNICAL ENGINEER SETUP ────────────────────
