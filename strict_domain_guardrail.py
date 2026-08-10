@@ -38,14 +38,19 @@ class StrictDomainGuardrail:
         if any(kw in q for kw in OFF_TOPIC_KEYWORDS) or any(phrase in q for phrase in ["uefa", "who won", "premier league", "write code", "football match"]):
             return "RUBBISH_OFF_TOPIC"
 
-        # 2. General business-like buying/selling questions for items NOT in catalog
+        # 2. Store Operational & Logistics Questions are ALWAYS IN_DOMAIN
+        store_ops_keywords = ["deliver", "delivery", "shipping", "ship", "location", "address", "where", "how do you", "payment", "bank", "account", "hours", "contact", "phone", "manager"]
+        if any(kw in q for kw in store_ops_keywords):
+            return "IN_DOMAIN"
+
+        # 3. General business-like buying/selling questions for items NOT in catalog
         catalog = tenant.get("catalog", [])
         catalog_names = [item.get("name", "").lower() for item in catalog if isinstance(item, dict)]
         
         if any(w in q for w in ["do you sell", "do you have", "can i get", "do you carry"]) and not any(name in q or any(word in q for word in name.split() if len(word) > 3) for name in catalog_names):
             return "BUSINESS_OUT_OF_CATALOG"
 
-        # 3. Extract tenant domain keywords from business name, domain scope & catalog
+        # 4. Extract tenant domain keywords from business name, domain scope & catalog
         biz_name = tenant.get("business_name", "").lower()
         domain_scope = tenant.get("business_domain_scope", "").lower()
 
