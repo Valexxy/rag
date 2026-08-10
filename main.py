@@ -140,12 +140,13 @@ def fast_catalog_search(query: str) -> dict:
 
 
 # ── AI ENGINE ENSEMBLE WITH GUARANTEED FALLBACK ─────────────────────
-def generate_ai_reply(query: str) -> str:
-    """Tries FreeAIHub/Cloudflare/Groq. If all fail, returns Smart Fallback (100% guaranteed response)."""
+def generate_ai_reply(query: str, tenant: dict = None) -> str:
+    """Tries FreeAIHub/Cloudflare/Groq with tenant context. Returns AI reasoning reply."""
+    t = tenant or {"business_name": "Teeslux Global Electronics & Solar", "store_address": "Onitsha, Anambra State"}
+    cat = t.get("catalog", STORE_CATALOG)
     try:
         from free_ai_hub import free_ai_hub
-        tenant = {"business_name": "Teeslux Global Electronics & Solar", "store_address": "Onitsha, Anambra State"}
-        res = free_ai_hub.generate_reply(query, tenant, STORE_CATALOG)
+        res = free_ai_hub.generate_reply(query, tenant=t, catalog=cat)
         if res and res.get("reply"):
             return res["reply"]
     except Exception as e:
@@ -669,7 +670,7 @@ async def process_meta_payload(payload: dict):
             send_meta_whatsapp_message(sender_phone, fast["reply"])
             return
 
-        ai_reply = generate_ai_reply(text)
+        ai_reply = generate_ai_reply(text, tenant=tenant)
         if ai_reply:
             send_meta_whatsapp_message(sender_phone, ai_reply)
             return

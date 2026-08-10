@@ -123,8 +123,8 @@ class FreeAIHub:
     def generate_reply(
         self,
         query: str,
-        tenant: dict,
-        catalog: list,
+        tenant: dict = None,
+        catalog: list = None,
         chat_history: str = ""
     ) -> dict | None:
         """
