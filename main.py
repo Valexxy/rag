@@ -138,7 +138,7 @@ def fast_catalog_search(query: str) -> dict:
             "reply": f"🛍️ *[Teeslux Store — Product Found]*\n\n✅ *{item['name']}*\n💰 *Fixed Price:* ₦{item['price']:,}.00\n📦 *Status:* In Stock\n📝 *Details:* {item['desc']}\n\n💬 Reply *#buy* to place your order, or *#human* to speak with our manager."
         }
 
-    # Ambiguous Broad Queries
+    # Ambiguous Broad Queries (Exact Single Words Only)
     if q in ["solar", "generator", "inverter"]:
         return {
             "matched": True, "type": "disambiguation",
