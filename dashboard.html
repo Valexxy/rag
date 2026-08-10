@@ -130,9 +130,82 @@
       transition: all 0.2s ease;
     }
 
-    .btn-guide:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(245, 158, 11, 0.45);
+    /* Mode Switcher Tabs */
+    .mode-tabs {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 0.85rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      border-radius: 0.75rem;
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s ease;
+    }
+
+    .tab-btn.active {
+      background: rgba(6, 182, 212, 0.15);
+      color: var(--accent-cyan);
+      border-color: var(--accent-cyan);
+    }
+
+    /* AI Interview Chat Box */
+    .ai-interview-box {
+      background: rgba(6, 9, 19, 0.7);
+      border: 1px solid var(--border-color);
+      border-radius: 1rem;
+      height: 420px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      margin-bottom: 1rem;
+    }
+
+    .ai-chat-history {
+      flex: 1;
+      padding: 1.25rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .ai-msg {
+      max-width: 88%;
+      padding: 0.85rem 1.1rem;
+      border-radius: 0.85rem;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .ai-msg-bot {
+      align-self: flex-start;
+      background: rgba(6, 182, 212, 0.15);
+      border: 1px solid rgba(6, 182, 212, 0.3);
+      color: #e2e8f0;
+    }
+
+    .ai-msg-user {
+      align-self: flex-end;
+      background: rgba(139, 92, 246, 0.2);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      color: #f1f5f9;
+    }
+
+    .ai-chat-input {
+      display: flex;
+      padding: 0.75rem;
+      background: rgba(15, 23, 42, 0.9);
+      border-top: 1px solid var(--border-color);
+      gap: 0.5rem;
     }
 
     /* Main Container */
@@ -154,51 +227,8 @@
       box-shadow: var(--glass-shadow);
     }
 
-    /* Step Progress Wizard */
-    .wizard-steps {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 2rem;
-      background: rgba(6, 9, 19, 0.6);
-      padding: 0.75rem 1.25rem;
-      border-radius: 1rem;
-      border: 1px solid var(--border-color);
-    }
-
-    .step {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: var(--text-muted);
-    }
-
-    .step.active {
-      color: var(--accent-cyan);
-    }
-
-    .step-num {
-      width: 26px;
-      height: 26px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.1);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.8rem;
-    }
-
-    .step.active .step-num {
-      background: var(--accent-cyan);
-      color: #000;
-      font-weight: bold;
-    }
-
     /* Form Controls */
-    .form-group {
-      margin-bottom: 1.25rem;
-    }
+    .form-group { margin-bottom: 1.25rem; }
 
     label {
       display: block;
@@ -222,30 +252,10 @@
       transition: all 0.2s ease;
     }
 
-    input:focus, select:focus {
-      outline: none;
-      border-color: var(--accent-cyan);
-      box-shadow: 0 0 15px rgba(6, 182, 212, 0.25);
-    }
-
     .form-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 1rem;
-    }
-
-    /* Template Dropdown Selector */
-    .template-selector {
-      background: rgba(6, 182, 212, 0.08);
-      border: 1px dashed var(--accent-cyan);
-      padding: 1rem;
-      border-radius: 0.75rem;
-      margin-bottom: 1.5rem;
-    }
-
-    .template-selector label {
-      color: var(--accent-cyan);
-      margin-bottom: 0.3rem;
     }
 
     /* Catalog Table */
@@ -261,7 +271,7 @@
       display: flex;
       flex-direction: column;
       gap: 0.75rem;
-      max-height: 260px;
+      max-height: 220px;
       overflow-y: auto;
       margin-bottom: 1.5rem;
       padding-right: 0.3rem;
@@ -298,11 +308,6 @@
       box-shadow: 0 4px 20px rgba(6, 182, 212, 0.35);
     }
 
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 25px rgba(6, 182, 212, 0.5);
-    }
-
     .btn-secondary {
       background: rgba(255, 255, 255, 0.08);
       color: var(--text-main);
@@ -322,13 +327,12 @@
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      font-weight: bold;
     }
 
     /* Phone Simulator Mockup */
     .phone-mockup {
       width: 100%;
-      height: 650px;
+      height: 670px;
       background: #0b141a;
       border-radius: 2.2rem;
       border: 4px solid #1e293b;
@@ -381,10 +385,6 @@
       font-weight: 600;
       white-space: nowrap;
       cursor: pointer;
-    }
-
-    .shortcut-btn:hover {
-      background: rgba(0, 168, 132, 0.2);
     }
 
     .chat-body {
@@ -477,28 +477,6 @@
       cursor: pointer;
     }
 
-    .guide-section {
-      margin-bottom: 1.75rem;
-    }
-
-    .guide-section h3 {
-      font-family: 'Outfit', sans-serif;
-      color: var(--accent-cyan);
-      margin-bottom: 0.5rem;
-      font-size: 1.2rem;
-    }
-
-    .guide-section p, .guide-section li {
-      color: var(--text-muted);
-      font-size: 0.92rem;
-      line-height: 1.6;
-    }
-
-    .guide-section ul {
-      margin-left: 1.25rem;
-      margin-top: 0.5rem;
-    }
-
     .alert-success {
       display: none;
       background: rgba(16, 185, 129, 0.15);
@@ -527,7 +505,7 @@
   <div class="hero-banner">
     <div class="hero-text">
       <h1>👋 Welcome, Store Owner!</h1>
-      <p>Automate your WhatsApp sales 24/7. Zero technical setup, zero stress.</p>
+      <p>Automate your WhatsApp sales 24/7. Expand into new revenue opportunities with zero stress.</p>
     </div>
     <button type="button" class="btn-guide" onclick="openGuideModal()">
       📖 Complete Business Guide & Shortcuts
@@ -537,83 +515,86 @@
   <!-- Main Container -->
   <div class="container">
     
-    <!-- Left Column: Simple Setup Wizard -->
+    <!-- Left Column: Setup Card with Interactive Mode Switcher -->
     <div class="card">
       
-      <div class="wizard-steps">
-        <div class="step active">
-          <div class="step-num">1</div>
-          <span>Shop Info</span>
-        </div>
-        <div class="step active">
-          <div class="step-num">2</div>
-          <span>Products</span>
-        </div>
-        <div class="step active">
-          <div class="step-num">3</div>
-          <span>Launch AI</span>
-        </div>
+      <div class="mode-tabs">
+        <button class="tab-btn active" id="tabAiBtn" onclick="switchMode('ai')">
+          🤖 Interactive AI Business Interview (Recommended)
+        </button>
+        <button class="tab-btn" id="tabFormBtn" onclick="switchMode('form')">
+          📝 Quick Setup Form
+        </button>
       </div>
 
       <div id="successAlert" class="alert-success">
-        🎉 <strong>Store Setup Complete!</strong> Your WhatsApp AI Assistant is live and ready to receive customer inquiries.
+        🎉 <strong>Store Setup Complete!</strong> Your WhatsApp AI Assistant is live and ready to capture sales & sourcing leads.
       </div>
 
-      <!-- Quick Template Selector -->
-      <div class="template-selector">
-        <label>⚡ Quick Start: Choose Your Business Industry</label>
-        <select id="industryTemplate" onchange="applyIndustryTemplate()">
-          <option value="solar">☀️ Solar Energy & Electronics (Default)</option>
-          <option value="fashion">👗 Fashion, Textiles & Boutiques</option>
-          <option value="supermarket">🛒 Supermarket & Provisions</option>
-          <option value="beauty">💄 Beauty, Cosmetics & Hair</option>
-          <option value="restaurant">🍲 Restaurant & Fast Food</option>
-        </select>
+      <!-- Mode 1: AI Interactive Business Interview -->
+      <div id="aiModeSection">
+        <div class="ai-interview-box">
+          <div class="ai-chat-history" id="aiInterviewHistory">
+            <div class="ai-msg ai-msg-bot">
+              👋 <strong>Hello! I am your AI Business Expansion Consultant.</strong><br><br>
+              To set up your 24/7 WhatsApp AI Assistant and unlock high-value sourcing leads, let's start with a quick interview:<br><br>
+              <strong>Question 1:</strong> What is your Business Name & WhatsApp Manager Phone Number?
+            </div>
+          </div>
+          <div class="ai-chat-input">
+            <input type="text" id="aiInterviewInput" placeholder="e.g. Teeslux Global, 2348072015725" onkeypress="if(event.key==='Enter') sendAiInterviewReply()" />
+            <button type="button" class="btn btn-primary" onclick="sendAiInterviewReply()">Reply ➤</button>
+          </div>
+        </div>
       </div>
 
-      <form id="merchantForm">
-        <div class="form-row">
-          <div class="form-group">
-            <label>Business Name</label>
-            <input type="text" id="businessName" value="Teeslux Global Electronics & Solar" required />
+      <!-- Mode 2: Manual Form -->
+      <div id="formModeSection" style="display: none;">
+        <form id="merchantForm">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Business Name</label>
+              <input type="text" id="businessName" value="Teeslux Global Electronics & Solar" required />
+            </div>
+            <div class="form-group">
+              <label>Manager WhatsApp Phone</label>
+              <input type="text" id="managerPhone" value="2348072015725" required />
+            </div>
           </div>
+
           <div class="form-group">
-            <label>Manager WhatsApp Phone</label>
-            <input type="text" id="managerPhone" value="2348072015725" required />
+            <label>🌐 Overall Business Domain Scope & Sourcing Offerings</label>
+            <input type="text" id="businessScope" value="Solar Panels, Inverters, Generators, Power Banks, Chargers & General Electronics" required />
+            <small style="color:var(--text-muted); font-size:0.78rem;">Describes all products/services your business can handle or source so AI routes related leads to you!</small>
           </div>
-        </div>
 
-        <div class="form-group">
-          <label>🌐 Overall Business Domain Scope & Offerings</label>
-          <input type="text" id="businessScope" value="Solar Panels, Inverters, Generators, Power Banks, Chargers & General Electronics" required />
-          <small style="color:var(--text-muted); font-size:0.78rem;">Describes all products/services your business handles so AI routes related leads to you!</small>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>Meta Phone Number ID</label>
-            <input type="text" id="phoneId" value="1242614362274985" required />
+          <div class="form-row">
+            <div class="form-group">
+              <label>Meta Phone Number ID</label>
+              <input type="text" id="phoneId" value="1242614362274985" required />
+            </div>
+            <div class="form-group">
+              <label>Store Location / Address</label>
+              <input type="text" id="storeAddress" value="Onitsha Main Market, Anambra State, Nigeria" required />
+            </div>
           </div>
-          <div class="form-group">
-            <label>Store Location / Address</label>
-            <input type="text" id="storeAddress" value="Onitsha Main Market, Anambra State, Nigeria" required />
+
+          <!-- Catalog Section -->
+          <div class="catalog-header">
+            <h3>📦 Your Product Catalog & Prices</h3>
+            <button type="button" class="btn btn-secondary" onclick="addCatalogRow()">+ Add Product</button>
           </div>
-        </div>
 
-        <!-- Catalog Section -->
-        <div class="catalog-header">
-          <h3>📦 Your Product Catalog & Prices</h3>
-          <button type="button" class="btn btn-secondary" onclick="addCatalogRow()">+ Add Product</button>
-        </div>
+          <div class="catalog-list" id="catalogList">
+            <!-- Populated by JavaScript -->
+          </div>
 
-        <div class="catalog-list" id="catalogList">
-          <!-- Populated by JavaScript -->
-        </div>
+          <button type="submit" class="btn btn-primary" style="width: 100%;">
+            🚀 Launch My WhatsApp AI Assistant Now
+          </button>
+        </form>
+      </div>
 
-        <button type="submit" class="btn btn-primary" style="width: 100%;">
-          🚀 Launch My WhatsApp AI Assistant Now
-        </button>
-      </form>
     </div>
 
     <!-- Right Column: Interactive Phone Simulator -->
@@ -631,9 +612,9 @@
         <div class="shortcut-bar">
           <button class="shortcut-btn" onclick="sendSimText('1.5kva')">📦 1.5kVA Generator</button>
           <button class="shortcut-btn" onclick="sendSimText('#buy 2')">🛍️ Buy Item (#buy)</button>
-          <button class="shortcut-btn" onclick="sendSimText('Do you ship to Abuja?')">🚚 Shipping Fee</button>
-          <button class="shortcut-btn" onclick="sendSimText('Send bank account')">💳 Payment Info</button>
-          <button class="shortcut-btn" onclick="sendSimText('Do you sell hair?')">🚨 Manager Handoff</button>
+          <button class="shortcut-btn" onclick="sendSimText('Can you supply 50 solar streetlights?')">💰 Sourcing Opportunity</button>
+          <button class="shortcut-btn" onclick="sendSimText('/quote')">📄 Get Formal Quote</button>
+          <button class="shortcut-btn" onclick="sendSimText('Who won UEFA?')">🛑 Rubbish Guardrail</button>
         </div>
 
         <div class="chat-body" id="chatBody">
@@ -657,33 +638,13 @@
       <h2 style="font-family:'Outfit'; font-size:1.6rem; margin-bottom:1.5rem;">📖 Small Business Owner Complete Guide</h2>
 
       <div class="guide-section">
-        <h3>1. How Your WhatsApp AI Assistant Works</h3>
-        <p>Your WhatsApp Assistant handles customer inquiries 24/7 automatically without you lifting a finger:</p>
-        <ul>
-          <li><strong>Instant Product Lookup:</strong> Answers product prices, availability, and specifications in under 1 second.</li>
-          <li><strong>Nationwide Logistics Matrix:</strong> Informs customers about delivery timelines to Lagos, Abuja, Kano, and all states.</li>
-          <li><strong>Payment Details:</strong> Shares your official bank account details securely for instant transfers.</li>
-        </ul>
+        <h3>1. Interactive AI Onboarding Advisor</h3>
+        <p>The AI interviews you to understand your business domain scope, sourcing capabilities, and custom services so it can capture high-value sales leads even for items outside your daily online catalog!</p>
       </div>
 
       <div class="guide-section">
-        <h3>2. Zero Loose Ends — Instant Manager Handoff</h3>
-        <p>When a customer requests to buy (#buy) or asks about a non-catalog item, the bot <strong>never makes guesses</strong>:</p>
-        <ul>
-          <li>The bot sends an acknowledgment card to the customer.</li>
-          <li>The bot dispatches a <strong>HOT SALES LEAD ALERT</strong> directly to your WhatsApp phone number with the customer's phone number!</li>
-          <li>You enter the chat to confirm quantity, color, quality choices, and delivery address.</li>
-        </ul>
-      </div>
-
-      <div class="guide-section">
-        <h3>3. Customer Chat Shortcuts Cheat-Sheet</h3>
-        <ul>
-          <li><code>#buy</code> or <code>buy</code> — Triggers instant Order Inquiry & Manager Handoff.</li>
-          <li><code>#human</code> or <code>#manager</code> — Escalates chat directly to store manager.</li>
-          <li><code>solar</code> / <code>generator</code> / <code>inverter</code> — Displays product catalog options.</li>
-          <li><code>shipping</code> / <code>delivery</code> — Displays delivery rates & timelines.</li>
-        </ul>
+        <h3>2. Zero Loose Ends — Manager Specs Confirmation</h3>
+        <p>Product cards display item names & prices, while directing exact <strong>sizes, colors, quantities, and delivery specs</strong> to the store manager to close the deal personally.</p>
       </div>
 
       <button type="button" class="btn btn-primary" onclick="closeGuideModal()" style="width:100%;">
@@ -693,30 +654,107 @@
   </div>
 
   <script>
+    let interviewStep = 1;
+    let interviewData = {
+      name: "Teeslux Global Electronics & Solar",
+      phone: "2348072015725",
+      domain: "Solar Panels, Generators, Hybrid Inverters, Batteries & Electronics",
+      sourcing: "Solar streetlights, CCTV cameras, electrical wiring accessories",
+      address: "Onitsha Main Market, Anambra State, Nigeria"
+    };
+
+    function switchMode(mode) {
+      if (mode === 'ai') {
+        document.getElementById('aiModeSection').style.display = 'block';
+        document.getElementById('formModeSection').style.display = 'none';
+        document.getElementById('tabAiBtn').classList.add('active');
+        document.getElementById('tabFormBtn').classList.remove('active');
+      } else {
+        document.getElementById('aiModeSection').style.display = 'none';
+        document.getElementById('formModeSection').style.display = 'block';
+        document.getElementById('tabFormBtn').classList.add('active');
+        document.getElementById('tabAiBtn').classList.remove('active');
+      }
+    }
+
+    function sendAiInterviewReply() {
+      const input = document.getElementById('aiInterviewInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      const history = document.getElementById('aiInterviewHistory');
+
+      const uMsg = document.createElement('div');
+      uMsg.className = 'ai-msg ai-msg-user';
+      uMsg.innerText = text;
+      history.appendChild(uMsg);
+
+      input.value = '';
+
+      setTimeout(() => {
+        const bMsg = document.createElement('div');
+        bMsg.className = 'ai-msg ai-msg-bot';
+
+        if (interviewStep === 1) {
+          interviewData.name = text.split(',')[0] || text;
+          interviewData.phone = text.split(',')[1] || "2348072015725";
+          bMsg.innerHTML = "<strong>Question 2:</strong> What is your core business domain scope? (e.g. <em>Solar Energy & Electronics</em> or <em>Fashion & Fabrics</em>)";
+          interviewStep = 2;
+        } else if (interviewStep === 2) {
+          interviewData.domain = text;
+          bMsg.innerHTML = "<strong>Question 3:</strong> What adjacent products/services can you source or supply if a customer asks? (e.g. <em>Solar streetlights, CCTV, electrical accessories</em>)";
+          interviewStep = 3;
+        } else if (interviewStep === 3) {
+          interviewData.sourcing = text;
+          bMsg.innerHTML = "<strong>Question 4:</strong> What is your Store Address & Main Market location?";
+          interviewStep = 4;
+        } else {
+          interviewData.address = text;
+          bMsg.innerHTML = "🎉 <strong>AI Interview Complete!</strong><br><br>I have configured your 24/7 WhatsApp AI Assistant with Sourcing Lead Alerts & Domain Boundaries.<br><br><button type='button' class='btn btn-primary' onclick='submitAiConfig()'>🚀 Deploy WhatsApp AI Bot Now</button>";
+        }
+
+        history.appendChild(bMsg);
+        history.scrollTop = history.scrollHeight;
+      }, 400);
+
+      history.scrollTop = history.scrollHeight;
+    }
+
+    async function submitAiConfig() {
+      const payload = {
+        tenant_id: interviewData.name.toLowerCase().replace(/[^a-z0-9]/g, '_'),
+        business_name: interviewData.name,
+        business_domain_scope: interviewData.domain + ", " + interviewData.sourcing,
+        phone_number_id: "1242614362274985",
+        manager_phone: interviewData.phone.replace(/[^0-9]/g, ''),
+        store_address: interviewData.address,
+        catalog: [
+          { name: "550W Monocrystalline Solar Panel", price: 120000, keywords: ["panel", "solar"] },
+          { name: "1.5kVA Dual Solar Generator", price: 185000, keywords: ["generator", "1.5kva"] }
+        ]
+      };
+
+      try {
+        const res = await fetch('/api/tenant/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+          document.getElementById('successAlert').style.display = 'block';
+          document.getElementById('simBizName').innerText = payload.business_name;
+        }
+      } catch (err) {
+        alert('Setup Error: ' + err.message);
+      }
+    }
+
     const industryTemplates = {
       solar: [
         { name: "550W Monocrystalline Solar Panel", price: 120000, keywords: "panel, solar, 550w" },
         { name: "1.5kVA Dual Solar Generator", price: 185000, keywords: "generator, 1.5kva, power" },
-        { name: "3.5kVA Hybrid Solar Inverter System", price: 340000, keywords: "inverter, 3.5kva, hybrid" },
-        { name: "20,000 mAh Solar Power Bank", price: 18500, keywords: "power bank, charger, battery" }
-      ],
-      fashion: [
-        { name: "50-Yard Royal Brocade Fabric", price: 45000, keywords: "brocade, fabric, royal" },
-        { name: "Embroidered Senator Suit Material", price: 28000, keywords: "senator, suit, material" },
-        { name: "Italian Leather Designer Shoes", price: 35000, keywords: "shoes, leather, italian" }
-      ],
-      supermarket: [
-        { name: "Carton of Premium Vegetable Oil (5L)", price: 32000, keywords: "oil, vegetable oil, cooking" },
-        { name: "50kg Bag of Foreign Parboiled Rice", price: 78000, keywords: "rice, 50kg, foreign" },
-        { name: "Pack of 40 Instant Noodles", price: 9500, keywords: "noodles, pack, food" }
-      ],
-      beauty: [
-        { name: "Human Hair Extension (30 Inches)", price: 85000, keywords: "hair, extension, human hair" },
-        { name: "Organic Skin Glowing Body Lotion", price: 15000, keywords: "lotion, cream, skin" }
-      ],
-      restaurant: [
-        { name: "Jollof Rice & Fried Chicken Combo", price: 4500, keywords: "jollof, chicken, food" },
-        { name: "Grilled Catfish & Chips Family Pack", price: 16000, keywords: "catfish, chips, fish" }
+        { name: "3.5kVA Hybrid Solar Inverter System", price: 340000, keywords: "inverter, 3.5kva, hybrid" }
       ]
     };
 
@@ -736,74 +774,10 @@
       });
     }
 
-    function applyIndustryTemplate() {
-      const selected = document.getElementById('industryTemplate').value;
-      const items = industryTemplates[selected] || industryTemplates.solar;
-      renderCatalog(items);
-    }
-
-    function addCatalogRow() {
-      const list = document.getElementById('catalogList');
-      const div = document.createElement('div');
-      div.className = 'catalog-item';
-      div.innerHTML = `
-        <input type="text" placeholder="Product Name" required />
-        <input type="number" placeholder="Price (₦)" required />
-        <input type="text" placeholder="Keywords" />
-        <button type="button" class="btn-remove" onclick="this.parentElement.remove()">×</button>
-      `;
-      list.appendChild(div);
-    }
-
-    // Initialize with default template
-    applyIndustryTemplate();
+    renderCatalog(industryTemplates.solar);
 
     function openGuideModal() { document.getElementById('guideModal').style.display = 'flex'; }
     function closeGuideModal() { document.getElementById('guideModal').style.display = 'none'; }
-
-    document.getElementById('merchantForm').addEventListener('submit', async function(e) {
-      e.preventDefault();
-      
-      const catalogItems = [];
-      document.querySelectorAll('.catalog-item').forEach((item, index) => {
-        const inputs = item.querySelectorAll('input');
-        if (inputs[0].value) {
-          catalogItems.push({
-            id: String(index + 1),
-            name: inputs[0].value,
-            price: parseFloat(inputs[1].value) || 0,
-            keywords: inputs[2].value.split(',').map(k => k.trim())
-          });
-        }
-      });
-
-      const payload = {
-        tenant_id: document.getElementById('businessName').value.toLowerCase().replace(/[^a-z0-9]/g, '_'),
-        business_name: document.getElementById('businessName').value,
-        business_domain_scope: document.getElementById('businessScope').value,
-        phone_number_id: document.getElementById('phoneId').value,
-        manager_phone: document.getElementById('managerPhone').value,
-        store_address: document.getElementById('storeAddress').value,
-        catalog: catalogItems
-      };
-
-      try {
-        const res = await fetch('/api/tenant/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        const data = await res.json();
-        
-        if (data.status === 'success') {
-          document.getElementById('successAlert').style.display = 'block';
-          document.getElementById('simBizName').innerText = payload.business_name;
-          setTimeout(() => { document.getElementById('successAlert').style.display = 'none'; }, 5000);
-        }
-      } catch (err) {
-        alert('Setup Error: ' + err.message);
-      }
-    });
 
     function sendSimText(text) {
       document.getElementById('simInput').value = text;
@@ -816,12 +790,10 @@
       if (!text) return;
 
       const chatBody = document.getElementById('chatBody');
-      
       const userMsg = document.createElement('div');
       userMsg.className = 'msg msg-outgoing';
       userMsg.innerText = text;
       chatBody.appendChild(userMsg);
-
       input.value = '';
 
       setTimeout(() => {
@@ -829,16 +801,14 @@
         botMsg.className = 'msg msg-incoming';
 
         const q = text.toLowerCase();
-        if (q.includes('#buy') || q.includes('buy') || q.includes('order')) {
-          botMsg.innerText = '🛍️ [Order Inquiry Received]\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nThank you! Our store manager (+2348072015725) is joining this chat right now to confirm quantity, color, quality options, and delivery address.\n\n💬 Please hold on for a moment while our manager replies!';
-        } else if (q.includes('ship') || q.includes('abuja') || q.includes('delivery')) {
-          botMsg.innerText = '🚚 [Nationwide Delivery Matrix]\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nLocal (Onitsha): Same-Day Delivery\nMajor Cities (Abuja, Lagos, PH): 24 – 48 Hours via Waybill/Park Delivery.';
-        } else if (q.includes('bank') || q.includes('pay') || q.includes('account')) {
-          botMsg.innerText = '💳 [Official Payment Options]\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nBank: Zenith Bank\nAccount Name: Teeslux Global\nAccount No: 1012345678';
-        } else if (q.includes('1.5kva') || q.includes('generator')) {
-          botMsg.innerText = '🛍️ [Product Found]\n\n✅ 1.5kVA Dual Solar Generator\n💰 Price: ₦185,000.00\n📦 Status: In Stock\n\n💬 Type #buy to place your order!';
+        if (q.includes('streetlights') || q.includes('supply') || q.includes('source')) {
+          botMsg.innerText = '🤝 [Special Sourcing & Supply Portal]\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nThank you! Our business sourcing unit (+2348072015725) handles custom bulk orders & supply. Our Store Director is joining this chat now!';
+        } else if (q.includes('/quote') || q.includes('quote')) {
+          botMsg.innerText = '📄 [OFFICIAL PROFORMA QUOTATION #QT-8941]\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nItems: 550W Solar Panel (x4), 3.5kVA Inverter (x1)\nEstimated Total: ₦885,000.00\n\n📞 Store Manager (+2348072015725) is standing by to confirm terms!';
+        } else if (q.includes('uefa') || q.includes('football')) {
+          botMsg.innerText = '🤖 [Store Assistant]\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nI am the automated store assistant for Teeslux Global. I only answer questions relating to our store products, prices, and orders.';
         } else {
-          botMsg.innerText = '🚨 [Manager Handoff Activated]\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nHello! Your request has been escalated directly to our store manager (+2348072015725) for personal assistance.\n\n💬 Our manager will reply to you shortly!';
+          botMsg.innerText = '🛍️ [Product Information]\n\n✅ 1.5kVA Dual Solar Generator\n💰 Price: ₦185,000.00\n📦 Status: Available\n\n💡 Recommended Add-On: ATS Changeover Switch (₦35,000)\n\n💬 Reply #buy to order! Our manager (+2348072015725) will join to confirm exact quantity & delivery address.';
         }
 
         chatBody.appendChild(botMsg);
