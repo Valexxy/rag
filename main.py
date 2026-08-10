@@ -37,9 +37,30 @@ STORE_CATALOG = [
 ]
 
 
-# ── FAST CATALOG MATCHING (< 1ms) ─────────────────────────────────────
+# ── FAST RULE-BASED CATALOG & INTENT MATCHER (SUB-5MS) ────────────────
 def fast_catalog_search(query: str) -> dict:
     q = query.lower().strip()
+
+    # GREETINGS & SMALL TALK (Hi, Hello, Good morning, Good afternoon, Good evening, Hey, How far)
+    greetings_list = [
+        "hi", "hello", "hey", "good morning", "good afternoon", "good evening",
+        "goodday", "good day", "how far", "how are you", "greetings", "wassup", "sup"
+    ]
+    if any(g in q for g in greetings_list) or q in greetings_list:
+        return {
+            "matched": True, "type": "greeting",
+            "reply": (
+                "👋 *Welcome to Teeslux Global Electronics & Solar!*\n"
+                "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+                "Good day! How can I assist you with your solar or electronics needs today?\n\n"
+                "💡 *Popular Products Available Today:*\n"
+                "1️⃣ *550W Monocrystalline Solar Panel* — ₦120,000\n"
+                "2️⃣ *1.5kVA Dual Solar Generator* — ₦185,000\n"
+                "3️⃣ *3.5kVA Hybrid Solar Inverter System* — ₦340,000\n"
+                "4️⃣ *20,000 mAh Solar Power Bank* — ₦18,500\n\n"
+                "💬 Type `/menu` for options, `#buy` to order, or reply with your question!"
+            )
+        }
 
     # Exact Number Selection
     if q == "1":
