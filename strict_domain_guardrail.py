@@ -1,90 +1,61 @@
 """
 ====================================================================
-STRICT TENANT DOMAIN GUARDRAIL & ANTI-ABUSE ENGINE (v2026)
+STRICT TENANT DOMAIN GUARDRAIL & ANTI-ABUSE ENGINE (v2026 - REFACTORED)
 ====================================================================
-Enforces 100% strict business boundary scoping per merchant tenant:
-  1. Prevents AI abuse (rejects coding, general trivia, politics, creative writing)
-  2. Ensures AI token usage is 100% focused on tenant's store catalog & services
-  3. Instantly routes all out-of-domain queries to human store manager
+Enforces business boundary scoping per merchant tenant:
+  1. ONLY blocks explicit spam, programming, general trivia, and politics.
+  2. Routes out-of-catalog product requests (e.g. "Do you sell cloths", "Do you sell cars") to Sourcing Lead Engine.
+  3. ALWAYS allows all store inquiries, delivery questions, city locations, product questions, specs, and prices IN_DOMAIN for AI reasoning.
 """
 
-import re
 import logging
-from typing import Dict, Optional
+from typing import Dict
 
 logger = logging.getLogger("StrictDomainGuardrail")
 
-# Forbidden General Off-Topic Keywords (Anti-Abuse)
-OFF_TOPIC_KEYWORDS = [
-    "write code", "python", "javascript", "html", "css", "sql", "script",
-    "essay", "poem", "story", "joke", "song", "lyrics", "homework",
-    "president", "election", "politics", "football", "premier league",
-    "champion", "who is", "tell me a story", "crypto", "bitcoin", "solana"
+EXPLICIT_SPAM_KEYWORDS = [
+    "write code", "python code", "javascript code", "html code", "css code",
+    "sql query", "write an essay", "write a poem", "write a story", "tell me a joke",
+    "who won uefa", "who won champion", "who won premier league", "who is the president",
+    "tell me about politics", "crypto price prediction", "bitcoin forecast"
 ]
 
 class StrictDomainGuardrail:
-    """Enforces strict tenant business boundaries with 2-tier smart classification."""
+    """Refactored Domain Guardrail — Zero False Positives for Business Queries."""
 
     def classify_query(self, query: str, tenant: dict) -> str:
-        """
-        Classifies query into:
-          - 'IN_DOMAIN': Relevant to tenant's store products & services.
-          - 'BUSINESS_OUT_OF_CATALOG': Still business-related, but not in current catalog -> Route to Manager.
-          - 'RUBBISH_OFF_TOPIC': General trivia, sports, code, politics -> Block AI reply cleanly without manager alert.
-        """
         q = query.lower().strip()
 
-        # 1. Rubbish / Anti-Abuse Keywords
-        if any(kw in q for kw in OFF_TOPIC_KEYWORDS) or any(phrase in q for phrase in ["uefa", "who won", "premier league", "write code", "football match"]):
+        # 1. ONLY block explicit spam / programming / general trivia / politics
+        if any(kw in q for kw in EXPLICIT_SPAM_KEYWORDS):
             return "RUBBISH_OFF_TOPIC"
 
-        # 2. Store Operational & Logistics Questions are ALWAYS IN_DOMAIN
-        store_ops_keywords = ["deliver", "delivery", "shipping", "ship", "location", "address", "where", "how do you", "payment", "bank", "account", "hours", "contact", "phone", "manager"]
+        # 2. Store Operational, Logistics, Cities & General Buying Questions are ALWAYS IN_DOMAIN
+        store_ops_keywords = [
+            "deliver", "delivery", "shipping", "ship", "send", "waybill", "transport",
+            "ibadan", "lagos", "abuja", "kano", "port harcourt", "enugu", "benin", "delta",
+            "calabar", "owerri", "jos", "kaduna", "sokoto", "asaba", "warri", "location",
+            "address", "where", "how do you", "payment", "bank", "account", "hours", "contact",
+            "phone", "manager", "package", "packaging", "warranty", "price", "cost", "how much"
+        ]
         if any(kw in q for kw in store_ops_keywords):
             return "IN_DOMAIN"
 
-        # 3. General business-like buying/selling questions for items NOT in catalog
+        # 3. Check for out-of-catalog product requests (e.g. "Do you sell cloths")
         catalog = tenant.get("catalog", [])
         catalog_names = [item.get("name", "").lower() for item in catalog if isinstance(item, dict)]
-        
-        if any(w in q for w in ["do you sell", "do you have", "can i get", "do you carry"]) and not any(name in q or any(word in q for word in name.split() if len(word) > 3) for name in catalog_names):
-            return "BUSINESS_OUT_OF_CATALOG"
-
-        # 4. Extract tenant domain keywords from business name, domain scope & catalog
-        biz_name = tenant.get("business_name", "").lower()
         domain_scope = tenant.get("business_domain_scope", "").lower()
 
-        domain_keywords = set([
-            "price", "buy", "order", "cost", "warranty", "ship", "delivery", "payment",
-            "stock", "store", "shop", "address", "location", "hours", "spec", "help",
-            "charge", "battery", "power", "solar", "panel", "generator", "inverter"
-        ])
-        
-        for text_source in [biz_name, domain_scope]:
-            for word in text_source.replace(",", " ").split():
-                if len(word) > 2:
-                    domain_keywords.add(word)
+        if any(phrase in q for phrase in ["do you sell", "do you have", "can i buy", "do you supply", "can you supply"]):
+            matches_domain = any(word in q for word in domain_scope.replace(",", " ").split() if len(word) > 3)
+            matches_catalog = any(name in q or any(word in q for word in name.split() if len(word) > 3) for name in catalog_names)
+            if not matches_domain and not matches_catalog:
+                return "BUSINESS_OUT_OF_CATALOG"
 
-        for item in catalog:
-            if isinstance(item, dict):
-                name = item.get("name", "").lower()
-                for w in name.split():
-                    if len(w) > 2:
-                        domain_keywords.add(w)
-
-        # Check if query matches tenant domain keywords
-        if any(kw in q for kw in domain_keywords):
-            return "IN_DOMAIN"
-
-        # Short general greetings / store questions are allowed in-domain
-        if len(q.split()) <= 4:
-            return "IN_DOMAIN"
-
-        # Default fallback for unknown long text
-        return "RUBBISH_OFF_TOPIC"
+        # 4. DEFAULT: ALL OTHER BUSINESS & STORE INQUIRIES ARE IN_DOMAIN!
+        return "IN_DOMAIN"
 
     def handle_rubbish_off_topic(self, tenant: dict) -> Dict[str, str]:
-        """Politely informs customer that AI only handles store business queries."""
         biz_name = tenant.get("business_name", "Teeslux Global Store")
         return {
             "type": "rubbish_blocked",
@@ -95,11 +66,10 @@ class StrictDomainGuardrail:
                 f"I only answer questions relating to our store products, prices, delivery, and orders.\n\n"
                 f"💬 Type `/menu` to browse options, or reply with your product inquiry!"
             ),
-            "manager_alert": None  # ZERO MANAGER DISTRACTION FOR RUBBISH QUERIES
+            "manager_alert": None
         }
 
     def handle_business_out_of_catalog(self, query: str, customer_phone: str, tenant: dict) -> Dict[str, str]:
-        """Routes real business leads for out-of-catalog items to the store manager."""
         biz_name = tenant.get("business_name", "Teeslux Global Store")
         manager_phone = tenant.get("manager_phone", "2348072015725")
         return {
@@ -120,6 +90,5 @@ class StrictDomainGuardrail:
                 f"⚡ *ACTION REQUIRED:* Business lead! Please reply to `+{customer_phone}` directly."
             )
         }
-
 
 strict_domain_guardrail = StrictDomainGuardrail()

@@ -95,18 +95,23 @@ class EcommerceMasterIntelligence:
             }
 
         # ── 4. INTERSTATE LOGISTICS & DELIVERY TIMELINES ─────────────────
-        if any(w in q for w in ["ship", "shipping", "deliver", "delivery", "waybill", "transport", "lagos", "abuja", "kano", "port harcourt"]):
+        logistics_keywords = [
+            "ship", "shipping", "deliver", "delivery", "waybill", "transport", "send", "send to", "ship to", "deliver to",
+            "ibadan", "lagos", "abuja", "kano", "port harcourt", "enugu", "benin", "delta", "calabar", "owerri",
+            "jos", "kaduna", "sokoto", "asaba", "warri", "ondo", "osun", "ogun", "ekiti", "kogi", "kwara"
+        ]
+        if any(w in q for w in logistics_keywords):
             return {
                 "type": "logistics",
                 "customer_reply": (
                     f"🚚 *[{biz_name} — Nationwide Delivery Matrix]*\n"
                     f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-                    f"We deliver nationwide across Nigeria & West Africa!\n\n"
+                    f"Yes! We deliver nationwide across Nigeria & West Africa (including Ibadan, Lagos, Abuja, Kano, PH, Enugu & all 36 states)!\n\n"
                     f"📍 *Delivery Timelines & Rates:*\n"
                     f"• *Local (Onitsha/Anambra):* Same-Day Delivery (₦3,000 – ₦5,000)\n"
-                    f"• *Major Cities (Lagos, Abuja, PH):* 24 – 48 Hours via Waybill/Park Delivery\n"
-                    f"• *Other States:* 48 – 72 Hours door-to-door\n\n"
-                    f"📞 Our Logistics Manager (`+{manager_phone}`) will confirm exact waybill fee to your specific city!"
+                    f"• *Major Cities (Ibadan, Lagos, Abuja, PH, Kano):* 24 – 48 Hours via Waybill/Park Delivery\n"
+                    f"• *Other States & Towns:* 48 – 72 Hours door-to-door\n\n"
+                    f"📞 Our Logistics Manager (`+{manager_phone}`) will confirm exact waybill fee to your location!"
                 ),
                 "manager_alert": None
             }
