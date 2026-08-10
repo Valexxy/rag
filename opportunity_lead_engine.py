@@ -1,9 +1,9 @@
 """
 ====================================================================
-AUTONOMOUS SOURCING & OPPORTUNITY DOOR-OPENER ENGINE (v2026 - ENHANCED)
+AUTONOMOUS SOURCING & OPPORTUNITY DOOR-OPENER ENGINE (v2026 - FULL COVERAGE)
 ====================================================================
 Transforms every customer query for non-catalog products, market errands,
-or custom assistance requests into a HIGH-VALUE BUSINESS OPPORTUNITY!
+extra help requests, or custom assistance into a HIGH-VALUE BUSINESS OPPORTUNITY!
 """
 
 import logging
@@ -19,10 +19,12 @@ class OpportunityLeadEngine:
         biz_name = tenant.get("business_name", "Teeslux Global Store")
         manager_phone = tenant.get("manager_phone", "2348072015725")
 
-        # 1. Custom Market Errand & Assistance Triggers
+        # 1. Custom Market Errand & Extra Assistance Triggers
         assistance_triggers = [
             "still help me", "can still help", "since you are in", "since you are in main market",
-            "can you help me check", "can you help me buy", "help me find", "check wrapper", "help me check"
+            "can you help me check", "can you help me buy", "help me find", "check wrapper", "help me check",
+            "extra help", "buy other things", "buy for me", "buy other items", "help me buy other",
+            "need you to buy", "offer extra help", "buy things for me"
         ]
 
         if any(trig in q for trig in assistance_triggers):
@@ -31,7 +33,7 @@ class OpportunityLeadEngine:
                 "customer_reply": (
                     f"🤝 *[{biz_name} — Smart Market Assistance]*\n"
                     f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-                    f"Since you need special assistance in the market, let me connect you directly to our Store Manager (`+{manager_phone}`) to see if we can help you get this done!\n\n"
+                    f"Yes! Since you need extra help buying or sourcing other items in the market, let me connect you directly to our Store Manager (`+{manager_phone}`) to see if we can help you get those items!\n\n"
                     f"📞 Our Store Manager is joining this chat right now to assist you personally!"
                 ),
                 "manager_alert": (
@@ -40,7 +42,7 @@ class OpportunityLeadEngine:
                     f"🏪 *Store:* {biz_name}\n"
                     f"👤 *Customer:* `+{customer_phone}`\n"
                     f"💬 *Customer Request:* '{query}'\n\n"
-                    f"📈 *ACTION REQUIRED:* Customer requested market assistance/sourcing! Please reply to `+{customer_phone}` directly on WhatsApp."
+                    f"📈 *ACTION REQUIRED:* Customer requested extra market assistance/sourcing! Please reply to `+{customer_phone}` directly on WhatsApp."
                 )
             }
 
