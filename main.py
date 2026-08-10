@@ -546,6 +546,16 @@ async def process_meta_payload(payload: dict):
         metadata_phone_id = val.get("metadata", {}).get("phone_number_id", META_PHONE_ID)
         tenant = multi_tenant_manager.get_tenant_by_phone_id(metadata_phone_id)
 
+        # ── 0. TELEGRAM-STYLE SLASH COMMAND & META LOCATION ROUTER ───────
+        from premium_meta_telegram_engine import premium_meta_telegram_engine
+        slash_res = premium_meta_telegram_engine.process_slash_command(text, sender_phone, tenant)
+        if slash_res:
+            send_meta_whatsapp_message(sender_phone, slash_res["customer_reply"])
+            if slash_res.get("location_pin"):
+                loc = slash_res["location_pin"]
+                send_meta_location_pin(sender_phone, loc["latitude"], loc["longitude"], loc["name"], loc["address"])
+            return
+
         # ── 1. MASTER E-COMMERCE INTELLIGENCE & EXCEPTION ROUTER ─────────
         from ecommerce_master_intelligence import ecommerce_intelligence
         matrix_res = ecommerce_intelligence.analyze_and_route(text, sender_phone, tenant)
@@ -620,6 +630,35 @@ def send_meta_whatsapp_message(to_phone: str, message: str):
             logger.info(f"[Meta Send Success] To: {clean_phone}")
     except Exception as e:
         logger.error(f"[Meta Send Error] {e}")
+
+def send_meta_location_pin(to_phone: str, lat: str, long: str, name: str, address: str):
+    clean_phone = "".join(filter(str.isdigit, str(to_phone)))
+    if not clean_phone:
+        return
+
+    url = f"https://graph.facebook.com/v18.0/{META_PHONE_ID}/messages"
+    headers = {
+        "Authorization": f"Bearer {META_TOKEN}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "messaging_product": "whatsapp",
+        "recipient_type": "individual",
+        "to": clean_phone,
+        "type": "location",
+        "location": {
+            "latitude": lat,
+            "longitude": long,
+            "name": name,
+            "address": address
+        }
+    }
+    try:
+        req = urllib.request.Request(url, headers=headers, data=json.dumps(payload).encode("utf-8"))
+        with urllib.request.urlopen(req, timeout=10) as r:
+            logger.info(f"[Meta Location Pin Success] To: {clean_phone}")
+    except Exception as e:
+        logger.error(f"[Meta Location Pin Error] {e}")
 
 @app.api_route("/webhook/whatsapp/{instance_name}", methods=["GET", "POST"])
 async def handle_whatsapp_webhook(instance_name: str, request: Request, background_tasks: BackgroundTasks):
