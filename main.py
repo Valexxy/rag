@@ -417,12 +417,20 @@ async def serve_dashboard():
     return HTMLResponse("<h1>Merchant Onboarding Dashboard Online</h1>")
 
 @app.get("/app", response_class=HTMLResponse)
+@app.get("/store", response_class=HTMLResponse)
+@app.get("/market", response_class=HTMLResponse)
 async def serve_app():
     if os.path.exists("static/futuristic_app.html"):
         return FileResponse("static/futuristic_app.html")
     elif os.path.exists("dist/index.html"):
         return FileResponse("dist/index.html")
-    return HTMLResponse("<h1>Sovereign AI App Online</h1>")
+    return HTMLResponse("<h1>Sovereign AI Web Store & Market Directory Online</h1>")
+
+@app.get("/directory", response_class=HTMLResponse)
+async def serve_directory():
+    if os.path.exists("static/directory_map.html"):
+        return FileResponse("static/directory_map.html")
+    return FileResponse("static/futuristic_app.html")
 
 @app.get("/api/status")
 async def status_endpoint():
