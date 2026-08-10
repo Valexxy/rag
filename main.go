@@ -836,9 +836,9 @@ func handleTestChat(w http.ResponseWriter, r *http.Request) {
 
 // ── META OFFICIAL WHATSAPP CLOUD API ─────────────────────────────────
 var (
-	MetaTokenRawPart1 = "RUFBTWdzcnJlWFBZQlNDc3VsS3RQb0hrR0U1eVgzYnkwN2ZydlQwUTdtOWRzdThFY3djWkJRMlV6ZHJydk5OUmFuOXpxVFRwWkM3eUZxYWM3MTZDQ3l6Sk92dUVZYVFLdVQweW5LNGlqUldpTGVVSVJkWkFPWkJNaTdXRjJ2djNUazVhdGJKdFFmajVudHhD"
-	MetaTokenRawPart2 = "MHNkWkF0WkNPTTdYQnc0T25RR0x3U1c3bkh6azI3WkN0eXZ6QXZzYzhNTkp1ZE0yclpBb3pKaVJVSjhtU016SDNWako1U3pybWh5bjdLanJ2VVhISFVXRHQ5VlpCc3RNajdmSkplMWMyRmhyNTJVMUhXUnRZUGluRlU5NkFHRnE4U290RFpBalRsT3JTa1pE"
-	MetaPhoneID       = "1237917316076300"
+	MetaTokenRawPart1 = "RUFBTWdzcnJlWFBZQlNQTGhTdzdwdk12N0xGcTd2SlJHdVFiZmsydlhZMzBzVFpBa1l3ODRzNnp2eW1iS1ViN2ttenBhcVk0WW9YUmo3OWpvWTZHYUtaQUdISUNWOHBxa3JQ"
+	MetaTokenRawPart2 = "Yzc2dGV4S1lWcVgwU21qZjZnazZQdjNBQ3V0eEYzQXk0QnllcmxoV0h0THBtZThyUk8welRBTUFTYlE0SktXN1VuYm1GNmNDWkFQSUllVjJuMWNQbzBJR0VCRmcxandaRFpE"
+	MetaPhoneID       = "1242614362274985"
 )
 
 func getMetaToken() string {

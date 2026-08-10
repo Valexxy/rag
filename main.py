@@ -405,8 +405,8 @@ async def test_chat_endpoint(query: str = "1.5kva"):
     return {"status": "success", "query": query, "reply": ai_reply, "source": "ai_ensemble_fallback"}
 
 # ── META OFFICIAL WHATSAPP CLOUD API WEBHOOKS ─────────────────────────
-META_PHONE_ID = "1237917316076300"
-META_TOKEN = "EAAMgsrreXPYBSCsulKtPoHkGE5yX3by07frvT0Q7m9dsu8EcwcZBQ2UzdrrvNNRan9zqTTpZC7yFqac716CCyzJOvuEYaQKuT0ynK4ijRWiLeUIRdZAOZBMi7WF2vv3Tk5atbJtQfj5ntxC0sdZAtZCOM7XBw4OnQGLwSW7nHzk27ZCtyvzAvsc8MNJudM2rZAozJiRUJ8mSMzH3VjJ5Szrmhyn7KjrvUXHHUWDt9VZBstMj7fJJe1c2Fhr52U1HWRtYPinFU96AGFq8SotDZAjTlOrSkZD"
+META_PHONE_ID = "1242614362274985"
+META_TOKEN = "EAAMgsrreXPYBSPLhSw7pvMv7LFq7vJRGuQbfk2vXY30sTZAkYw84s6zvymbKUb7kmzpaqY4YoXRj79joY6GaKZAGHICV8pqkrPc76texKYVqX0Smjf6gk6Pv3ACutxF3Ay4ByerlhWHtLpme8rRO0zTAMASbQ4JKW7UnbmF6cCZAPIIeV2n1cPo0IGEBFg1jwZDZD"
 META_VERIFY_TOKEN = "my_secret_token"
 
 @app.api_route("/webhook/meta", methods=["GET", "POST"])
