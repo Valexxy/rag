@@ -148,18 +148,18 @@ def generate_ai_reply(query: str) -> str:
     except Exception as e:
         logger.warning(f"[AI Ensemble] CloudflareAI failed: {e}")
 
-    # 100% GUARANTEED ELEGANT FALLBACK — NEVER ECHOES RAW QUERY VERBATIM
+    # INSTANT MANAGER HANDOFF ROUTING FOR UNMATCHED / OUT-OF-CATALOG ITEMS
     return (
-        "👋 *Welcome to Teeslux Global Electronics & Solar!*\n"
+        "🚨 *[Manager Handoff Activated]*\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-        "Hello! We specialize in *Solar Panels, Inverters, Solar Generators, Power Banks, and Electronics*.\n\n"
-        "We currently do not carry that item in our direct store catalog.\n\n"
-        "💡 *Available In-Stock Products Today:*\n"
+        "Hello! Your request has been escalated directly to our store manager for personal assistance.\n\n"
+        "📞 *Store Manager Direct Line:* `+2348072015725`\n\n"
+        "💡 *While you wait, check out our in-stock products today:*\n"
         "1️⃣ *550W Monocrystalline Solar Panel* — ₦120,000\n"
         "2️⃣ *1.5kVA Dual Solar Generator* — ₦185,000\n"
         "3️⃣ *3.5kVA Hybrid Solar Inverter System* — ₦340,000\n"
         "4️⃣ *20,000 mAh Solar Power Bank* — ₦18,500\n\n"
-        "💬 Reply *1*, *2*, *3*, or *4* to view product specs, or reply *#human* to speak directly with our store manager!"
+        "💬 Our manager will reply to you shortly!"
     )
 
 
@@ -490,16 +490,16 @@ async def process_meta_payload(payload: dict):
             return
 
         fallback = (
-            "👋 *Welcome to Teeslux Global Electronics & Solar!*\n"
+            "🚨 *[Manager Handoff Activated]*\n"
             "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-            "Hello! We specialize in *Solar Panels, Inverters, Solar Generators, Power Banks, and Electronics*.\n\n"
-            "We currently do not carry that item in our direct store catalog.\n\n"
-            "💡 *Available In-Stock Products Today:*\n"
+            "Hello! Your request has been escalated directly to our store manager for personal assistance.\n\n"
+            "📞 *Store Manager Direct Line:* `+2348072015725`\n\n"
+            "💡 *While you wait, check out our in-stock products today:*\n"
             "1️⃣ *550W Monocrystalline Solar Panel* — ₦120,000\n"
             "2️⃣ *1.5kVA Dual Solar Generator* — ₦185,000\n"
             "3️⃣ *3.5kVA Hybrid Solar Inverter System* — ₦340,000\n"
             "4️⃣ *20,000 mAh Solar Power Bank* — ₦18,500\n\n"
-            "💬 Reply *1*, *2*, *3*, or *4* to view product specs, or reply *#human* to speak directly with our store manager!"
+            "💬 Our manager will reply to you shortly!"
         )
         send_meta_whatsapp_message(sender_phone, fallback)
     except Exception as e:
