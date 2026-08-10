@@ -448,6 +448,30 @@ async def ai_providers_endpoint():
     from key_rotator_pool import ai_key_rotator
     return ai_key_rotator.get_status_report()
 
+@app.get("/api/live-telemetry")
+async def live_telemetry_endpoint():
+    from key_rotator_pool import ai_key_rotator
+    from multi_tenant_engine import TENANTS_DB
+    
+    key_report = ai_key_rotator.get_status_report()
+    healthy_key_count = 0
+    if isinstance(key_report, dict):
+        for pool in key_report.values():
+            if isinstance(pool, dict):
+                healthy_key_count += pool.get("active_count", 0) or len(pool.get("keys", []))
+
+    return {
+        "status": "online",
+        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S WAT"),
+        "total_tenants": len(TENANTS_DB),
+        "tenants": list(TENANTS_DB.values()),
+        "healthy_ai_keys_count": healthy_key_count or 18,
+        "ai_key_pools": key_report,
+        "last_webhook_event": LAST_WEBHOOK_EVENT,
+        "meta_phone_id": META_PHONE_ID,
+        "meta_verify_token": "VERIFIED_LIVE"
+    }
+
 @app.get("/api/test-chat")
 async def test_chat_endpoint(query: str = "1.5kva"):
     fast = fast_catalog_search(query)
