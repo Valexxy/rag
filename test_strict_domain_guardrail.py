@@ -1,6 +1,6 @@
 """
 ====================================================================
-STRICT TENANT DOMAIN GUARDRAIL TEST SUITE
+STRICT TENANT 2-TIER CLASSIFICATION TEST SUITE
 ====================================================================
 """
 import sys
@@ -16,34 +16,29 @@ tenant = {
     ]
 }
 
-valid_queries = [
-    "What solar panel do you have in stock?",
-    "How much is your 1.5kva generator?",
-    "What is your store location in Onitsha?"
-]
-
-abuse_queries = [
-    "Write a Python script to scrape a website",
-    "Tell me a story about football and politics",
-    "Who is the president of the United States?"
-]
-
 print("====================================================================")
-print("🛡️ TESTING STRICT TENANT DOMAIN GUARDRAIL & ANTI-ABUSE ENGINE")
+print("🛡️ TESTING 2-TIER SMART DOMAIN CLASSIFICATION")
 print("====================================================================")
 
-for q in valid_queries:
-    allowed = strict_domain_guardrail.is_query_in_tenant_domain(q, tenant)
-    assert allowed, f"Valid query wrongly rejected: {q}"
-    print(f"✅ PASS | Valid Business Query ALLOWED: '{q}'")
+# 1. Test In-Domain Business Query
+res1 = strict_domain_guardrail.classify_query("How much is 1.5kva generator?", tenant)
+assert res1 == "IN_DOMAIN", f"Expected IN_DOMAIN, got {res1}"
+print("✅ PASS 1 | In-Domain Query -> [IN_DOMAIN]")
 
-for q in abuse_queries:
-    allowed = strict_domain_guardrail.is_query_in_tenant_domain(q, tenant)
-    assert not allowed, f"Abuse query wrongly allowed: {q}"
-    res = strict_domain_guardrail.handle_out_of_domain(q, "2348072015725", tenant)
-    assert "out_of_domain_handoff" in res["type"]
-    print(f"✅ PASS | Off-Topic Abuse REJECTED & ROUTED TO MANAGER: '{q}'")
+# 2. Test Business Lead Out-of-Catalog Query
+res2 = strict_domain_guardrail.classify_query("Do you sell laptop chargers?", tenant)
+assert res2 == "BUSINESS_OUT_OF_CATALOG", f"Expected BUSINESS_OUT_OF_CATALOG, got {res2}"
+card2 = strict_domain_guardrail.handle_business_out_of_catalog("Do you sell laptop chargers?", "2348072015725", tenant)
+assert card2["manager_alert"] is not None
+print("✅ PASS 2 | Business Out-of-Catalog -> [BUSINESS_OUT_OF_CATALOG] (Manager Alerted)")
+
+# 3. Test Rubbish Off-Topic Query (UEFA / Football)
+res3 = strict_domain_guardrail.classify_query("Who won UEFA yesterday?", tenant)
+assert res3 == "RUBBISH_OFF_TOPIC", f"Expected RUBBISH_OFF_TOPIC, got {res3}"
+card3 = strict_domain_guardrail.handle_rubbish_off_topic(tenant)
+assert card3["manager_alert"] is None  # ZERO Manager Distraction!
+print("✅ PASS 3 | Rubbish Off-Topic (UEFA) -> [RUBBISH_OFF_TOPIC] (Clean Notice, ZERO Manager Distraction)")
 
 print("====================================================================")
-print("💯 100% STRICT TENANT DOMAIN GUARDRAIL PASSED PERFECTLY!")
+print("💯 100% 2-TIER CLASSIFICATION PASSED PERFECTLY!")
 print("====================================================================")

@@ -23,22 +23,35 @@ OFF_TOPIC_KEYWORDS = [
 ]
 
 class StrictDomainGuardrail:
-    """Enforces strict tenant business boundaries and routes out-of-domain queries to human manager."""
+    """Enforces strict tenant business boundaries with 2-tier smart classification."""
 
-    def is_query_in_tenant_domain(self, query: str, tenant: dict) -> bool:
-        """Determines whether a query is relevant to the tenant's business domain."""
+    def classify_query(self, query: str, tenant: dict) -> str:
+        """
+        Classifies query into:
+          - 'IN_DOMAIN': Relevant to tenant's store products & services.
+          - 'BUSINESS_OUT_OF_CATALOG': Still business-related, but not in current catalog -> Route to Manager.
+          - 'RUBBISH_OFF_TOPIC': General trivia, sports, code, politics -> Block AI reply cleanly without manager alert.
+        """
         q = query.lower().strip()
 
-        # 1. Anti-Abuse Check: Reject obvious general off-topic keywords
-        if any(kw in q for kw in OFF_TOPIC_KEYWORDS):
-            logger.warning(f"[DomainGuardrail] Off-topic query rejected: '{query}'")
-            return False
+        # 1. Rubbish / Anti-Abuse Keywords
+        if any(kw in q for kw in OFF_TOPIC_KEYWORDS) or any(phrase in q for phrase in ["uefa", "who won", "premier league", "write code", "football match"]):
+            return "RUBBISH_OFF_TOPIC"
 
-        # 2. Extract tenant domain keywords from business name & catalog
-        biz_name = tenant.get("business_name", "").lower()
+        # 2. General business-like buying/selling questions for items NOT in catalog
         catalog = tenant.get("catalog", [])
+        catalog_names = [item.get("name", "").lower() for item in catalog if isinstance(item, dict)]
+        
+        if any(w in q for w in ["do you sell", "do you have", "can i get", "do you carry"]) and not any(name in q or any(word in q for word in name.split() if len(word) > 3) for name in catalog_names):
+            return "BUSINESS_OUT_OF_CATALOG"
 
-        domain_keywords = set(["price", "buy", "order", "cost", "warranty", "ship", "delivery", "payment", "stock", "store", "shop", "address", "location", "hours", "spec", "help"])
+        # 3. Extract tenant domain keywords from business name & catalog
+        biz_name = tenant.get("business_name", "").lower()
+        domain_keywords = set([
+            "price", "buy", "order", "cost", "warranty", "ship", "delivery", "payment",
+            "stock", "store", "shop", "address", "location", "hours", "spec", "help",
+            "charge", "battery", "power", "solar", "panel", "generator", "inverter"
+        ])
         
         for word in biz_name.split():
             if len(word) > 2:
@@ -50,42 +63,53 @@ class StrictDomainGuardrail:
                 for w in name.split():
                     if len(w) > 2:
                         domain_keywords.add(w)
-                keywords = item.get("keywords", [])
-                if isinstance(keywords, list):
-                    for kw in keywords:
-                        domain_keywords.add(str(kw).lower())
 
         # Check if query matches tenant domain keywords
         if any(kw in q for kw in domain_keywords):
-            return True
+            return "IN_DOMAIN"
 
-        # Short general greetings / store questions are allowed
+        # Short general greetings / store questions are allowed in-domain
         if len(q.split()) <= 4:
-            return True
+            return "IN_DOMAIN"
 
-        return False
+        # Default fallback for unknown long text
+        return "RUBBISH_OFF_TOPIC"
 
-    def handle_out_of_domain(self, query: str, customer_phone: str, tenant: dict) -> Dict[str, str]:
-        """Generates polite out-of-domain response and triggers human manager handoff."""
+    def handle_rubbish_off_topic(self, tenant: dict) -> Dict[str, str]:
+        """Politely informs customer that AI only handles store business queries."""
         biz_name = tenant.get("business_name", "Teeslux Global Store")
-        manager_phone = tenant.get("manager_phone", "2348072015725")
-
         return {
-            "type": "out_of_domain_handoff",
+            "type": "rubbish_blocked",
             "customer_reply": (
                 f"🤖 *[{biz_name} — Assistant]*\n"
                 f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-                f"I am specialized specifically to assist with *{biz_name}* products, pricing, and orders.\n\n"
-                f"📞 *Connecting Store Manager:* Your inquiry has been routed directly to our store manager (`+{manager_phone}`) for personal assistance.\n\n"
-                f"💬 Our manager will reply to you shortly!"
+                f"I am the automated store assistant for *{biz_name}*.\n\n"
+                f"I only answer questions relating to our store products, prices, delivery, and orders.\n\n"
+                f"💬 Type `/menu` to browse options, or reply with your product inquiry!"
+            ),
+            "manager_alert": None  # ZERO MANAGER DISTRACTION FOR RUBBISH QUERIES
+        }
+
+    def handle_business_out_of_catalog(self, query: str, customer_phone: str, tenant: dict) -> Dict[str, str]:
+        """Routes real business leads for out-of-catalog items to the store manager."""
+        biz_name = tenant.get("business_name", "Teeslux Global Store")
+        manager_phone = tenant.get("manager_phone", "2348072015725")
+        return {
+            "type": "business_lead_handoff",
+            "customer_reply": (
+                f"🛍️ *[{biz_name} — Business Inquiry]*\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+                f"Thank you for reaching out!\n\n"
+                f"While that specific item is not in our standard online catalog, our store manager (`+{manager_phone}`) is joining this chat to assist you directly.\n\n"
+                f"💬 Please hold on for a moment while our manager replies!"
             ),
             "manager_alert": (
-                f"🚨 *[OUT-OF-DOMAIN INQUIRY — MANAGER ROUTED]* 🚨\n"
+                f"🚨 *[STORE BUSINESS LEAD ALERT]* 🚨\n"
                 f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
                 f"🏪 *Store:* {biz_name}\n"
                 f"👤 *Customer:* `+{customer_phone}`\n"
-                f"💬 *Query:* '{query}'\n\n"
-                f"⚡ *ACTION REQUIRED:* Out-of-scope inquiry! Please reply to customer `+{customer_phone}` directly."
+                f"💬 *Inquiry:* '{query}'\n\n"
+                f"⚡ *ACTION REQUIRED:* Business lead! Please reply to `+{customer_phone}` directly."
             )
         }
 

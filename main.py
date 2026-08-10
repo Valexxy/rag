@@ -567,15 +567,22 @@ async def process_meta_payload(payload: dict):
         metadata_phone_id = val.get("metadata", {}).get("phone_number_id", META_PHONE_ID)
         tenant = multi_tenant_manager.get_tenant_by_phone_id(metadata_phone_id)
 
-        # ── 0. STRICT BUSINESS DOMAIN & ANTI-ABUSE GUARDRAIL ─────────────
+        # ── 0. STRICT 2-TIER DOMAIN & ANTI-ABUSE GUARDRAIL ─────────────
         from strict_domain_guardrail import strict_domain_guardrail
-        if not strict_domain_guardrail.is_query_in_tenant_domain(text, tenant):
-            guard_res = strict_domain_guardrail.handle_out_of_domain(text, sender_phone, tenant)
-            send_meta_whatsapp_message(sender_phone, guard_res["customer_reply"])
-            if guard_res.get("manager_alert"):
+        classification = strict_domain_guardrail.classify_query(text, tenant)
+
+        if classification == "RUBBISH_OFF_TOPIC":
+            rubbish_res = strict_domain_guardrail.handle_rubbish_off_topic(tenant)
+            send_meta_whatsapp_message(sender_phone, rubbish_res["customer_reply"])
+            return
+
+        elif classification == "BUSINESS_OUT_OF_CATALOG":
+            biz_res = strict_domain_guardrail.handle_business_out_of_catalog(text, sender_phone, tenant)
+            send_meta_whatsapp_message(sender_phone, biz_res["customer_reply"])
+            if biz_res.get("manager_alert"):
                 mgr_phone = tenant.get("manager_phone", "2348072015725")
                 if mgr_phone and mgr_phone != sender_phone:
-                    send_meta_whatsapp_message(mgr_phone, guard_res["manager_alert"])
+                    send_meta_whatsapp_message(mgr_phone, biz_res["manager_alert"])
             return
 
         # ── 0B. TELEGRAM-STYLE SLASH COMMAND & META LOCATION ROUTER ───────
