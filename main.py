@@ -567,7 +567,18 @@ async def process_meta_payload(payload: dict):
         metadata_phone_id = val.get("metadata", {}).get("phone_number_id", META_PHONE_ID)
         tenant = multi_tenant_manager.get_tenant_by_phone_id(metadata_phone_id)
 
-        # ── 0. TELEGRAM-STYLE SLASH COMMAND & META LOCATION ROUTER ───────
+        # ── 0. STRICT BUSINESS DOMAIN & ANTI-ABUSE GUARDRAIL ─────────────
+        from strict_domain_guardrail import strict_domain_guardrail
+        if not strict_domain_guardrail.is_query_in_tenant_domain(text, tenant):
+            guard_res = strict_domain_guardrail.handle_out_of_domain(text, sender_phone, tenant)
+            send_meta_whatsapp_message(sender_phone, guard_res["customer_reply"])
+            if guard_res.get("manager_alert"):
+                mgr_phone = tenant.get("manager_phone", "2348072015725")
+                if mgr_phone and mgr_phone != sender_phone:
+                    send_meta_whatsapp_message(mgr_phone, guard_res["manager_alert"])
+            return
+
+        # ── 0B. TELEGRAM-STYLE SLASH COMMAND & META LOCATION ROUTER ───────
         from premium_meta_telegram_engine import premium_meta_telegram_engine
         slash_res = premium_meta_telegram_engine.process_slash_command(text, sender_phone, tenant)
         if slash_res:
