@@ -148,13 +148,18 @@ def generate_ai_reply(query: str) -> str:
     except Exception as e:
         logger.warning(f"[AI Ensemble] CloudflareAI failed: {e}")
 
-    # 100% GUARANTEED SMART FALLBACK — NEVER SILENT
+    # 100% GUARANTEED ELEGANT FALLBACK — NEVER ECHOES RAW QUERY VERBATIM
     return (
-        f"🤖 *[Teeslux Global Store Consultant]*\n\n"
-        f"Thank you for reaching out about '{query}'!\n\n"
-        f"We specialize in solar energy systems, inverters, panels, generators, and electronics. "
-        f"While we don't currently have '{query}' in our direct store catalog, you can find general household & market items at Main Market in Onitsha!\n\n"
-        f"💡 Would you like to check out our available solar or generator packages today? Reply *1* to browse our catalog, or reply *#human* to speak directly with our store manager!"
+        "👋 *Welcome to Teeslux Global Electronics & Solar!*\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+        "Hello! We specialize in *Solar Panels, Inverters, Solar Generators, Power Banks, and Electronics*.\n\n"
+        "We currently do not carry that item in our direct store catalog.\n\n"
+        "💡 *Available In-Stock Products Today:*\n"
+        "1️⃣ *550W Monocrystalline Solar Panel* — ₦120,000\n"
+        "2️⃣ *1.5kVA Dual Solar Generator* — ₦185,000\n"
+        "3️⃣ *3.5kVA Hybrid Solar Inverter System* — ₦340,000\n"
+        "4️⃣ *20,000 mAh Solar Power Bank* — ₦18,500\n\n"
+        "💬 Reply *1*, *2*, *3*, or *4* to view product specs, or reply *#human* to speak directly with our store manager!"
     )
 
 
@@ -484,7 +489,18 @@ async def process_meta_payload(payload: dict):
             send_meta_whatsapp_message(sender_phone, ai_reply)
             return
 
-        fallback = f"🤖 *[Teeslux Global Meta Assistant]*\n\nThank you for reaching out regarding '{text}'! Our manager will reply to you shortly."
+        fallback = (
+            "👋 *Welcome to Teeslux Global Electronics & Solar!*\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            "Hello! We specialize in *Solar Panels, Inverters, Solar Generators, Power Banks, and Electronics*.\n\n"
+            "We currently do not carry that item in our direct store catalog.\n\n"
+            "💡 *Available In-Stock Products Today:*\n"
+            "1️⃣ *550W Monocrystalline Solar Panel* — ₦120,000\n"
+            "2️⃣ *1.5kVA Dual Solar Generator* — ₦185,000\n"
+            "3️⃣ *3.5kVA Hybrid Solar Inverter System* — ₦340,000\n"
+            "4️⃣ *20,000 mAh Solar Power Bank* — ₦18,500\n\n"
+            "💬 Reply *1*, *2*, *3*, or *4* to view product specs, or reply *#human* to speak directly with our store manager!"
+        )
         send_meta_whatsapp_message(sender_phone, fallback)
     except Exception as e:
         logger.error(f"[Meta Payload Error] {e}")

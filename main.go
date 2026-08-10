@@ -987,7 +987,16 @@ func processMetaWebhookAsync(bodyBytes []byte) {
 		return
 	}
 
-	fallback := fmt.Sprintf("🤖 *[Teeslux Global Meta Assistant]*\n\nThank you for reaching out regarding '%s'! Our manager will reply to you shortly.", text)
+	fallback := "👋 *Welcome to Teeslux Global Electronics & Solar!*\n" +
+		"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n" +
+		"Hello! We specialize in *Solar Panels, Inverters, Solar Generators, Power Banks, and Electronics*.\n\n" +
+		"We currently do not carry that item in our direct store catalog.\n\n" +
+		"💡 *Available In-Stock Products Today:*\n" +
+		"1️⃣ *550W Monocrystalline Solar Panel* — ₦120,000\n" +
+		"2️⃣ *1.5kVA Dual Solar Generator* — ₦185,000\n" +
+		"3️⃣ *3.5kVA Hybrid Solar Inverter System* — ₦340,000\n" +
+		"4️⃣ *20,000 mAh Solar Power Bank* — ₦18,500\n\n" +
+		"💬 Reply *1*, *2*, *3*, or *4* to view product specs, or reply *#human* to speak directly with our store manager!"
 	SendMetaWhatsAppMessage(senderPhone, fallback)
 }
 
