@@ -403,11 +403,12 @@ if os.path.exists("static"):
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/", response_class=HTMLResponse)
+@app.get("/portal", response_class=HTMLResponse)
 async def serve_homepage():
-    if os.path.exists("dashboard.html"):
+    if os.path.exists("unified_portal.html"):
+        return FileResponse("unified_portal.html")
+    elif os.path.exists("dashboard.html"):
         return FileResponse("dashboard.html")
-    elif os.path.exists("static/futuristic_app.html"):
-        return FileResponse("static/futuristic_app.html")
     return HTMLResponse("<h1>Sovereign AI Commerce Platform Online</h1>")
 
 @app.get("/dashboard", response_class=HTMLResponse)
