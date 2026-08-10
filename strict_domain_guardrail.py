@@ -45,17 +45,20 @@ class StrictDomainGuardrail:
         if any(w in q for w in ["do you sell", "do you have", "can i get", "do you carry"]) and not any(name in q or any(word in q for word in name.split() if len(word) > 3) for name in catalog_names):
             return "BUSINESS_OUT_OF_CATALOG"
 
-        # 3. Extract tenant domain keywords from business name & catalog
+        # 3. Extract tenant domain keywords from business name, domain scope & catalog
         biz_name = tenant.get("business_name", "").lower()
+        domain_scope = tenant.get("business_domain_scope", "").lower()
+
         domain_keywords = set([
             "price", "buy", "order", "cost", "warranty", "ship", "delivery", "payment",
             "stock", "store", "shop", "address", "location", "hours", "spec", "help",
             "charge", "battery", "power", "solar", "panel", "generator", "inverter"
         ])
         
-        for word in biz_name.split():
-            if len(word) > 2:
-                domain_keywords.add(word)
+        for text_source in [biz_name, domain_scope]:
+            for word in text_source.replace(",", " ").split():
+                if len(word) > 2:
+                    domain_keywords.add(word)
 
         for item in catalog:
             if isinstance(item, dict):

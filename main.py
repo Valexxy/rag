@@ -105,37 +105,25 @@ def fast_catalog_search(query: str) -> dict:
         item = STORE_CATALOG[2]
         return {
             "matched": True, "type": "single",
-            "reply": f"🛍️ *[Teeslux Store — Product Found]*\n\n✅ *{item['name']}*\n💰 *Fixed Price:* ₦{item['price']:,}.00\n📦 *Status:* In Stock\n📝 *Details:* {item['desc']}\n\n💬 Reply *#buy* to place your order, or *#human* to speak with our manager."
+            "reply": f"🛍️ *[Teeslux Store — Product Information]*\n\n✅ *{item['name']}*\n💰 *Price:* ₦{item['price']:,}.00\n📦 *Status:* Available\n\n💬 Reply *#buy* to place your order! Our store manager (+2348072015725) will join this chat to confirm your preferred quantity, specifications, and delivery address."
         }
     if "3.5kva" in q or "3.5 kva" in q:
         item = STORE_CATALOG[5]
         return {
             "matched": True, "type": "single",
-            "reply": f"🛍️ *[Teeslux Store — Product Found]*\n\n✅ *{item['name']}*\n💰 *Fixed Price:* ₦{item['price']:,}.00\n📦 *Status:* In Stock\n📝 *Details:* {item['desc']}\n\n💬 Reply *#buy* to place your order, or *#human* to speak with our manager."
-        }
-    if "24k gold" in q or "gold bar" in q:
-        item = STORE_CATALOG[4]
-        return {
-            "matched": True, "type": "single",
-            "reply": f"🛍️ *[Teeslux Store — Product Found]*\n\n✅ *{item['name']}*\n💰 *Fixed Price:* ₦{item['price']:,}.00\n📦 *Status:* In Stock\n📝 *Details:* {item['desc']}\n\n💬 Reply *#buy* to place your order, or *#human* to speak with our manager."
-        }
-    if "rice" in q or "50kg" in q:
-        item = STORE_CATALOG[3]
-        return {
-            "matched": True, "type": "single",
-            "reply": f"🛍️ *[Teeslux Store — Product Found]*\n\n✅ *{item['name']}*\n💰 *Fixed Price:* ₦{item['price']:,}.00\n📦 *Status:* In Stock\n📝 *Details:* {item['desc']}\n\n💬 Reply *#buy* to place your order, or *#human* to speak with our manager."
+            "reply": f"🛍️ *[Teeslux Store — Product Information]*\n\n✅ *{item['name']}*\n💰 *Price:* ₦{item['price']:,}.00\n📦 *Status:* Available\n\n💬 Reply *#buy* to place your order! Our store manager (+2348072015725) will join this chat to confirm your preferred quantity, specifications, and delivery address."
         }
     if "power bank" in q or "powerbank" in q:
         item = STORE_CATALOG[1]
         return {
             "matched": True, "type": "single",
-            "reply": f"🛍️ *[Teeslux Store — Product Found]*\n\n✅ *{item['name']}*\n💰 *Fixed Price:* ₦{item['price']:,}.00\n📦 *Status:* In Stock\n📝 *Details:* {item['desc']}\n\n💬 Reply *#buy* to place your order, or *#human* to speak with our manager."
+            "reply": f"🛍️ *[Teeslux Store — Product Information]*\n\n✅ *{item['name']}*\n💰 *Price:* ₦{item['price']:,}.00\n📦 *Status:* Available\n\n💬 Reply *#buy* to place your order! Our store manager (+2348072015725) will join this chat to confirm your preferred quantity, specifications, and delivery address."
         }
     if "panel" in q or "550w" in q:
         item = STORE_CATALOG[0]
         return {
             "matched": True, "type": "single",
-            "reply": f"🛍️ *[Teeslux Store — Product Found]*\n\n✅ *{item['name']}*\n💰 *Fixed Price:* ₦{item['price']:,}.00\n📦 *Status:* In Stock\n📝 *Details:* {item['desc']}\n\n💬 Reply *#buy* to place your order, or *#human* to speak with our manager."
+            "reply": f"🛍️ *[Teeslux Store — Product Information]*\n\n✅ *{item['name']}*\n💰 *Price:* ₦{item['price']:,}.00\n📦 *Status:* Available\n\n💬 Reply *#buy* to place your order! Our store manager (+2348072015725) will join this chat to confirm your preferred quantity, specifications, and delivery address."
         }
 
     # Ambiguous Broad Queries (Exact Single Words Only)

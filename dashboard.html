@@ -583,6 +583,12 @@
           </div>
         </div>
 
+        <div class="form-group">
+          <label>🌐 Overall Business Domain Scope & Offerings</label>
+          <input type="text" id="businessScope" value="Solar Panels, Inverters, Generators, Power Banks, Chargers & General Electronics" required />
+          <small style="color:var(--text-muted); font-size:0.78rem;">Describes all products/services your business handles so AI routes related leads to you!</small>
+        </div>
+
         <div class="form-row">
           <div class="form-group">
             <label>Meta Phone Number ID</label>
@@ -774,6 +780,7 @@
       const payload = {
         tenant_id: document.getElementById('businessName').value.toLowerCase().replace(/[^a-z0-9]/g, '_'),
         business_name: document.getElementById('businessName').value,
+        business_domain_scope: document.getElementById('businessScope').value,
         phone_number_id: document.getElementById('phoneId').value,
         manager_phone: document.getElementById('managerPhone').value,
         store_address: document.getElementById('storeAddress').value,

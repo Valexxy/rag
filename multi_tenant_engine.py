@@ -20,6 +20,7 @@ TENANTS_DB: Dict[str, dict] = {
     DEFAULT_TENANT_ID: {
         "tenant_id": DEFAULT_TENANT_ID,
         "business_name": "Teeslux Global Electronics & Solar",
+        "business_domain_scope": "Solar Panels, Generators, Hybrid Inverters, Batteries, Power Banks, Chargers & General Consumer Electronics",
         "phone_number_id": DEFAULT_PHONE_ID,
         "manager_phone": "2348072015725",
         "store_address": "Onitsha Main Market, Anambra State, Nigeria",
@@ -79,12 +80,14 @@ class MultiTenantManager:
         phone_number_id: str,
         manager_phone: str,
         store_address: str,
-        catalog: List[dict]
+        catalog: List[dict],
+        business_domain_scope: str = ""
     ) -> dict:
         """Registers a new merchant business on the multi-tenant platform."""
         tenant_data = {
             "tenant_id": tenant_id,
             "business_name": business_name,
+            "business_domain_scope": business_domain_scope or business_name,
             "phone_number_id": phone_number_id,
             "manager_phone": manager_phone,
             "store_address": store_address,
