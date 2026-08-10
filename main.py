@@ -531,6 +531,26 @@ async def process_meta_payload(payload: dict):
         
         logger.info(f"[Meta Incoming Message] From: {sender_phone} | Text: '{text}'")
 
+        # AUTOMATED ORDER PLACEMENT (#buy / #order)
+        clean_t = text.lower().strip()
+        if clean_t.startswith("#buy") or clean_t.startswith("#order") or clean_t.startswith("buy") or clean_t.startswith("order"):
+            from order_placement_engine import order_placement_engine
+            from multi_tenant_engine import multi_tenant_manager
+            
+            metadata_phone_id = val.get("metadata", {}).get("phone_number_id", META_PHONE_ID)
+            tenant = multi_tenant_manager.get_tenant_by_phone_id(metadata_phone_id)
+            
+            order_res = order_placement_engine.process_buy_command(text, sender_phone, tenant)
+            
+            # 1. Send Itemized Receipt Card to Customer
+            send_meta_whatsapp_message(sender_phone, order_res["customer_reply"])
+            
+            # 2. Send Real-time Alert Card to Store Manager
+            manager_phone = order_res.get("manager_phone", "2348072015725")
+            if manager_phone and manager_phone != sender_phone:
+                send_meta_whatsapp_message(manager_phone, order_res["manager_alert"])
+            return
+
         fast = fast_catalog_search(text)
         if fast["matched"]:
             send_meta_whatsapp_message(sender_phone, fast["reply"])
