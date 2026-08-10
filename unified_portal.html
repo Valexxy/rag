@@ -3,25 +3,28 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Sovereign AI Commerce — Enterprise SaaS Control Portal</title>
+  <title>Sovereign AI Commerce — World-Class Enterprise SaaS Platform</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-main: #020617;
-      --bg-card: rgba(15, 23, 42, 0.88);
-      --bg-card-hover: rgba(30, 41, 59, 0.95);
-      --accent-cyan: #06b6d4;
-      --accent-green: #10b981;
-      --accent-blue: #3b82f6;
-      --accent-purple: #8b5cf6;
-      --accent-gold: #f59e0b;
-      --accent-red: #ef4444;
+      --bg-main: #02040a;
+      --bg-card: rgba(10, 16, 31, 0.88);
+      --bg-card-hover: rgba(20, 30, 55, 0.95);
+      --accent-cyan: #00f2fe;
+      --accent-blue: #4facfe;
+      --accent-green: #00ff88;
+      --accent-purple: #7928ca;
+      --accent-gold: #ffd700;
+      --accent-orange: #ff6b00;
+      --accent-pink: #ff0080;
+      --accent-red: #ff3333;
       --text-main: #f8fafc;
       --text-muted: #94a3b8;
-      --border-color: rgba(255, 255, 255, 0.12);
-      --glass-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+      --border-color: rgba(0, 242, 254, 0.18);
+      --border-light: rgba(255, 255, 255, 0.08);
+      --glass-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -32,19 +35,19 @@
       color: var(--text-main);
       min-height: 100vh;
       background-image: 
-        radial-gradient(circle at 10% 10%, rgba(6, 182, 212, 0.15) 0%, transparent 40%),
-        radial-gradient(circle at 90% 90%, rgba(139, 92, 246, 0.15) 0%, transparent 40%);
+        radial-gradient(circle at 10% 10%, rgba(0, 242, 254, 0.12) 0%, transparent 45%),
+        radial-gradient(circle at 90% 90%, rgba(121, 40, 202, 0.15) 0%, transparent 45%);
       line-height: 1.5;
     }
 
-    /* Top Navbar */
+    /* Top Navbar — Linear/Vercel Style */
     .navbar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 1.2rem 3rem;
-      background: rgba(2, 6, 23, 0.95);
-      backdrop-filter: blur(24px);
+      padding: 1rem 2.5rem;
+      background: rgba(2, 4, 10, 0.95);
+      backdrop-filter: blur(30px);
       border-bottom: 1px solid var(--border-color);
       position: sticky;
       top: 0;
@@ -53,24 +56,24 @@
 
     .brand {
       font-family: 'Outfit', sans-serif;
-      font-size: 1.4rem;
+      font-size: 1.35rem;
       font-weight: 800;
-      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-green));
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue), var(--accent-green));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.6rem;
     }
 
     .user-pill {
       display: flex;
       align-items: center;
       gap: 0.75rem;
-      background: rgba(255, 255, 255, 0.06);
+      background: rgba(255, 255, 255, 0.05);
       padding: 0.4rem 1rem;
       border-radius: 9999px;
-      border: 1px solid var(--border-color);
+      border: 1px solid var(--border-light);
     }
 
     .role-badge {
@@ -86,9 +89,9 @@
     .role-badge.admin { background: var(--accent-gold); color: #000; }
 
     .btn-logout {
-      background: rgba(239, 68, 68, 0.2);
-      color: #ef4444;
-      border: 1px solid rgba(239, 68, 68, 0.4);
+      background: rgba(255, 51, 51, 0.2);
+      color: var(--accent-red);
+      border: 1px solid rgba(255, 51, 51, 0.4);
       padding: 0.35rem 0.85rem;
       border-radius: 0.5rem;
       font-size: 0.8rem;
@@ -102,7 +105,7 @@
       margin: 4rem auto;
       padding: 2.5rem;
       background: var(--bg-card);
-      backdrop-filter: blur(24px);
+      backdrop-filter: blur(30px);
       border: 1px solid var(--border-color);
       border-radius: 1.5rem;
       box-shadow: var(--glass-shadow);
@@ -124,7 +127,7 @@
     }
 
     .demo-credentials {
-      background: rgba(6, 182, 212, 0.08);
+      background: rgba(0, 242, 254, 0.08);
       border: 1px dashed var(--accent-cyan);
       border-radius: 0.75rem;
       padding: 1rem;
@@ -134,7 +137,7 @@
 
     .demo-cred-btn {
       background: rgba(255, 255, 255, 0.08);
-      border: 1px solid var(--border-color);
+      border: 1px solid var(--border-light);
       color: var(--text-main);
       padding: 0.45rem 0.85rem;
       border-radius: 0.5rem;
@@ -147,14 +150,14 @@
       transition: all 0.2s ease;
     }
 
-    .demo-cred-btn:hover { background: rgba(6, 182, 212, 0.25); border-color: var(--accent-cyan); }
+    .demo-cred-btn:hover { background: rgba(0, 242, 254, 0.25); border-color: var(--accent-cyan); }
 
     /* Form Controls */
     .form-group { margin-bottom: 1.25rem; }
 
     label {
       display: block;
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       font-weight: 700;
       color: var(--text-muted);
       margin-bottom: 0.4rem;
@@ -164,8 +167,8 @@
 
     input, select, textarea {
       width: 100%;
-      background: rgba(2, 6, 23, 0.8);
-      border: 1px solid var(--border-color);
+      background: rgba(2, 4, 10, 0.85);
+      border: 1px solid var(--border-light);
       border-radius: 0.75rem;
       padding: 0.85rem 1rem;
       color: var(--text-main);
@@ -176,7 +179,7 @@
     input:focus, select:focus, textarea:focus {
       outline: none;
       border-color: var(--accent-cyan);
-      box-shadow: 0 0 15px rgba(6, 182, 212, 0.25);
+      box-shadow: 0 0 15px rgba(0, 242, 254, 0.25);
     }
 
     .form-row {
@@ -201,25 +204,25 @@
 
     .btn-primary {
       background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
-      color: #fff;
-      box-shadow: 0 4px 20px rgba(6, 182, 212, 0.35);
+      color: #000;
+      box-shadow: 0 4px 20px rgba(0, 242, 254, 0.35);
     }
 
     .btn-success {
       background: linear-gradient(135deg, var(--accent-green), #059669);
-      color: #fff;
+      color: #000;
     }
 
     .btn-danger {
-      background: rgba(239, 68, 68, 0.2);
-      color: #ef4444;
-      border: 1px solid rgba(239, 68, 68, 0.4);
+      background: rgba(255, 51, 51, 0.2);
+      color: var(--accent-red);
+      border: 1px solid rgba(255, 51, 51, 0.4);
     }
 
     /* Main Dashboard Layout */
     .dashboard-layout {
       display: none;
-      max-width: 1400px;
+      max-width: 1450px;
       margin: 2rem auto;
       padding: 0 2rem;
     }
@@ -229,7 +232,7 @@
       display: flex;
       gap: 1rem;
       margin-bottom: 2rem;
-      background: rgba(2, 6, 23, 0.6);
+      background: rgba(2, 4, 10, 0.6);
       padding: 0.6rem;
       border-radius: 1rem;
       border: 1px solid var(--border-color);
@@ -254,14 +257,14 @@
 
     .nav-tab.active {
       background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
-      color: #fff;
-      box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3);
+      color: #000;
+      box-shadow: 0 4px 15px rgba(0, 242, 254, 0.3);
     }
 
     .nav-tab.admin.active {
-      background: linear-gradient(135deg, var(--accent-gold), #ea580c);
+      background: linear-gradient(135deg, var(--accent-gold), var(--accent-orange));
       color: #000;
-      box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+      box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
     }
 
     /* Dashboard Panels */
@@ -282,27 +285,34 @@
       margin-bottom: 2rem;
     }
 
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
     .stat-card {
       background: var(--bg-card);
-      border: 1px solid var(--border-color);
+      border: 1px solid var(--border-light);
       border-radius: 1.25rem;
       padding: 1.5rem;
       box-shadow: var(--glass-shadow);
       margin-bottom: 1.5rem;
     }
 
-    .stat-title { color: var(--text-muted); font-size: 0.82rem; font-weight: 700; text-transform: uppercase; }
+    .stat-title { color: var(--text-muted); font-size: 0.8rem; font-weight: 700; text-transform: uppercase; }
     .stat-value { font-family: 'Outfit', sans-serif; font-size: 2.2rem; font-weight: 800; margin: 0.3rem 0; }
     .stat-desc { font-size: 0.8rem; color: var(--accent-green); }
 
-    /* Visual Analytics Graph (SVG) */
+    /* Visual Analytics Chart */
     .chart-container {
       width: 100%;
       height: 200px;
       margin-top: 1rem;
     }
 
-    /* Catalog Table */
+    /* Table Component */
     .data-table {
       width: 100%;
       border-collapse: collapse;
@@ -323,7 +333,7 @@
     }
 
     .badge-status {
-      background: rgba(16, 185, 129, 0.15);
+      background: rgba(0, 255, 136, 0.15);
       color: var(--accent-green);
       padding: 0.25rem 0.65rem;
       border-radius: 9999px;
@@ -331,13 +341,55 @@
       font-weight: 700;
     }
 
+    .badge-dispatch {
+      background: rgba(255, 107, 0, 0.15);
+      color: var(--accent-orange);
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
     .badge-tier {
-      background: rgba(139, 92, 246, 0.2);
+      background: rgba(121, 40, 202, 0.2);
       color: var(--accent-purple);
       padding: 0.25rem 0.65rem;
       border-radius: 9999px;
       font-size: 0.75rem;
       font-weight: 700;
+    }
+
+    /* Shopify-Style Kanban Board */
+    .kanban-board {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .kanban-col {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-light);
+      border-radius: 0.85rem;
+      padding: 1rem;
+    }
+
+    .kanban-col-title {
+      font-weight: 800;
+      font-size: 0.85rem;
+      margin-bottom: 1rem;
+      display: flex;
+      justify-content: space-between;
+      color: var(--text-muted);
+    }
+
+    .kanban-card {
+      background: rgba(2, 4, 10, 0.9);
+      border: 1px solid var(--border-light);
+      padding: 0.85rem;
+      border-radius: 0.75rem;
+      margin-bottom: 0.75rem;
+      font-size: 0.82rem;
     }
 
     /* WhatsApp Simulator Mockup */
@@ -423,7 +475,7 @@
   <!-- Top Navbar -->
   <nav class="navbar">
     <div class="brand">
-      <span>⚡ Sovereign AI Commerce — Full-Scale SaaS Portal</span>
+      <span>⚡ Sovereign AI Commerce — World-Class Enterprise SaaS</span>
     </div>
     <div class="user-pill" id="userPill" style="display: none;">
       <span id="userName">User</span>
@@ -435,8 +487,8 @@
   <!-- Login Screen -->
   <div id="authScreen">
     <div class="auth-container">
-      <h2 class="auth-title">🔐 Enterprise Portal Login</h2>
-      <p class="auth-subtitle">Select your login role to enter full-scale controls</p>
+      <h2 class="auth-title">🔐 Enterprise Single Sign-On</h2>
+      <p class="auth-subtitle">Log in to access your role-specific enterprise dashboard</p>
 
       <div class="demo-credentials">
         <strong>⚡ 1-Click Fast Logins:</strong><br>
@@ -471,39 +523,87 @@
     <!-- Navigation Tabs -->
     <div class="role-nav">
       <button class="nav-tab active" id="tabMerchant" onclick="switchPanel('merchant')">
-        🏬 Merchant Business Owner Dashboard & Full Settings
+        🏬 Merchant Dashboard (Shopify + DHL + Stripe Components)
       </button>
       <button class="nav-tab admin" id="tabAdmin" onclick="switchPanel('admin')">
-        🛡️ Master SaaS Director Dashboard & All Merchant Controls
+        🛡️ Master SaaS Director (Vercel + Supabase Telemetry)
       </button>
     </div>
 
     <!-- ================================================================= -->
-    <!-- PANEL 1: FULL-SCALE MERCHANT / BUSINESS OWNER DASHBOARD -->
+    <!-- PANEL 1: WORLD-CLASS MERCHANT DASHBOARD -->
     <!-- ================================================================= -->
     <div class="panel active" id="panelMerchant">
       
       <!-- Analytics Header Cards -->
       <div class="grid-4">
         <div class="stat-card">
-          <div class="stat-title">Monthly Revenue</div>
-          <div class="stat-value">₦3,450,000</div>
-          <div class="stat-desc">📈 +28% vs last month</div>
+          <div class="stat-title">Shopify-Style Sales Volume</div>
+          <div class="stat-value">₦4,850,000</div>
+          <div class="stat-desc">📈 +32% WhatsApp & Web Direct</div>
         </div>
         <div class="stat-card">
-          <div class="stat-title">Inquiries Processed</div>
-          <div class="stat-value">1,240</div>
-          <div class="stat-desc">⚡ 99.8% AI Auto-Handled</div>
+          <div class="stat-title">DHL/GIG Dispatches</div>
+          <div class="stat-value">64 Deliveries</div>
+          <div class="stat-desc">🚚 100% On-Time Delivery SLA</div>
         </div>
         <div class="stat-card">
-          <div class="stat-title">Hot Manager Leads</div>
-          <div class="stat-value">42 Leads</div>
-          <div class="stat-desc">🚨 Routed to +2348072015725</div>
+          <div class="stat-title">Stripe Bank Transfers</div>
+          <div class="stat-value">₦3,920,000</div>
+          <div class="stat-desc">💳 Zenith Bank Instant Settled</div>
         </div>
         <div class="stat-card">
           <div class="stat-title">Sourcing Opportunities</div>
-          <div class="stat-value">8 Inquiries</div>
-          <div class="stat-desc">💰 ₦2.1M Extra Niche Potential</div>
+          <div class="stat-value">12 Inquiries</div>
+          <div class="stat-desc">💰 ₦3.5M Extra Revenue Potential</div>
+        </div>
+      </div>
+
+      <!-- Shopify-Style Order Fulfillment Kanban Workflow -->
+      <div class="stat-card">
+        <h3>🛍️ Shopify-Style Order Fulfillment & Dispatch Kanban Workflow</h3>
+        <div class="kanban-board">
+          
+          <div class="kanban-col">
+            <div class="kanban-col-title"><span>⏳ Pending (2)</span> <span>₦525,000</span></div>
+            <div class="kanban-card">
+              <strong>Order #TSX-9841</strong><br>
+              3.5kVA Hybrid Inverter (x1)<br>
+              <small style="color:var(--text-muted);">Customer: +2348072015725</small><br>
+              <span class="badge-status">POD Pending</span>
+            </div>
+          </div>
+
+          <div class="kanban-col">
+            <div class="kanban-col-title"><span>⚙️ Processing (3)</span> <span>₦780,000</span></div>
+            <div class="kanban-card">
+              <strong>Order #TSX-9840</strong><br>
+              550W Solar Panel (x4)<br>
+              <small style="color:var(--text-muted);">Customer: +2348099887766</small><br>
+              <span class="badge-status">Bank Transfer Verified</span>
+            </div>
+          </div>
+
+          <div class="kanban-col">
+            <div class="kanban-col-title"><span>🚚 In Transit (4)</span> <span>₦1,240,000</span></div>
+            <div class="kanban-card">
+              <strong>Waybill GIG-ON-984210</strong><br>
+              1.5kVA Dual Solar Generator<br>
+              <small style="color:var(--text-muted);">Destination: Abuja (GIGM Park)</small><br>
+              <span class="badge-dispatch">Dispatched GIGM</span>
+            </div>
+          </div>
+
+          <div class="kanban-col">
+            <div class="kanban-col-title"><span>✅ Delivered (18)</span> <span>₦2,305,000</span></div>
+            <div class="kanban-card">
+              <strong>Waybill DHL-NG-884102</strong><br>
+              20,000 mAh Power Bank (x5)<br>
+              <small style="color:var(--text-muted);">Destination: Lagos (Door Delivery)</small><br>
+              <span class="badge-status">Completed</span>
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -553,76 +653,48 @@
             </table>
           </div>
 
-          <!-- Full Merchant Web Settings (For Merchant who prefers web over WhatsApp) -->
+          <!-- DHL/FedEx Logistics & Shipping Rate Matrix Settings -->
           <div class="stat-card">
-            <h3>⚙️ Full Merchant Store & AI Business Settings</h3>
+            <h3>🚚 DHL/FedEx Enterprise Shipping & Rate Matrix Settings</h3>
             <br>
             <form onsubmit="saveMerchantSettings(event)">
               <div class="form-row">
                 <div class="form-group">
-                  <label>Business Name</label>
-                  <input type="text" id="mBizName" value="Teeslux Global Electronics & Solar" required />
+                  <label>Local Same-Day Shipping Rate (₦)</label>
+                  <input type="text" value="₦4,500.00" required />
                 </div>
                 <div class="form-group">
-                  <label>Manager WhatsApp Phone Number</label>
-                  <input type="text" id="mMgrPhone" value="2348072015725" required />
+                  <label>Interstate Major City Rate (Lagos/Abuja/PH)</label>
+                  <input type="text" value="₦12,500.00 (24-48h Waybill)" required />
                 </div>
               </div>
 
               <div class="form-group">
-                <label>🌐 Business Domain Scope & Sourcing Capabilities</label>
-                <input type="text" id="mDomainScope" value="Solar Panels, Inverters, Generators, Power Banks, Chargers, Electrical Accessories & Custom Sourcing" required />
+                <label>💳 Stripe/Paystack Bank Transfer Settlement Account</label>
+                <input type="text" value="Zenith Bank Plc | Account Name: Teeslux Global | Account No: 1012345678" required />
               </div>
 
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Official Bank Name</label>
-                  <input type="text" id="mBankName" value="Zenith Bank Plc" required />
-                </div>
-                <div class="form-group">
-                  <label>Bank Account Number</label>
-                  <input type="text" id="mAccNo" value="1012345678" required />
-                </div>
-              </div>
-
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Store Location Address</label>
-                  <input type="text" id="mAddress" value="Onitsha Main Market, Anambra State, Nigeria" required />
-                </div>
-                <div class="form-group">
-                  <label>Operating Hours</label>
-                  <input type="text" id="mHours" value="Mon – Sat: 8:00 AM – 6:00 PM WAT" required />
-                </div>
-              </div>
-
-              <button type="submit" class="btn btn-success">💾 Save & Deploy Merchant Settings</button>
+              <button type="submit" class="btn btn-success">💾 Save & Sync Global Logistics & Payment Matrix</button>
             </form>
           </div>
         </div>
 
-        <!-- Right Side: Live Simulator & Hot Lead Stream -->
+        <!-- Right Side: Intercom Live Chat Monitor & Bot Simulator -->
         <div>
-          <!-- Hot Leads Feed -->
+          <!-- Intercom-Style Live Customer Session Monitor -->
           <div class="stat-card">
-            <h3>🚨 Real-Time Hot Sales Leads Inbox</h3>
+            <h3>🤖 Intercom-Style Customer Session Command Center</h3>
             <div style="margin-top:1rem; display:flex; flex-direction:column; gap:0.75rem;">
-              <div style="background:rgba(255,255,255,0.04); padding:0.85rem; border-radius:0.75rem; border-left:4px solid var(--accent-green);">
+              <div style="background:rgba(255,255,255,0.04); padding:0.85rem; border-radius:0.75rem; border-left:4px solid var(--accent-cyan);">
                 <div style="display:flex; justify-content:space-between; font-weight:700; font-size:0.85rem;">
-                  <span>👤 Customer: +2348072015725</span>
-                  <span style="color:var(--text-muted); font-size:0.75rem;">2 mins ago</span>
+                  <span>👤 Session: +2348072015725</span>
+                  <span class="badge-status">AI Active</span>
                 </div>
-                <div style="font-size:0.82rem; color:var(--text-muted); margin:0.3rem 0;">Request: "I want to buy 2 units of 1.5kva generator"</div>
-                <a href="https://wa.me/2348072015725" target="_blank" class="btn btn-primary" style="width:auto; padding:0.3rem 0.75rem; font-size:0.75rem; text-decoration:none;">Reply on WhatsApp ➤</a>
-              </div>
-
-              <div style="background:rgba(255,255,255,0.04); padding:0.85rem; border-radius:0.75rem; border-left:4px solid var(--accent-gold);">
-                <div style="display:flex; justify-content:space-between; font-weight:700; font-size:0.85rem;">
-                  <span>👤 Customer: +2349011223344</span>
-                  <span style="color:var(--text-muted); font-size:0.75rem;">15 mins ago</span>
+                <div style="font-size:0.82rem; color:var(--text-muted); margin:0.3rem 0;">Asking: "Can you supply 100 sets of solar streetlights?"</div>
+                <div style="display:flex; gap:0.5rem;">
+                  <button type="button" class="btn btn-primary" style="width:auto; padding:0.3rem 0.75rem; font-size:0.75rem;" onclick="alert('Bot muted! You have taken over this chat directly.')">Mute Bot & Takeover</button>
+                  <a href="https://wa.me/2348072015725" target="_blank" class="btn btn-secondary" style="width:auto; padding:0.3rem 0.75rem; font-size:0.75rem; text-decoration:none;">Open WhatsApp ↗</a>
                 </div>
-                <div style="font-size:0.82rem; color:var(--text-muted); margin:0.3rem 0;">Sourcing Request: "Can you supply 100 sets of solar streetlights?"</div>
-                <a href="https://wa.me/2349011223344" target="_blank" class="btn btn-primary" style="width:auto; padding:0.3rem 0.75rem; font-size:0.75rem; text-decoration:none;">Quote Price on WhatsApp ➤</a>
               </div>
             </div>
           </div>
@@ -638,8 +710,8 @@
             </div>
             <div class="chat-body" id="mSimBody">
               <div class="msg msg-inc">👋 Welcome to Teeslux Global Store Simulator!</div>
-              <div class="msg msg-out">Do you sell solar streetlights?</div>
-              <div class="msg msg-inc">🤝 [Special Sourcing & Supply Portal]\nOur store director (+2348072015725) handles bulk sourcing orders!</div>
+              <div class="msg msg-out">Can you supply 50 solar streetlights?</div>
+              <div class="msg msg-inc">🤝 [Special Sourcing & Supply Portal]\nOur store director (+2348072015725) handles bulk orders!</div>
             </div>
             <div class="chat-footer">
               <input type="text" id="mSimInput" placeholder="Test customer message..." onkeypress="if(event.key==='Enter') sendSim('mSimInput', 'mSimBody')" />
@@ -651,7 +723,7 @@
     </div>
 
     <!-- ================================================================= -->
-    <!-- PANEL 2: MASTER SAAS DIRECTOR / ADMIN DASHBOARD (FULL SCALE) -->
+    <!-- PANEL 2: MASTER SAAS DIRECTOR / ADMIN DASHBOARD (VERCEL + SUPABASE TELEMETRY) -->
     <!-- ================================================================= -->
     <div class="panel" id="panelAdmin">
       
@@ -721,33 +793,21 @@
                 <button type="button" class="btn btn-danger" style="width:auto; padding:0.3rem 0.6rem; font-size:0.75rem;" onclick="alert('Subscription updated!')">Change Plan</button>
               </td>
             </tr>
-            <tr>
-              <td><strong>lagos_supermarket</strong><br><small style="color:var(--text-muted);">Lagos Provisions Ltd</small></td>
-              <td>+2348011223344</td>
-              <td>1242614362274985</td>
-              <td><span class="badge-tier">FREE TIER</span></td>
-              <td>2 Items</td>
-              <td><span class="badge-status">ACTIVE</span></td>
-              <td>
-                <button type="button" class="btn btn-primary" style="width:auto; padding:0.3rem 0.6rem; font-size:0.75rem;" onclick="adminEditTenant('lagos_supermarket')">Edit Catalog</button>
-                <button type="button" class="btn btn-danger" style="width:auto; padding:0.3rem 0.6rem; font-size:0.75rem;" onclick="alert('Subscription updated!')">Change Plan</button>
-              </td>
-            </tr>
           </tbody>
         </table>
       </div>
 
-      <!-- Combined Telemetry & Global Settings Grid -->
+      <!-- Vercel/Supabase Style System Health Radar -->
       <div class="grid-2">
         <div class="stat-card">
-          <h3>📊 Combined Telemetry Analytics (Web Traffic + Meta WhatsApp)</h3>
+          <h3>📊 Vercel-Style Combined Telemetry Analytics</h3>
           <p style="color:var(--text-muted); font-size:0.82rem;">Real-time traffic & inbound webhook payload telemetry</p>
           
           <svg class="chart-container" viewBox="0 0 500 180">
-            <path d="M0,150 Q100,60 200,110 T400,30 T500,80 L500,180 L0,180 Z" fill="rgba(6, 182, 212, 0.15)" stroke="var(--accent-cyan)" stroke-width="3"/>
-            <path d="M0,160 Q100,100 200,130 T400,70 T500,110 L500,180 L0,180 Z" fill="rgba(139, 92, 246, 0.15)" stroke="var(--accent-purple)" stroke-width="3"/>
-            <text x="20" y="30" fill="var(--accent-cyan)" font-size="12" font-weight="700">● WhatsApp Meta Webhooks (548K)</text>
-            <text x="260" y="30" fill="var(--accent-purple)" font-size="12" font-weight="700">● Website Traffic (142K Visits)</text>
+            <path d="M0,150 Q100,60 200,110 T400,30 T500,80 L500,180 L0,180 Z" fill="rgba(0, 242, 254, 0.15)" stroke="var(--accent-cyan)" stroke-width="3"/>
+            <path d="M0,160 Q100,100 200,130 T400,70 T500,110 L500,180 L0,180 Z" fill="rgba(121, 40, 202, 0.15)" stroke="var(--accent-purple)" stroke-width="3"/>
+            <text x="20" y="30" fill="var(--accent-cyan)" font-size="12" font-weight="700">● Meta Webhook Payloads (548K)</text>
+            <text x="260" y="30" fill="var(--accent-purple)" font-size="12" font-weight="700">● Web Traffic (142K Visits)</text>
           </svg>
         </div>
 
@@ -762,10 +822,6 @@
             <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.04); padding:0.75rem; border-radius:0.5rem;">
               <span><strong>AI Key Rotator Pool Status</strong></span>
               <button type="button" class="btn btn-primary" style="width:auto; padding:0.3rem 0.75rem; font-size:0.75rem;" onclick="fetch('/api/ai-providers').then(r=>r.json()).then(d=>alert(JSON.stringify(d,null,2)))">Inspect 18 Keys</button>
-            </div>
-            <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.04); padding:0.75rem; border-radius:0.5rem;">
-              <span><strong>Global Master Backup</strong></span>
-              <button type="button" class="btn btn-success" style="width:auto; padding:0.3rem 0.75rem; font-size:0.75rem;" onclick="alert('Full SaaS System Database Backup Completed!')">Backup Now</button>
             </div>
           </div>
         </div>
@@ -829,7 +885,7 @@
 
     function saveMerchantSettings(e) {
       e.preventDefault();
-      alert('✅ Merchant Settings Saved & Deployed to WhatsApp Cloud API Live!');
+      alert('✅ Global Logistics & Payment Settings Saved & Deployed Live!');
     }
 
     function addCatalogItem() {
