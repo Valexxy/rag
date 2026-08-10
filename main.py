@@ -531,21 +531,27 @@ async def process_meta_payload(payload: dict):
         
         logger.info(f"[Meta Incoming Message] From: {sender_phone} | Text: '{text}'")
 
-        # AUTOMATED ORDER PLACEMENT (#buy / #order)
+        from multi_tenant_engine import multi_tenant_manager
+        metadata_phone_id = val.get("metadata", {}).get("phone_number_id", META_PHONE_ID)
+        tenant = multi_tenant_manager.get_tenant_by_phone_id(metadata_phone_id)
+
+        # ── 1. MASTER E-COMMERCE INTELLIGENCE & EXCEPTION ROUTER ─────────
+        from ecommerce_master_intelligence import ecommerce_intelligence
+        matrix_res = ecommerce_intelligence.analyze_and_route(text, sender_phone, tenant)
+        if matrix_res:
+            send_meta_whatsapp_message(sender_phone, matrix_res["customer_reply"])
+            if matrix_res.get("manager_alert"):
+                mgr_phone = tenant.get("manager_phone", "2348072015725")
+                if mgr_phone and mgr_phone != sender_phone:
+                    send_meta_whatsapp_message(mgr_phone, matrix_res["manager_alert"])
+            return
+
+        # ── 2. AUTOMATED ORDER HANDOVER (#buy / #order) ─────────────────
         clean_t = text.lower().strip()
         if clean_t.startswith("#buy") or clean_t.startswith("#order") or clean_t.startswith("buy") or clean_t.startswith("order"):
             from order_placement_engine import order_placement_engine
-            from multi_tenant_engine import multi_tenant_manager
-            
-            metadata_phone_id = val.get("metadata", {}).get("phone_number_id", META_PHONE_ID)
-            tenant = multi_tenant_manager.get_tenant_by_phone_id(metadata_phone_id)
-            
             order_res = order_placement_engine.process_buy_command(text, sender_phone, tenant)
-            
-            # 1. Send Itemized Receipt Card to Customer
             send_meta_whatsapp_message(sender_phone, order_res["customer_reply"])
-            
-            # 2. Send Real-time Alert Card to Store Manager
             manager_phone = order_res.get("manager_phone", "2348072015725")
             if manager_phone and manager_phone != sender_phone:
                 send_meta_whatsapp_message(manager_phone, order_res["manager_alert"])
