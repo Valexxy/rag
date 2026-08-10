@@ -101,29 +101,32 @@ def fast_catalog_search(query: str) -> dict:
         }
 
     # Exact Spec Boosts
+    from cross_sell_engine import cross_sell_engine
+    addon_text = cross_sell_engine.get_cross_sell_addons(q) or ""
+
     if "1.5kva" in q or "1.5 kva" in q:
         item = STORE_CATALOG[2]
         return {
             "matched": True, "type": "single",
-            "reply": f"🛍️ *[Teeslux Store — Product Information]*\n\n✅ *{item['name']}*\n💰 *Price:* ₦{item['price']:,}.00\n📦 *Status:* Available\n\n💬 Reply *#buy* to place your order! Our store manager (+2348072015725) will join this chat to confirm your preferred quantity, specifications, and delivery address."
+            "reply": f"🛍️ *[Teeslux Store — Product Information]*\n\n✅ *{item['name']}*\n💰 *Price:* ₦{item['price']:,}.00\n📦 *Status:* Available\n{addon_text}\n\n💬 Reply *#buy* to place your order! Our store manager (+2348072015725) will join this chat to confirm your preferred quantity, specifications, and delivery address."
         }
     if "3.5kva" in q or "3.5 kva" in q:
         item = STORE_CATALOG[5]
         return {
             "matched": True, "type": "single",
-            "reply": f"🛍️ *[Teeslux Store — Product Information]*\n\n✅ *{item['name']}*\n💰 *Price:* ₦{item['price']:,}.00\n📦 *Status:* Available\n\n💬 Reply *#buy* to place your order! Our store manager (+2348072015725) will join this chat to confirm your preferred quantity, specifications, and delivery address."
+            "reply": f"🛍️ *[Teeslux Store — Product Information]*\n\n✅ *{item['name']}*\n💰 *Price:* ₦{item['price']:,}.00\n📦 *Status:* Available\n{addon_text}\n\n💬 Reply *#buy* to place your order! Our store manager (+2348072015725) will join this chat to confirm your preferred quantity, specifications, and delivery address."
         }
     if "power bank" in q or "powerbank" in q:
         item = STORE_CATALOG[1]
         return {
             "matched": True, "type": "single",
-            "reply": f"🛍️ *[Teeslux Store — Product Information]*\n\n✅ *{item['name']}*\n💰 *Price:* ₦{item['price']:,}.00\n📦 *Status:* Available\n\n💬 Reply *#buy* to place your order! Our store manager (+2348072015725) will join this chat to confirm your preferred quantity, specifications, and delivery address."
+            "reply": f"🛍️ *[Teeslux Store — Product Information]*\n\n✅ *{item['name']}*\n💰 *Price:* ₦{item['price']:,}.00\n📦 *Status:* Available\n{addon_text}\n\n💬 Reply *#buy* to place your order! Our store manager (+2348072015725) will join this chat to confirm your preferred quantity, specifications, and delivery address."
         }
     if "panel" in q or "550w" in q:
         item = STORE_CATALOG[0]
         return {
             "matched": True, "type": "single",
-            "reply": f"🛍️ *[Teeslux Store — Product Information]*\n\n✅ *{item['name']}*\n💰 *Price:* ₦{item['price']:,}.00\n📦 *Status:* Available\n\n💬 Reply *#buy* to place your order! Our store manager (+2348072015725) will join this chat to confirm your preferred quantity, specifications, and delivery address."
+            "reply": f"🛍️ *[Teeslux Store — Product Information]*\n\n✅ *{item['name']}*\n💰 *Price:* ₦{item['price']:,}.00\n📦 *Status:* Available\n{addon_text}\n\n💬 Reply *#buy* to place your order! Our store manager (+2348072015725) will join this chat to confirm your preferred quantity, specifications, and delivery address."
         }
 
     # Ambiguous Broad Queries (Exact Single Words Only)
@@ -565,12 +568,35 @@ async def process_meta_payload(payload: dict):
             return
 
         elif classification == "BUSINESS_OUT_OF_CATALOG":
+            # 🚀 INNOVATION 1: AUTONOMOUS SOURCING OPPORTUNITY DOOR-OPENER
+            from opportunity_lead_engine import opportunity_lead_engine
+            opp_res = opportunity_lead_engine.evaluate_opportunity(text, sender_phone, tenant)
+            if opp_res:
+                send_meta_whatsapp_message(sender_phone, opp_res["customer_reply"])
+                if opp_res.get("manager_alert"):
+                    mgr_phone = tenant.get("manager_phone", "2348072015725")
+                    if mgr_phone and mgr_phone != sender_phone:
+                        send_meta_whatsapp_message(mgr_phone, opp_res["manager_alert"])
+                return
+
             biz_res = strict_domain_guardrail.handle_business_out_of_catalog(text, sender_phone, tenant)
             send_meta_whatsapp_message(sender_phone, biz_res["customer_reply"])
             if biz_res.get("manager_alert"):
                 mgr_phone = tenant.get("manager_phone", "2348072015725")
                 if mgr_phone and mgr_phone != sender_phone:
                     send_meta_whatsapp_message(mgr_phone, biz_res["manager_alert"])
+            return
+
+        # 🚀 INNOVATION 3: INSTANT PROFORMA INVOICE & QUOTATION GENERATOR
+        clean_low = text.lower().strip()
+        if any(w in clean_low for w in ["quote", "quotation", "invoice", "/quote"]):
+            from quote_generator_engine import quote_generator_engine
+            q_res = quote_generator_engine.generate_quotation(text, sender_phone, tenant)
+            send_meta_whatsapp_message(sender_phone, q_res["customer_reply"])
+            if q_res.get("manager_alert"):
+                mgr_phone = tenant.get("manager_phone", "2348072015725")
+                if mgr_phone and mgr_phone != sender_phone:
+                    send_meta_whatsapp_message(mgr_phone, q_res["manager_alert"])
             return
 
         # ── 0B. TELEGRAM-STYLE SLASH COMMAND & META LOCATION ROUTER ───────
