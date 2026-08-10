@@ -409,6 +409,31 @@ async def test_chat_endpoint(query: str = "1.5kva"):
     ai_reply = generate_ai_reply(query)
     return {"status": "success", "query": query, "reply": ai_reply, "source": "ai_ensemble_fallback"}
 
+# ── MULTI-TENANT ONBOARDING ENDPOINTS ────────────────────────────────
+from multi_tenant_engine import multi_tenant_manager, TENANTS_DB
+
+@app.post("/api/tenant/register")
+async def register_tenant_endpoint(payload: dict):
+    tenant_id = payload.get("tenant_id")
+    biz_name = payload.get("business_name")
+    phone_id = payload.get("phone_number_id")
+    manager_phone = payload.get("manager_phone", "")
+    address = payload.get("store_address", "")
+    catalog = payload.get("catalog", [])
+
+    if not tenant_id or not biz_name or not phone_id:
+        return JSONResponse(status_code=400, content={"error": "tenant_id, business_name, and phone_number_id are required"})
+
+    res = multi_tenant_manager.register_tenant(tenant_id, biz_name, phone_id, manager_phone, address, catalog)
+    return {"status": "success", "tenant": res}
+
+@app.get("/api/tenant/{tenant_id}")
+async def get_tenant_endpoint(tenant_id: str):
+    tenant = TENANTS_DB.get(tenant_id)
+    if not tenant:
+        return JSONResponse(status_code=404, content={"error": "Tenant not found"})
+    return {"status": "success", "tenant": tenant}
+
 # ── META OFFICIAL WHATSAPP CLOUD API WEBHOOKS ─────────────────────────
 META_PHONE_ID = "1242614362274985"
 META_TOKEN = "EAAMgsrreXPYBSPLhSw7pvMv7LFq7vJRGuQbfk2vXY30sTZAkYw84s6zvymbKUb7kmzpaqY4YoXRj79joY6GaKZAGHICV8pqkrPc76texKYVqX0Smjf6gk6Pv3ACutxF3Ay4ByerlhWHtLpme8rRO0zTAMASbQ4JKW7UnbmF6cCZAPIIeV2n1cPo0IGEBFg1jwZDZD"
