@@ -35,20 +35,10 @@ MISTRAL_API_KEY   = os.environ.get("MISTRAL_API_KEY", "")
 # ── Provider configurations ───────────────────────────────────────────
 PROVIDERS = [
     {
-        "name": "Cerebras",
-        "key_env": "CEREBRAS_API_KEY",
-        "base_url": "https://api.cerebras.ai/v1/chat/completions",
-        "model": "llama-3.3-70b",
-        "headers": lambda key: {
-            "Authorization": f"Bearer {key}",
-            "Content-Type": "application/json",
-        },
-    },
-    {
-        "name": "OpenRouter_Llama",
+        "name": "OpenRouter_Auto",
         "key_env": "OPENROUTER_API_KEY",
         "base_url": "https://openrouter.ai/api/v1/chat/completions",
-        "model": "meta-llama/llama-3.3-70b-instruct:free",
+        "model": "openrouter/auto",
         "headers": lambda key: {
             "Authorization": f"Bearer {key}",
             "Content-Type": "application/json",
@@ -60,7 +50,7 @@ PROVIDERS = [
         "name": "OpenRouter_DeepSeek",
         "key_env": "OPENROUTER_API_KEY",
         "base_url": "https://openrouter.ai/api/v1/chat/completions",
-        "model": "deepseek/deepseek-chat-v3-0324:free",
+        "model": "deepseek/deepseek-r1:free",
         "headers": lambda key: {
             "Authorization": f"Bearer {key}",
             "Content-Type": "application/json",
@@ -69,10 +59,10 @@ PROVIDERS = [
         },
     },
     {
-        "name": "Mistral",
-        "key_env": "MISTRAL_API_KEY",
-        "base_url": "https://api.mistral.ai/v1/chat/completions",
-        "model": "mistral-small-latest",
+        "name": "Cerebras",
+        "key_env": "CEREBRAS_API_KEY",
+        "base_url": "https://api.cerebras.ai/v1/chat/completions",
+        "model": "llama-3.3-70b",
         "headers": lambda key: {
             "Authorization": f"Bearer {key}",
             "Content-Type": "application/json",
@@ -113,11 +103,21 @@ class FreeAIHub:
         }
 
     def _refresh_keys(self):
-        """Re-read env vars in case they were set after module import."""
+        """Re-read env vars or active key pools."""
+        try:
+            from key_rotator_pool import ai_key_rotator
+            c_key = os.environ.get("CEREBRAS_API_KEY") or ai_key_rotator.cerebras_pool.get_healthy_key() or ""
+            o_key = os.environ.get("OPENROUTER_API_KEY") or ai_key_rotator.openrouter_pool.get_healthy_key() or ""
+            m_key = os.environ.get("MISTRAL_API_KEY") or ai_key_rotator.mistral_pool.get_healthy_key() or ""
+        except Exception:
+            c_key = os.environ.get("CEREBRAS_API_KEY", "")
+            o_key = os.environ.get("OPENROUTER_API_KEY", "")
+            m_key = os.environ.get("MISTRAL_API_KEY", "")
+
         self._keys = {
-            "CEREBRAS_API_KEY":   os.environ.get("CEREBRAS_API_KEY", ""),
-            "OPENROUTER_API_KEY": os.environ.get("OPENROUTER_API_KEY", ""),
-            "MISTRAL_API_KEY":    os.environ.get("MISTRAL_API_KEY", ""),
+            "CEREBRAS_API_KEY": c_key,
+            "OPENROUTER_API_KEY": o_key,
+            "MISTRAL_API_KEY": m_key,
         }
 
     def generate_reply(
@@ -189,16 +189,16 @@ class FreeAIHub:
                 headers=headers,
                 method="POST"
             )
-            with urllib.request.urlopen(req, timeout=4) as resp:
+            with urllib.request.urlopen(req, timeout=10) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 text = data["choices"][0]["message"]["content"].strip()
                 return text if text else None
 
         try:
             with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
-                return ex.submit(_do_request).result(timeout=4.5)
+                return ex.submit(_do_request).result(timeout=10.5)
         except concurrent.futures.TimeoutError:
-            logger.warning(f"[FreeAIHub] {provider['name']} timed out after 4s")
+            logger.warning(f"[FreeAIHub] {provider['name']} timed out after 10s")
             return None
         except urllib.error.HTTPError as e:
             logger.warning(f"[FreeAIHub] {provider['name']} HTTP {e.code}: {e.reason}")
