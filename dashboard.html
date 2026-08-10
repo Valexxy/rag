@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Global AI WhatsApp SaaS — Merchant Onboarding Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-main: #090d16;
+      --bg-card: rgba(18, 26, 44, 0.75);
+      --bg-card-hover: rgba(28, 38, 62, 0.85);
+      --accent-green: #10b981;
+      --accent-cyan: #06b6d4;
+      --accent-blue: #3b82f6;
+      --accent-purple: #8b5cf6;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --border-color: rgba(255, 255, 255, 0.1);
+      --glass-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--bg-main);
+      color: var(--text-main);
+      min-height: 100vh;
+      background-image: 
+        radial-gradient(circle at 15% 15%, rgba(6, 182, 212, 0.12) 0%, transparent 40%),
+        radial-gradient(circle at 85% 85%, rgba(139, 92, 246, 0.12) 0%, transparent 40%);
+      line-height: 1.5;
+    }
+
+    /* Navbar */
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.25rem 3rem;
+      background: rgba(9, 13, 22, 0.8);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.35rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .badge-live {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--accent-green);
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--accent-green);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--accent-green);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    /* Main Container */
+    .container {
+      max-width: 1300px;
+      margin: 2.5rem auto;
+      padding: 0 2rem;
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: 2.5rem;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--bg-card);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border-color);
+      border-radius: 1.25rem;
+      padding: 2rem;
+      box-shadow: var(--glass-shadow);
+    }
+
+    .card-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .card-subtitle {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 1.75rem;
+    }
+
+    /* Form Inputs */
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      background: rgba(9, 13, 22, 0.6);
+      border: 1px solid var(--border-color);
+      border-radius: 0.75rem;
+      padding: 0.85rem 1rem;
+      color: var(--text-main);
+      font-family: inherit;
+      font-size: 0.95rem;
+      transition: all 0.2s ease;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 15px rgba(6, 182, 212, 0.2);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    /* Catalog Section */
+    .catalog-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 1.5rem;
+      margin-bottom: 1rem;
+
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.75rem;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(6, 182, 212, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 25px rgba(6, 182, 212, 0.45);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    /* Catalog Table */
+    .catalog-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      max-height: 250px;
+      overflow-y: auto;
+      margin-bottom: 1.5rem;
+      padding-right: 0.3rem;
+    }
+
+    .catalog-item {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1.5fr 40px;
+      gap: 0.75rem;
+      align-items: center;
+      background: rgba(9, 13, 22, 0.5);
+      padding: 0.75rem 1rem;
+      border-radius: 0.75rem;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .btn-remove {
+      background: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 0.5rem;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .btn-remove:hover {
+      background: rgba(239, 68, 68, 0.3);
+    }
+
+    /* Phone Simulator Mockup */
+    .phone-mockup {
+      width: 100%;
+      height: 600px;
+      background: #0b141a;
+      border-radius: 2rem;
+      border: 4px solid #1f2937;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .phone-header {
+      background: #1f2c34;
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: #000;
+    }
+
+    .phone-header-info h4 {
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    .phone-header-info p {
+      font-size: 0.75rem;
+      color: var(--accent-green);
+    }
+
+    .chat-body {
+      flex: 1;
+      padding: 1.25rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 0);
+      background-size: 20px 20px;
+    }
+
+    .msg {
+      max-width: 85%;
+      padding: 0.85rem 1.1rem;
+      border-radius: 1rem;
+      font-size: 0.88rem;
+      line-height: 1.45;
+      white-space: pre-wrap;
+    }
+
+    .msg-incoming {
+      align-self: flex-start;
+      background: #202c33;
+      color: #e9edef;
+      border-top-left-radius: 0.2rem;
+    }
+
+    .msg-outgoing {
+      align-self: flex-end;
+      background: #005c4b;
+      color: #e9edef;
+      border-top-right-radius: 0.2rem;
+    }
+
+    .chat-footer {
+      padding: 0.85rem 1rem;
+      background: #1f2c34;
+      display: flex;
+      gap: 0.6rem;
+    }
+
+    .chat-footer input {
+      background: #2a3942;
+      border: none;
+      padding: 0.75rem 1rem;
+      border-radius: 9999px;
+      font-size: 0.9rem;
+    }
+
+    .chat-footer button {
+      background: var(--accent-green);
+      border: none;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #000;
+      font-weight: bold;
+    }
+
+    /* Modal / Alert */
+    .success-alert {
+      display: none;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid var(--accent-green);
+      color: var(--accent-green);
+      padding: 1rem;
+      border-radius: 0.75rem;
+      margin-bottom: 1.5rem;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="brand">
+      <span>🤖 Global AI SaaS Platform</span>
+    </div>
+    <div class="badge-live">
+      <div class="pulse-dot"></div>
+      Meta Official Cloud API Connected
+    </div>
+  </nav>
+
+  <!-- Main Container -->
+  <div class="container">
+    
+    <!-- Left Column: Merchant Onboarding Form -->
+    <div class="card">
+      <h2 class="card-title">🚀 Register New Merchant Business</h2>
+      <p class="card-subtitle">Onboard any business worldwide onto your Meta Official WhatsApp AI Engine in 60 seconds.</p>
+
+      <div id="successAlert" class="success-alert">
+        🎉 <strong>Merchant Registered Successfully!</strong> Tenant account is live and ready to receive customer webhooks.
+      </div>
+
+      <form id="merchantForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Tenant ID (Unique)</label>
+            <input type="text" id="tenantId" value="lagos_electronics" required />
+          </div>
+          <div class="form-group">
+            <label>Business Name</label>
+            <input type="text" id="businessName" value="Lagos Mega Electronics Store" required />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Meta Phone Number ID</label>
+            <input type="text" id="phoneId" value="1242614362274985" required />
+          </div>
+          <div class="form-group">
+            <label>Manager WhatsApp SIM</label>
+            <input type="text" id="managerPhone" value="2348072015725" required />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Store Location / Address</label>
+          <input type="text" id="storeAddress" value="Computer Village, Ikeja, Lagos, Nigeria" required />
+        </div>
+
+        <!-- Catalog Items -->
+        <div class="catalog-header">
+          <h3>📦 Merchant Product Catalog</h3>
+          <button type="button" class="btn btn-secondary" onclick="addCatalogRow()">+ Add Product</button>
+        </div>
+
+        <div class="catalog-list" id="catalogList">
+          <div class="catalog-item">
+            <input type="text" placeholder="Product Name" value="Smart 55-Inch 4K OLED TV" required />
+            <input type="number" placeholder="Price (₦)" value="350000" required />
+            <input type="text" placeholder="Keywords (comma separated)" value="tv, oled, 4k, samsung" />
+            <button type="button" class="btn-remove" onclick="this.parentElement.remove()">×</button>
+          </div>
+          <div class="catalog-item">
+            <input type="text" placeholder="Product Name" value="Double Door Refrigerator" required />
+            <input type="number" placeholder="Price (₦)" value="280000" required />
+            <input type="text" placeholder="Keywords (comma separated)" value="fridge, refrigerator, double door" />
+            <button type="button" class="btn-remove" onclick="this.parentElement.remove()">×</button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%;">
+          ⚡ Deploy Merchant onto Live Meta SaaS Platform
+        </button>
+      </form>
+    </div>
+
+    <!-- Right Column: Interactive WhatsApp Simulator -->
+    <div>
+      <div class="phone-mockup">
+        <div class="phone-header">
+          <div class="avatar">AI</div>
+          <div class="phone-header-info">
+            <h4 id="simBizName">Lagos Mega Electronics</h4>
+            <p>Meta Official WhatsApp AI Assistant • Online</p>
+          </div>
+        </div>
+
+        <div class="chat-body" id="chatBody">
+          <div class="msg msg-incoming">👋 Hello! Welcome to Lagos Mega Electronics. How can I help you today?</div>
+        </div>
+
+        <div class="chat-footer">
+          <input type="text" id="simInput" placeholder="Type a message (e.g. tv, fridge)..." onkeypress="if(event.key==='Enter') sendSimMessage()" />
+          <button type="button" onclick="sendSimMessage()">➤</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    function addCatalogRow() {
+      const list = document.getElementById('catalogList');
+      const div = document.createElement('div');
+      div.className = 'catalog-item';
+      div.innerHTML = `
+        <input type="text" placeholder="Product Name" required />
+        <input type="number" placeholder="Price (₦)" required />
+        <input type="text" placeholder="Keywords" />
+        <button type="button" class="btn-remove" onclick="this.parentElement.remove()">×</button>
+      `;
+      list.appendChild(div);
+    }
+
+    document.getElementById('merchantForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const catalogItems = [];
+      document.querySelectorAll('.catalog-item').forEach((item, index) => {
+        const inputs = item.querySelectorAll('input');
+        catalogItems.push({
+          id: String(index + 1),
+          name: inputs[0].value,
+          price: parseFloat(inputs[1].value) || 0,
+          keywords: inputs[2].value.split(',').map(k => k.trim())
+        });
+      });
+
+      const payload = {
+        tenant_id: document.getElementById('tenantId').value,
+        business_name: document.getElementById('businessName').value,
+        phone_number_id: document.getElementById('phoneId').value,
+        manager_phone: document.getElementById('managerPhone').value,
+        store_address: document.getElementById('storeAddress').value,
+        catalog: catalogItems
+      };
+
+      try {
+        const res = await fetch('/api/tenant/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        
+        if (data.status === 'success') {
+          document.getElementById('successAlert').style.display = 'block';
+          document.getElementById('simBizName').innerText = payload.business_name;
+          setTimeout(() => { document.getElementById('successAlert').style.display = 'none'; }, 5000);
+        }
+      } catch (err) {
+        alert('Registration Error: ' + err.message);
+      }
+    });
+
+    function sendSimMessage() {
+      const input = document.getElementById('simInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      const chatBody = document.getElementById('chatBody');
+      
+      // Add Outgoing User Msg
+      const userMsg = document.createElement('div');
+      userMsg.className = 'msg msg-outgoing';
+      userMsg.innerText = text;
+      chatBody.appendChild(userMsg);
+
+      input.value = '';
+
+      // Generate AI/Catalog Sim Reply
+      setTimeout(() => {
+        const botMsg = document.createElement('div');
+        botMsg.className = 'msg msg-incoming';
+
+        const q = text.toLowerCase();
+        if (q.includes('tv') || q.includes('oled')) {
+          botMsg.innerText = '🛍️ [Lagos Mega Electronics]\n\n✅ Smart 55-Inch 4K OLED TV\n💰 Price: ₦350,000.00\n📦 Status: In Stock\n\n💬 Reply #buy to place your order!';
+        } else if (q.includes('fridge') || q.includes('refrigerator')) {
+          botMsg.innerText = '🛍️ [Lagos Mega Electronics]\n\n✅ Double Door Refrigerator\n💰 Price: ₦280,000.00\n📦 Status: In Stock\n\n💬 Reply #buy to place your order!';
+        } else {
+          botMsg.innerText = '🚨 [Manager Handoff Activated]\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nHello! Your request has been escalated directly to our store manager for personal assistance.\n\n📞 Store Manager Direct Line: +2348072015725\n\n💬 Our manager will reply to you shortly!';
+        }
+
+        chatBody.appendChild(botMsg);
+        chatBody.scrollTop = chatBody.scrollHeight;
+      }, 500);
+
+      chatBody.scrollTop = chatBody.scrollHeight;
+    }
+  </script>
+</body>
+</html>

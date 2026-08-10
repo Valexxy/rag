@@ -383,8 +383,35 @@ def process_webhook_async(instance_name: str, payload: dict):
         logger.error(f"[Webhook Worker Error]: {e}")
 
 
-# ── HTTP API ENDPOINTS ───────────────────────────────────────────────
-@app.get("/")
+# ── HTTP & WEB SYSTEM INTERFACES ─────────────────────────────────────
+from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
+
+if os.path.exists("static"):
+    app.mount("/static", StaticFiles(directory="static"), name="static")
+
+@app.get("/", response_class=HTMLResponse)
+async def serve_homepage():
+    if os.path.exists("dashboard.html"):
+        return FileResponse("dashboard.html")
+    elif os.path.exists("static/futuristic_app.html"):
+        return FileResponse("static/futuristic_app.html")
+    return HTMLResponse("<h1>Sovereign AI Commerce Platform Online</h1>")
+
+@app.get("/dashboard", response_class=HTMLResponse)
+async def serve_dashboard():
+    if os.path.exists("dashboard.html"):
+        return FileResponse("dashboard.html")
+    return HTMLResponse("<h1>Merchant Onboarding Dashboard Online</h1>")
+
+@app.get("/app", response_class=HTMLResponse)
+async def serve_app():
+    if os.path.exists("static/futuristic_app.html"):
+        return FileResponse("static/futuristic_app.html")
+    elif os.path.exists("dist/index.html"):
+        return FileResponse("dist/index.html")
+    return HTMLResponse("<h1>Sovereign AI App Online</h1>")
+
 @app.get("/api/status")
 async def status_endpoint():
     return {
