@@ -401,12 +401,17 @@ def process_webhook_async(instance_name: str, payload: dict):
             logger.info(f"[Cost Boundary] Non-product cost inquiry '{message_text}' from {sender_phone} transferred to manager {owner_phone}")
             return
 
+        from billion_dollar_brain import memory_store
+        memory_store.add_turn(sender_phone, "user", message_text)
+
         # ── 3. INTELLIGENT EXECUTIVE AI LLM ENGINE (Supabase Product Prices ONLY) ─
         ai_res = free_ai_hub.generate_reply(
             query=message_text,
+            tenant=tenant,
             catalog=STORE_CATALOG,
-            chat_history=""
+            phone=sender_phone
         )
+
 
         if ai_res and ai_res.get("reply"):
             send_whatsapp_message(instance_name, sender_phone, ai_res["reply"])

@@ -108,6 +108,9 @@ STRICT COMMERCIAL CONSTITUTION & OPERATIONAL BOUNDARIES:
 
 
 
+from billion_dollar_brain import billion_dollar_brain, memory_store
+
+
 class FreeAIHub:
     """
     Unified hub for Cerebras + OpenRouter + Mistral free AI APIs.
@@ -145,7 +148,8 @@ class FreeAIHub:
         query: str,
         tenant: dict = None,
         catalog: list = None,
-        chat_history: str = ""
+        chat_history: str = "",
+        phone: str = ""
     ) -> dict | None:
         """
         Tries Cerebras → OpenRouter (Llama) → OpenRouter (DeepSeek) → Mistral.
@@ -163,14 +167,15 @@ class FreeAIHub:
                 if isinstance(i, dict):
                     cat_lines.append(f"- {i.get('name', 'Item')}: ₦{i.get('price', 0):,.2f} — {i.get('description', '')}")
 
-        system = STORE_SYSTEM_PROMPT.format(
-            business_name=business_name,
-            catalog="\n".join(cat_lines) if cat_lines else "(Catalog loading from Supabase DB...)",
-            address=address
-        )
+        cat_str = "\n".join(cat_lines) if cat_lines else "(Catalog loading from Supabase DB...)"
 
-        history = f"\nRecent chat:\n{chat_history[-400:]}\n" if chat_history else ""
-        user_msg = f"{history}Customer: {query}"
+        # 🧠 Construct Master System Prompt & Memory Context
+        if phone:
+            system, user_msg = billion_dollar_brain.construct_master_prompt(phone, query, business_name, cat_str, address)
+        else:
+            system = STORE_SYSTEM_PROMPT.format(business_name=business_name, catalog=cat_str, address=address)
+            history = f"\nRecent chat:\n{chat_history[-400:]}\n" if chat_history else ""
+            user_msg = f"{history}Customer: {query}"
 
         for provider in PROVIDERS:
             key = self._keys.get(provider["key_env"], "")
@@ -185,6 +190,9 @@ class FreeAIHub:
                 is_transfer = "[TRANSFER_HUMAN]" in result or "TRANSFER_HUMAN" in result
                 clean_reply = result.replace("[TRANSFER_HUMAN]", "").replace("TRANSFER_HUMAN", "").strip()
 
+                if phone:
+                    memory_store.add_turn(phone, "assistant", clean_reply)
+
                 return {
                     "success": True,
                     "reply": clean_reply,
@@ -194,6 +202,7 @@ class FreeAIHub:
                 }
 
         return None
+
 
     def _call(self, provider: dict, key: str, system: str, user_msg: str) -> str | None:
         """
