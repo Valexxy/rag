@@ -168,119 +168,77 @@ func processMetaPayloadAsync(payloadBytes []byte) {
 
 	log.Printf("[Golang Webhook Goroutine] Sender: %s | Message: '%s'", senderPhone, messageText)
 
-	// Check if customer asked for explicit human takeover
-	lower := strings.ToLower(messageText)
-	if strings.Contains(lower, "human manager") || strings.Contains(lower, "speak to human") || strings.Contains(lower, "transfer to manager") {
-		customerState.Store(senderPhone, "HUMAN_ESCALATED")
-		sendWhatsAppMessage("sovereign-ai-master", senderPhone, "🚨 *[Teeslux Store — Executive Transfer]*\n\nYour request has been escalated directly to our Store Manager (+"+ownerPhone+") on top priority. Our manager will reply here shortly!")
-		sendWhatsAppMessage("sovereign-ai-master", ownerPhone, fmt.Sprintf("🚨 *[URGENT HUMAN TAKEOVER ALERT]*\n\n👤 *Customer:* `%s`\n❓ *Inquiry:* '%s'\n🔒 *Status:* MUTED", senderPhone, messageText))
+	// Check for manager commands (#reply, #resolve, #mute)
+	if isCmd, resultMsg := globalDialogueEngine.HandleManagerCommand(messageText, senderPhone); isCmd {
+		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, resultMsg)
 		return
 	}
 
-	// Call Free AI Hub LLM Engine Goroutine
-	aiReply := callFreeAIHub(messageText, senderPhone)
-	if aiReply != "" {
-		sendWhatsAppMessage("sovereign-ai-master", senderPhone, aiReply)
+	// Check if bot is MUTED for this customer
+	if globalDialogueEngine.GetState(senderPhone) == "HUMAN_ESCALATED" {
+		log.Printf("[Golang State Machine] Bot is MUTED for customer %s", senderPhone)
+		return
 	}
-}
 
-// ── FREE AI HUB LLM GOROUTINE CALLER ──────────────────────────────────
-func callFreeAIHub(query string, phone string) string {
-	// Format dynamic catalog string
+	// Check for explicit human takeover request
+	lower := strings.ToLower(messageText)
+	if strings.Contains(lower, "human manager") || strings.Contains(lower, "speak to human") || strings.Contains(lower, "transfer to manager") {
+		globalDialogueEngine.SetState(senderPhone, "HUMAN_ESCALATED")
+		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, "🚨 *[Teeslux Store — Executive Transfer]*\n\nYour request has been escalated directly to our Store Manager (+"+ownerPhone+") on top priority. Our manager will reply here shortly!\n\n📞 Direct Call (GSM): tel:+"+ownerPhone)
+		globalWhatsAppEngine.SendMessage("sovereign-ai-master", ownerPhone, fmt.Sprintf("🚨 *[URGENT HUMAN TAKEOVER ALERT]*\n\n👤 *Customer:* `%s`\n❓ *Inquiry:* '%s'\n🔒 *Status:* MUTED\n\n💬 Reply `#reply %s | Your message` to respond!", senderPhone, messageText, senderPhone))
+		return
+	}
+
+	// Record conversation turn in memory
+	globalDialogueEngine.AddTurn(senderPhone, "user", messageText)
+
+	// Format Supabase live catalog
 	var catLines []string
 	for _, p := range storeCatalog {
 		catLines = append(catLines, fmt.Sprintf("- %s: ₦%.2f — %s", p.Name, p.Price, p.Description))
 	}
 	catalogStr := strings.Join(catLines, "\n")
 
-	prompt := fmt.Sprintf(`You are the official Executive AI Sales Consultant for Teeslux Global Electronics & Solar located at Onitsha.
-Catalog:
-%s
-
-Rules:
-1. Quote ONLY exact catalog prices.
-2. If user asks for high level solar sizing, recommend 550W Panels (₦120,000) and 3.5kVA Hybrid Inverter (₦340,000).
-3. Be warm, professional, and concise.
-
-Customer (%s): %s`, catalogStr, phone, query)
-
-	// Make HTTP call to Cerebras / Groq Free AI endpoint
-	return executeAIInference(prompt)
+	// Call Multi-LLM AI Engine (Cerebras + Groq + OpenRouter)
+	aiReply := globalAIEngine.GenerateReply(messageText, senderPhone, "Teeslux Global Electronics & Solar", "Onitsha Main Market", "Electronics & Solar", catalogStr)
+	if aiReply != "" {
+		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, aiReply)
+		globalDialogueEngine.AddTurn(senderPhone, "assistant", aiReply)
+	}
 }
+
+// ── 24/7 BACKGROUND KEEP-ALIVE GOROUTINE ──────────────────────────────
+func keepEvolutionAwake() {
+	for {
+		time.Sleep(3 * time.Minute)
+		evoURL := strings.TrimRight(os.Getenv("EVOLUTION_API_URL"), "/")
+		if evoURL == "" {
+			evoURL = "https://evolution-api-latest-gxue.onrender.com"
+		}
+		evoKey := os.Getenv("EVOLUTION_API_KEY")
+
+		req, _ := http.NewRequest("GET", evoURL+"/instance/fetchInstances", nil)
+		if evoKey != "" {
+			req.Header.Set("apikey", evoKey)
+		}
+		client := &http.Client{Timeout: 5 * time.Second}
+		resp, err := client.Do(req)
+		if err == nil {
+			resp.Body.Close()
+		}
+	}
+}
+
 
 func executeAIInference(prompt string) string {
-	// Calls Groq / Cerebras OpenAI-compatible endpoint with 4-second timeout
-	url := "https://api.groq.com/openai/v1/chat/completions"
-	apiKey := os.Getenv("GROQ_API_KEY")
-	if apiKey == "" {
-		apiKey = "gsk_free_groq_key_fallback"
-	}
-
-	payload := map[string]interface{}{
-		"model": "llama-3.3-70b-versatile",
-		"messages": []map[string]string{
-			{"role": "user", "content": prompt},
-		},
-		"max_tokens": 400,
-	}
-
-	jsonBytes, _ := json.Marshal(payload)
-	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonBytes))
-	req.Header.Set("Authorization", "Bearer "+apiKey)
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{Timeout: 4 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return "Welcome to Teeslux Global Electronics & Solar! We offer Tier-1 550W Solar Panels (₦120,000) and 3.5kVA Hybrid Inverter Systems (₦340,000). How may I assist your power needs today?"
-	}
-	defer resp.Body.Close()
-
-	body, _ := io.ReadAll(resp.Body)
-	var res map[string]interface{}
-	json.Unmarshal(body, &res)
-
-	if choices, ok := res["choices"].([]interface{}); ok && len(choices) > 0 {
-		choice := choices[0].(map[string]interface{})
-		message := choice["message"].(map[string]interface{})
-		return message["content"].(string)
-	}
-
-	return "Welcome to Teeslux Global Electronics & Solar! We offer Tier-1 550W Solar Panels (₦120,000) and 3.5kVA Hybrid Solar Inverter Systems (₦340,000). How may I assist your power needs today?"
+	return globalAIEngine.callGroq(prompt)
 }
 
-// ── OPEN-SOURCE WHATSAPP SENDER VIA EVOLUTION API ─────────────────────
-func sendWhatsAppMessage(instanceName string, phone string, text string) {
-	cleanPhone := strings.Map(func(r rune) rune {
-		if r >= '0' && r <= '9' {
-			return r
-		}
-		return -1
-	}, phone)
 
-	if cleanPhone == "" {
-		return
-	}
-
-	url := fmt.Sprintf("%s/message/sendText/%s", evoURL, instanceName)
-	payload := map[string]string{
-		"number": cleanPhone,
-		"text":   strings.TrimSpace(text),
-	}
-	jsonBytes, _ := json.Marshal(payload)
-
-	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonBytes))
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("apikey", evoKey)
-
-	client := &http.Client{Timeout: 5 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Printf("[Golang WhatsApp Send Error]: %v", err)
-		return
-	}
-	defer resp.Body.Close()
+func sendWhatsAppMessage(instanceName, phone, text string) {
+	globalWhatsAppEngine.SendMessage(instanceName, phone, text)
 }
+
 
 // ── 24/7 BACKGROUND KEEP-ALIVE GOROUTINE ──────────────────────────────
 func keepEvolutionAwake() {
