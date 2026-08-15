@@ -264,6 +264,13 @@ def process_webhook_async(instance_name: str, payload: dict):
             or payload.get("fromMe") is True
         )
 
+        # Extract message text OR handle Voice Note / Audio Messages
+        is_audio_message = bool(
+            message_info.get("audioMessage")
+            or payload.get("type") in ["audio", "voice"]
+            or data.get("type") in ["audio", "voice"]
+        )
+
         message_text = (
             message_info.get("conversation")
             or message_info.get("extendedTextMessage", {}).get("text")
@@ -274,12 +281,39 @@ def process_webhook_async(instance_name: str, payload: dict):
             or ""
         ).strip()
 
+        if is_audio_message and not message_text:
+            message_text = "[VOICE_NOTE_RECEIVED]"
+
         if not message_text:
             return
 
         owner_phone = os.environ.get("OWNER_PHONE", "2348072015725")
         clean_owner = "".join(filter(str.isdigit, str(owner_phone)))
         clean_sender = "".join(filter(str.isdigit, str(sender_phone)))
+
+        # ── VOICE NOTE HANDLER FOR ILLITERATE / NON-TECH BUYERS ─────────
+        if message_text == "[VOICE_NOTE_RECEIVED]":
+            state_machine.set_state(remote_jid, "HUMAN_ESCALATED")
+
+            voice_notice = (
+                f"🎙️ *[Teeslux Client Care — Voice Note Received]*\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+                f"Thank you for sending a voice note! Our **Store Manager** is listening to your audio message right now and will reply to you here shortly!\n\n"
+                f"📞 Direct Manager Line: *+{owner_phone}*"
+            )
+            send_whatsapp_message(instance_name, sender_phone, voice_notice)
+
+            time.sleep(0.5)
+            manager_alert = (
+                f"🎙️ *[URGENT VOICE NOTE RECEIVED FROM CUSTOMER]*\n\n"
+                f"👤 *Customer:* `{sender_phone}`\n"
+                f"🔊 *Type:* WhatsApp Voice Note\n"
+                f"🔒 *Bot Status:* MUTED (Listening & Manager Action Required)\n\n"
+                f"💬 Reply `#reply {sender_phone} | Your message` to respond directly to this customer!"
+            )
+            send_whatsapp_message(instance_name, owner_phone, manager_alert)
+            logger.info(f"[Voice Note Handler] Voice note from {sender_phone} routed to manager {owner_phone}")
+            return
 
         # If fromMe=True, allow ONLY if:
         # a) Starts with # or ! (Owner Admin Command)
@@ -342,6 +376,7 @@ def process_webhook_async(instance_name: str, payload: dict):
             )
             send_whatsapp_message(instance_name, sender_phone, customer_notice)
 
+            time.sleep(0.5)
             manager_alert = (
                 f"🚨 *[URGENT CHATWOOT-GRADE HANDOVER]*\n\n"
                 f"👤 *Customer:* `{sender_phone}`\n"
@@ -385,21 +420,19 @@ def process_webhook_async(instance_name: str, payload: dict):
             )
             send_whatsapp_message(instance_name, sender_phone, cost_transfer_notice)
 
-            clean_owner = "".join(filter(str.isdigit, str(owner_phone)))
-            clean_sender = "".join(filter(str.isdigit, str(sender_phone)))
-            if clean_sender != clean_owner:
-                time.sleep(0.5)
-                manager_alert = (
-                    f"🚨 *[HIGH-PRIORITY WAYBILL & COST QUOTE REQUIRED]*\n\n"
-                    f"👤 *Customer:* `{sender_phone}`\n"
-                    f"❓ *Delivery/Cost Inquiry:* '{message_text}'\n"
-                    f"🔒 *Bot Status:* MUTED (Manager Control Active)\n\n"
-                    f"💬 Reply `#reply {sender_phone} | Your quote` to respond directly!"
-                )
-                send_whatsapp_message(instance_name, owner_phone, manager_alert)
+            time.sleep(0.5)
+            manager_alert = (
+                f"🚨 *[HIGH-PRIORITY WAYBILL & COST QUOTE REQUIRED]*\n\n"
+                f"👤 *Customer:* `{sender_phone}`\n"
+                f"❓ *Delivery/Cost Inquiry:* '{message_text}'\n"
+                f"🔒 *Bot Status:* MUTED (Manager Control Active)\n\n"
+                f"💬 Reply `#reply {sender_phone} | Your quote` to respond directly!"
+            )
+            send_whatsapp_message(instance_name, owner_phone, manager_alert)
 
             logger.info(f"[Cost Boundary] Non-product cost inquiry '{message_text}' from {sender_phone} transferred to manager {owner_phone}")
             return
+
 
         from billion_dollar_brain import memory_store
         memory_store.add_turn(sender_phone, "user", message_text)
