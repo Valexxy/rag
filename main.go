@@ -161,9 +161,19 @@ func processMetaPayloadAsync(payloadBytes []byte) {
 
 	log.Printf("[Golang Webhook Goroutine] Sender: %s | Message: '%s'", senderPhone, messageText)
 
-	// Dynamically detect & update customer location on FIRST CHAT and SUBSEQUENT CHATS
+	var profileName string
+	if contacts, ok := value["contacts"].([]interface{}); ok && len(contacts) > 0 {
+		if contact, ok := contacts[0].(map[string]interface{}); ok {
+			if profObj, ok := contact["profile"].(map[string]interface{}); ok {
+				profileName, _ = profObj["name"].(string)
+			}
+		}
+	}
+
+	custProf := globalWorldFirstEngine.UpdateCustomerProfile(senderPhone, profileName, messageText)
 	custLoc := globalLocationEngine.DetectAndUpdateLocation(senderPhone, messageText)
-	log.Printf("[Location Engine] Customer %s location updated: %s, %s", senderPhone, custLoc.City, custLoc.State)
+	log.Printf("[World-First Engine] Customer: %s (%s) | Location: %s, %s", custProf.Name, senderPhone, custLoc.City, custLoc.State)
+
 
 	// Check for manager commands (#reply, #resolve, #mute)
 	if isCmd, resultMsg := globalDialogueEngine.HandleManagerCommand(messageText, senderPhone); isCmd {
@@ -172,6 +182,14 @@ func processMetaPayloadAsync(payloadBytes []byte) {
 	}
 
 	lower := strings.ToLower(messageText)
+
+	// In-Built Native Phone Feature: Downloadable VCard Contact Card
+	if strings.Contains(lower, "vcard") || strings.Contains(lower, "save contact") || strings.Contains(lower, "contact card") {
+		vcfCard := globalWorldFirstEngine.GenerateVCardPayload()
+		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, fmt.Sprintf("📇 *[TEESLUX STORE DIRECT VCARD CONTACT]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nSave our official business contact directly into your phone native contacts with 1-tap!\n\n```vcard\n%s\n```", vcfCard))
+		return
+	}
+
 
 	// Auto-unmute bot if customer asks a product/picture/reminder question
 	if strings.Contains(lower, "photo") || strings.Contains(lower, "picture") || strings.Contains(lower, "image") || strings.Contains(lower, "show me") || strings.Contains(lower, "buy") || strings.Contains(lower, "how much") || strings.Contains(lower, "price") || strings.Contains(lower, "panel") || strings.Contains(lower, "inverter") || strings.Contains(lower, "generator") || strings.Contains(lower, "remind") || strings.Contains(lower, "drugs") {
