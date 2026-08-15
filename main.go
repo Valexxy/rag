@@ -53,8 +53,27 @@ func main() {
 	// Start 24/7 background keep-alive goroutine
 	go keepEvolutionAwake()
 
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/" && r.URL.Path != "/portal" && r.URL.Path != "/dashboard" && r.URL.Path != "/market" {
+			http.NotFound(w, r)
+			return
+		}
+		if _, err := os.Stat("unified_portal.html"); err == nil {
+			http.ServeFile(w, r, "unified_portal.html")
+			return
+		}
+		if _, err := os.Stat("dashboard.html"); err == nil {
+			http.ServeFile(w, r, "dashboard.html")
+			return
+		}
+		w.Header().Set("Content-Type", "text/html")
+		w.Write([]byte("<h1>Sovereign AI Commerce Platform (Golang Core) Online</h1>"))
+	})
+
 	http.HandleFunc("/health", healthHandler)
+	http.HandleFunc("/api/status", healthHandler)
 	http.HandleFunc("/webhook/meta", metaWebhookHandler)
+	http.HandleFunc("/webhook/evolution", metaWebhookHandler)
 	http.HandleFunc("/api/v1/analytics/dashboard", dashboardAnalyticsHandler)
 	http.HandleFunc("/api/v1/analytics/zero-cost", zeroCostAnalyticsHandler)
 
@@ -63,6 +82,7 @@ func main() {
 		log.Fatalf("Server failed: %v", err)
 	}
 }
+
 
 // ── HEALTH HANDLER ─────────────────────────────────────────────────────
 func healthHandler(w http.ResponseWriter, r *http.Request) {
