@@ -442,6 +442,38 @@ def process_webhook_async(instance_name: str, payload: dict):
             logger.info(f"[Cost Boundary] Non-product cost inquiry '{message_text}' from {sender_phone} transferred to manager {owner_phone}")
             return
 
+        # ── 2.5 OUT-OF-CATALOG & MARKET ANALYSIS HANDOVER DETECTOR ──────
+        market_analysis_keywords = [
+            "price analysis", "main market", "source for", "market price", "buy wrapper", "wrapper", "fabric", "cloth"
+        ]
+        is_market_query = any(kw in lower for kw in market_analysis_keywords)
+        if is_market_query:
+            state_machine.set_state(remote_jid, "HUMAN_ESCALATED")
+
+            market_transfer_notice = (
+                f"☀️ *[Teeslux Global Client Care — Market Referral]*\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+                f"Teeslux specializes in high-quality solar energy & electronics! For custom market price analysis and local vendor sourcing in Onitsha Main Market regarding *'{message_text}'*, our **Store Manager** will assist you directly!\n\n"
+                f"📞 *Tap to Call Manager Directly (GSM):* tel:+{owner_phone}\n"
+                f"💬 *Tap to Chat Manager Directly:* https://wa.me/{owner_phone}"
+            )
+            send_whatsapp_message(instance_name, sender_phone, market_transfer_notice)
+
+            time.sleep(0.5)
+            manager_alert = (
+                f"🚨 *[OUT-OF-CATALOG & MARKET ANALYSIS HANDOVER]*\n\n"
+                f"👤 *Customer:* `{sender_phone}`\n"
+                f"❓ *Market Inquiry:* '{message_text}'\n"
+                f"🔒 *Bot Status:* MUTED (Manager Action Required)\n\n"
+                f"💬 Reply `#reply {sender_phone} | Your message` to respond directly!\n"
+                f"📞 Direct Call (GSM): tel:+{owner_phone}"
+            )
+            send_whatsapp_message(instance_name, owner_phone, manager_alert)
+
+            logger.info(f"[Market Boundary] Out-of-catalog query '{message_text}' from {sender_phone} transferred to manager {owner_phone}")
+            return
+
+
 
         from billion_dollar_brain import memory_store
         memory_store.add_turn(sender_phone, "user", message_text)
