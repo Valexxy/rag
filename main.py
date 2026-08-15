@@ -598,7 +598,18 @@ async def get_dashboard_analytics():
         return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
 
 
+# ── ZERO-KOBO SAAS ECONOMICS ENDPOINT ────────────────────────────────────
+@app.get("/api/v1/analytics/zero-cost")
+async def get_zero_cost_analytics(merchants: int = 100000):
+    """
+    Returns financial cost savings audit proving ₦0.00 daily operational cost for WhatsApp & AI.
+    """
+    from zero_cost_saas_engine import zero_cost_saas_engine
+    return zero_cost_saas_engine.calculate_cost_savings(active_merchants=merchants)
+
+
 # ── HTTP & WEB SYSTEM INTERFACES ─────────────────────────────────────
+
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 
