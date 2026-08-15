@@ -182,14 +182,16 @@ def generate_ai_reply(query: str, tenant: dict = None) -> str:
         "🚨 *[Manager Handoff Activated]*\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
         "Hello! Your request has been escalated directly to our store manager for personal assistance.\n\n"
-        "📞 *Store Manager Direct Line:* `+2348072015725`\n\n"
+        "📞 *Tap to Call Manager Directly (GSM):* tel:+2348072015725\n"
+        "💬 *Tap to Chat Manager Directly:* https://wa.me/2348072015725\n\n"
         "💡 *While you wait, check out our in-stock products today:*\n"
         "1️⃣ *550W Monocrystalline Solar Panel* — ₦120,000\n"
         "2️⃣ *1.5kVA Dual Solar Generator* — ₦185,000\n"
         "3️⃣ *3.5kVA Hybrid Solar Inverter System* — ₦340,000\n"
         "4️⃣ *20,000 mAh Solar Power Bank* — ₦18,500\n\n"
-        "💬 Our manager will reply to you shortly!"
+        "💬 Our manager will reply to you shortly! [TRANSFER_HUMAN]"
     )
+
 
 
 # ── EVOLUTION API MESSAGE SENDER ─────────────────────────────────────
@@ -460,19 +462,18 @@ def process_webhook_async(instance_name: str, payload: dict):
             # If AI flagged a human transfer requirement, mute bot and alert manager
             if ai_res.get("is_human_transfer"):
                 state_machine.set_state(remote_jid, "HUMAN_ESCALATED")
-                clean_owner = "".join(filter(str.isdigit, str(owner_phone)))
-                clean_sender = "".join(filter(str.isdigit, str(sender_phone)))
-                if clean_sender != clean_owner:
-                    time.sleep(0.5)
-                    manager_alert = (
-                        f"🚨 *[AI SENSITIVE ESCALATION ALERT]*\n\n"
-                        f"👤 *Customer:* `{sender_phone}`\n"
-                        f"❓ *Inquiry:* '{message_text}'\n"
-                        f"🔒 *Bot Status:* MUTED (Manager Control Active)\n\n"
-                        f"💬 Reply `#reply {sender_phone} | Your message` to take over!"
-                    )
-                    send_whatsapp_message(instance_name, owner_phone, manager_alert)
+                time.sleep(0.5)
+                manager_alert = (
+                    f"🚨 *[AI SENSITIVE ESCALATION ALERT]*\n\n"
+                    f"👤 *Customer:* `{sender_phone}`\n"
+                    f"❓ *Inquiry:* '{message_text}'\n"
+                    f"🔒 *Bot Status:* MUTED (Manager Control Active)\n\n"
+                    f"💬 Reply `#reply {sender_phone} | Your message` to take over!\n"
+                    f"📞 Direct Call (GSM): tel:+{owner_phone}"
+                )
+                send_whatsapp_message(instance_name, owner_phone, manager_alert)
             return
+
 
         # ── 4. FALLBACK: EXECUTIVE CONSULTANT ADVISORY ────────────────
         fast_match = fast_catalog_search(message_text)
