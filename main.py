@@ -822,88 +822,33 @@ async def process_meta_payload(payload: dict):
         metadata_phone_id = val.get("metadata", {}).get("phone_number_id", META_PHONE_ID)
         tenant = multi_tenant_manager.get_tenant_by_phone_id(metadata_phone_id)
 
-        # ── 0. STRICT 2-TIER DOMAIN & ANTI-ABUSE GUARDRAIL ─────────────
-        from strict_domain_guardrail import strict_domain_guardrail
-        classification = strict_domain_guardrail.classify_query(text, tenant)
+        # ── PURE REAL AI LLM ENGINE WITH LIVE SUPABASE DB LOOKUPS ──────
+        from billion_dollar_brain import memory_store
+        memory_store.add_turn(sender_phone, "user", text)
 
-        if classification == "RUBBISH_OFF_TOPIC":
-            rubbish_res = strict_domain_guardrail.handle_rubbish_off_topic(tenant)
-            send_meta_whatsapp_message(sender_phone, rubbish_res["customer_reply"])
+        ai_res = free_ai_hub.generate_reply(
+            query=text,
+            tenant=tenant,
+            catalog=STORE_CATALOG,
+            phone=sender_phone
+        )
+
+        if ai_res and ai_res.get("reply"):
+            send_meta_whatsapp_message(sender_phone, ai_res["reply"])
+            if ai_res.get("is_human_transfer"):
+                state_machine.set_state(sender_phone, "HUMAN_ESCALATED")
+                mgr_phone = tenant.get("manager_phone", "2348072015725") if isinstance(tenant, dict) else "2348072015725"
+                manager_alert = (
+                    f"🚨 *[AI SENSITIVE ESCALATION ALERT]*\n\n"
+                    f"👤 *Customer:* `{sender_phone}`\n"
+                    f"❓ *Inquiry:* '{text}'\n"
+                    f"🔒 *Bot Status:* MUTED (Manager Control Active)\n\n"
+                    f"💬 Reply `#reply {sender_phone} | Your message` to take over!\n"
+                    f"📞 Direct Call (GSM): tel:+{mgr_phone}"
+                )
+                send_meta_whatsapp_message(mgr_phone, manager_alert)
             return
 
-        elif classification == "BUSINESS_OUT_OF_CATALOG":
-            # 🚀 INNOVATION 1: AUTONOMOUS SOURCING OPPORTUNITY DOOR-OPENER
-            from opportunity_lead_engine import opportunity_lead_engine
-            opp_res = opportunity_lead_engine.evaluate_opportunity(text, sender_phone, tenant)
-            if opp_res:
-                send_meta_whatsapp_message(sender_phone, opp_res["customer_reply"])
-                if opp_res.get("manager_alert"):
-                    mgr_phone = tenant.get("manager_phone", "2348072015725")
-                    if mgr_phone and mgr_phone != sender_phone:
-                        send_meta_whatsapp_message(mgr_phone, opp_res["manager_alert"])
-                return
-
-            biz_res = strict_domain_guardrail.handle_business_out_of_catalog(text, sender_phone, tenant)
-            send_meta_whatsapp_message(sender_phone, biz_res["customer_reply"])
-            if biz_res.get("manager_alert"):
-                mgr_phone = tenant.get("manager_phone", "2348072015725")
-                if mgr_phone and mgr_phone != sender_phone:
-                    send_meta_whatsapp_message(mgr_phone, biz_res["manager_alert"])
-            return
-
-        # 🚀 INNOVATION 3: INSTANT PROFORMA INVOICE & QUOTATION GENERATOR
-        clean_low = text.lower().strip()
-        if any(w in clean_low for w in ["quote", "quotation", "invoice", "/quote"]):
-            from quote_generator_engine import quote_generator_engine
-            q_res = quote_generator_engine.generate_quotation(text, sender_phone, tenant)
-            send_meta_whatsapp_message(sender_phone, q_res["customer_reply"])
-            if q_res.get("manager_alert"):
-                mgr_phone = tenant.get("manager_phone", "2348072015725")
-                if mgr_phone and mgr_phone != sender_phone:
-                    send_meta_whatsapp_message(mgr_phone, q_res["manager_alert"])
-            return
-
-        # ── 0B. TELEGRAM-STYLE SLASH COMMAND & META LOCATION ROUTER ───────
-        from premium_meta_telegram_engine import premium_meta_telegram_engine
-        slash_res = premium_meta_telegram_engine.process_slash_command(text, sender_phone, tenant)
-        if slash_res:
-            send_meta_whatsapp_message(sender_phone, slash_res["customer_reply"])
-            if slash_res.get("location_pin"):
-                loc = slash_res["location_pin"]
-                send_meta_location_pin(sender_phone, loc["latitude"], loc["longitude"], loc["name"], loc["address"])
-            return
-
-        # ── 1. MASTER E-COMMERCE INTELLIGENCE & EXCEPTION ROUTER ─────────
-        from ecommerce_master_intelligence import ecommerce_intelligence
-        matrix_res = ecommerce_intelligence.analyze_and_route(text, sender_phone, tenant)
-        if matrix_res:
-            send_meta_whatsapp_message(sender_phone, matrix_res["customer_reply"])
-            if matrix_res.get("manager_alert"):
-                mgr_phone = tenant.get("manager_phone", "2348072015725")
-                if mgr_phone and mgr_phone != sender_phone:
-                    send_meta_whatsapp_message(mgr_phone, matrix_res["manager_alert"])
-            return
-
-        # ── 2. AUTOMATED ORDER HANDOVER (#buy / #order) ─────────────────
-        clean_t = text.lower().strip()
-        if clean_t.startswith("#buy") or clean_t.startswith("#order") or clean_t.startswith("buy") or clean_t.startswith("order"):
-            from order_placement_engine import order_placement_engine
-            order_res = order_placement_engine.process_buy_command(text, sender_phone, tenant)
-            send_meta_whatsapp_message(sender_phone, order_res["customer_reply"])
-            manager_phone = order_res.get("manager_phone", "2348072015725")
-            if manager_phone and manager_phone != sender_phone:
-                send_meta_whatsapp_message(manager_phone, order_res["manager_alert"])
-            return
-
-        fast = fast_catalog_search(text)
-        if fast["matched"]:
-            send_meta_whatsapp_message(sender_phone, fast["reply"])
-            return
-
-        ai_reply = generate_ai_reply(text, tenant=tenant)
-        if ai_reply:
-            send_meta_whatsapp_message(sender_phone, ai_reply)
-            return
 
         fallback = (
             "🚨 *[Manager Handoff Activated]*\n"
