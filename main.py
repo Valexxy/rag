@@ -441,9 +441,63 @@ def process_webhook_async(instance_name: str, payload: dict):
         logger.error(f"[Webhook Worker Error]: {e}")
 
 
+# ── REAL-TIME EXECUTIVE ANALYTICS ENDPOINT ──────────────────────────────
+@app.get("/api/v1/analytics/dashboard")
+async def get_dashboard_analytics():
+    """
+    Returns real-time executive dashboard metrics:
+    - Total Revenue (₦)
+    - Order counts & breakdown
+    - Customer Store Credit balance total
+    - In-stock inventory valuation
+    - Low stock alerts
+    """
+    try:
+        from supabase_db import get_client
+        db = get_client()
+        if not db:
+            return JSONResponse({"status": "error", "message": "DB Unavailable"})
+
+        orders_res = db.table("orders").select("amount_paid, status").execute()
+        orders = orders_res.data or []
+
+        products_res = db.table("products").select("name, price, stock").execute()
+        products = products_res.data or []
+
+        ledgers_res = db.table("customer_ledgers").select("balance").execute()
+        ledgers = ledgers_res.data or []
+
+        total_revenue = sum(float(o.get("amount_paid") or 0.0) for o in orders if o.get("status") in ["PENDING_HUMAN_VERIFICATION", "PAID_APPROVED", "DISPATCHED", "DELIVERED"])
+        total_store_credit = sum(float(l.get("balance") or 0.0) for l in ledgers)
+        inventory_value = sum(float(p.get("price") or 0.0) * int(p.get("stock") or 0) for p in products)
+        low_stock_alerts = [p for p in products if int(p.get("stock") or 0) < 10]
+
+        status_counts = {}
+        for o in orders:
+            st = o.get("status", "unknown")
+            status_counts[st] = status_counts.get(st, 0) + 1
+
+        return {
+            "status": "success",
+            "currency": "NGN",
+            "metrics": {
+                "total_revenue": total_revenue,
+                "total_orders": len(orders),
+                "status_breakdown": status_counts,
+                "total_store_credit_balance": total_store_credit,
+                "total_inventory_value": inventory_value,
+                "in_stock_catalog_count": len(products),
+                "low_stock_alerts": low_stock_alerts
+            }
+        }
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+
 # ── HTTP & WEB SYSTEM INTERFACES ─────────────────────────────────────
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
+
 
 if os.path.exists("static"):
     app.mount("/static", StaticFiles(directory="static"), name="static")

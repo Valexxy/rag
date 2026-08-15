@@ -53,21 +53,38 @@ class HumanCommandProcessor:
 
         # ── #dispatch [ORDER_REF] [Rider info] ──────────────────────────
         if cmd == "#dispatch" and len(parts) >= 3:
+            import random
             order_ref = parts[1].upper()
             rider_info = parts[2]
+            otp_code = f"{random.randint(1000, 9999)}"
+
             return {
                 "action": "DISPATCH_ORDER",
                 "order_ref": order_ref,
+                "otp_code": otp_code,
                 "customer_message": (
                     f"🚚 *[Your Order Is On Its Way!]*\n"
                     f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
                     f"Order *#{order_ref}* has been dispatched!\n\n"
-                    f"🏍️ *Delivery Agent:* {rider_info}\n\n"
-                    f"📞 Please be available to receive your delivery.\n"
-                    f"For any delivery issues, contact our manager: +{tenant.get('owner_phone', manager_phone)}"
+                    f"🏍️ *Delivery Agent:* {rider_info}\n"
+                    f"🔐 *Secret Delivery OTP:* `{otp_code}`\n\n"
+                    f"⚠️ *Mandatory Security:* Provide this 4-digit secret OTP to the rider upon receiving your package to verify delivery!\n\n"
+                    f"📞 For any delivery issues, contact our manager: +{tenant.get('owner_phone', manager_phone)}"
                 ),
                 "db_status": "DISPATCHED"
             }
+
+        # ── #verifyotp [ORDER_REF] [OTP_CODE] ────────────────────────────
+        if cmd == "#verifyotp" and len(parts) >= 3:
+            order_ref = parts[1].upper()
+            otp_input = parts[2].strip()
+            return {
+                "action": "VERIFY_POD_OTP",
+                "order_ref": order_ref,
+                "user_otp": otp_input,
+                "manager_ack": f"🔍 Verifying Delivery OTP '{otp_input}' for Order #{order_ref}..."
+            }
+
 
         # ── #quote [ORDER_REF] [AMOUNT] ──────────────────────────────────
         if cmd == "#quote" and len(parts) >= 3:
