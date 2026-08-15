@@ -219,7 +219,7 @@ func processMetaPayloadAsync(payloadBytes []byte) {
 	}
 
 	// 24/7 Autonomous Visual Media Delivery Engine (Product Picture Requests)
-	if strings.Contains(lower, "picture") || strings.Contains(lower, "photo") || strings.Contains(lower, "image") || strings.Contains(lower, "show me") || strings.Contains(lower, "let me see") || strings.Contains(lower, "send pic") {
+	if strings.Contains(lower, "picture") || strings.Contains(lower, "pictures") || strings.Contains(lower, "photo") || strings.Contains(lower, "photos") || strings.Contains(lower, "image") || strings.Contains(lower, "images") || strings.Contains(lower, "show me") || strings.Contains(lower, "let me see") || strings.Contains(lower, "send pic") || strings.Contains(lower, "product picture") {
 		mediaAgent := &VisualMediaAgent{}
 		for _, p := range storeCatalog {
 			pName := strings.ToLower(p.Name)
@@ -231,6 +231,14 @@ func processMetaPayloadAsync(payloadBytes []byte) {
 		mediaAgent.DispatchProductPhoto("1", senderPhone)
 		return
 	}
+
+	// Autonomous Omni-Reminder Agent
+	if strings.Contains(lower, "remind me") || strings.Contains(lower, "set reminder") || strings.Contains(lower, "reminder") {
+		remReply := globalOmniReminderAgent.ScheduleCustomReminder(senderPhone, messageText, 10)
+		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, remReply)
+		return
+	}
+
 
 
 	// Record conversation turn in memory

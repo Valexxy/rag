@@ -115,3 +115,74 @@ type MarketResearchAgent struct{}
 func (mr *MarketResearchAgent) GetMarketIntelligenceSummary() string {
 	return "📊 *[AUTONOMOUS MARKET INTELLIGENCE]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n- *Onitsha Main Market:* 550W Tier-1 Panels average ₦122,000.\n- *Alaba International:* 3.5kVA Hybrid Inverters average ₦345,000.\n- *Recommendation:* Our catalog prices (₦120k / ₦340k) maintain a 2% competitive edge!"
 }
+
+// ── AGENT 8: AUTONOMOUS OMNI-REMINDER AGENT ────────────────────────────
+// Inspired by world-class open-source reminder & scheduler engines (BullMQ, Temporal, Agenda)
+type ScheduledReminder struct {
+	ID            string    `json:"id"`
+	CustomerPhone string    `json:"customer_phone"`
+	ReminderType  string    `json:"type"`
+	ScheduledTime time.Time `json:"scheduled_time"`
+	Message       string    `json:"message"`
+	Executed      bool      `json:"executed"`
+}
+
+type OmniReminderAgent struct {
+	mu        sync.RWMutex
+	reminders map[string]ScheduledReminder
+}
+
+var globalOmniReminderAgent = &OmniReminderAgent{
+	reminders: make(map[string]ScheduledReminder),
+}
+
+func (or *OmniReminderAgent) ScheduleCustomReminder(phone, reminderText string, delayMinutes int) string {
+	or.mu.Lock()
+	defer or.mu.Unlock()
+
+	if delayMinutes <= 0 {
+		delayMinutes = 10
+	}
+
+	id := fmt.Sprintf("REM-%d", time.Now().UnixNano())
+	targetTime := time.Now().Add(time.Duration(delayMinutes) * time.Minute)
+
+	rem := ScheduledReminder{
+		ID:            id,
+		CustomerPhone: phone,
+		ReminderType:  "custom_user_scheduled",
+		ScheduledTime: targetTime,
+		Message:       reminderText,
+		Executed:      false,
+	}
+
+	or.reminders[id] = rem
+
+	// Goroutine timer execution
+	go func(r ScheduledReminder) {
+		time.Sleep(time.Until(r.ScheduledTime))
+		or.mu.Lock()
+		cur, exists := or.reminders[r.ID]
+		if exists && !cur.Executed {
+			cur.Executed = true
+			or.reminders[r.ID] = cur
+			or.mu.Unlock()
+
+			payload := fmt.Sprintf("⏰ *[AUTONOMOUS REMINDER ALERT]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nHello! Here is your scheduled reminder:\n\n💡 *Note:* %s\n\nHow may I assist you further today?", r.Message)
+			globalWhatsAppEngine.SendMessage("sovereign-ai-master", r.CustomerPhone, payload)
+			return
+		}
+		or.mu.Unlock()
+	}(rem)
+
+	return fmt.Sprintf("⏰ *[REMINDER SCHEDULED]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nI have set an automated reminder for you in *%d minutes*:\n\n💡 *Note:* '%s'\n\nI will ping your WhatsApp directly at that exact time!", delayMinutes, reminderText)
+}
+
+func (or *OmniReminderAgent) SchedulePaymentFollowup(phone, item string) {
+	go func() {
+		time.Sleep(15 * time.Minute) // 15-minute checkout payment reminder
+		payload := fmt.Sprintf("💳 *[PAYMENT CHECKOUT FOLLOW-UP]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nHi! We noticed your cart item *'%s'* is reserved for you.\n\nWould you like to complete payment via USSD or view account details?", item)
+		globalWhatsAppEngine.SendMessage("sovereign-ai-master", phone, payload)
+	}()
+}
+
