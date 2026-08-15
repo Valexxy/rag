@@ -88,10 +88,9 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// ── META WHATSAPP WEBHOOK GOROUTINE HANDLER ────────────────────────────
+// ── META & EVOLUTION WHATSAPP WEBHOOK GOROUTINE HANDLER ────────────────
 func metaWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		// Verification challenge
 		mode := r.URL.Query().Get("hub.mode")
 		token := r.URL.Query().Get("hub.verify_token")
 		challenge := r.URL.Query().Get("hub.challenge")
@@ -111,22 +110,50 @@ func metaWebhookHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Process webhook asynchronously in background Goroutine (sub-1ms response)
-	go processMetaPayloadAsync(body)
+	// Asynchronously process webhook (sub-1ms SLA)
+	go processUnifiedPayloadAsync(body)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`{"status":"received"}`))
 }
 
-// ── ASYNCHRONOUS METAPAYLOAD GOROUTINE WORKER ──────────────────────────
-func processMetaPayloadAsync(payloadBytes []byte) {
+// ── UNIFIED PAYLOAD GOROUTINE PARSER ───────────────────────────────────
+func processUnifiedPayloadAsync(payloadBytes []byte) {
 	var payload map[string]interface{}
 	if err := json.Unmarshal(payloadBytes, &payload); err != nil {
 		return
 	}
 
-	// Extract message & sender phone
+	// 1. Check for Open-Source Baileys / Evolution API Webhook format
+	if data, ok := payload["data"].(map[string]interface{}); ok {
+		if key, ok := data["key"].(map[string]interface{}); ok {
+			if fromMe, ok := key["fromMe"].(bool); ok && fromMe {
+				return // Skip bot's own sent messages
+			}
+			if remoteJid, ok := key["remoteJid"].(string); ok && remoteJid != "" {
+				senderPhone := strings.Split(remoteJid, "@")[0]
+				var messageText string
+				if msgObj, ok := data["message"].(map[string]interface{}); ok {
+					if conv, ok := msgObj["conversation"].(string); ok {
+						messageText = conv
+					} else if extendedMsg, ok := msgObj["extendedTextMessage"].(map[string]interface{}); ok {
+						messageText, _ = extendedMsg["text"].(string)
+					}
+				}
+				if messageText != "" {
+					var profileName string
+					if pushName, ok := data["pushName"].(string); ok {
+						profileName = pushName
+					}
+					dispatchIncomingMessage(senderPhone, messageText, profileName)
+					return
+				}
+			}
+		}
+	}
+
+	// 2. Check for Meta Cloud Graph API Webhook format
 	entryList, ok := payload["entry"].([]interface{})
 	if !ok || len(entryList) == 0 {
 		return
@@ -159,8 +186,6 @@ func processMetaPayloadAsync(payloadBytes []byte) {
 		return
 	}
 
-	log.Printf("[Golang Webhook Goroutine] Sender: %s | Message: '%s'", senderPhone, messageText)
-
 	var profileName string
 	if contacts, ok := value["contacts"].([]interface{}); ok && len(contacts) > 0 {
 		if contact, ok := contacts[0].(map[string]interface{}); ok {
@@ -170,9 +195,17 @@ func processMetaPayloadAsync(payloadBytes []byte) {
 		}
 	}
 
+	dispatchIncomingMessage(senderPhone, messageText, profileName)
+}
+
+// ── UNIFIED MESSAGE DISPATCHER (ALL 7 AGENTS + LOCATIONS + REMINDERS) ─
+func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
+	log.Printf("[Golang Webhook Dispatcher] Sender: %s (%s) | Message: '%s'", profileName, senderPhone, messageText)
+
 	custProf := globalWorldFirstEngine.UpdateCustomerProfile(senderPhone, profileName, messageText)
 	custLoc := globalLocationEngine.DetectAndUpdateLocation(senderPhone, messageText)
 	log.Printf("[World-First Engine] Customer: %s (%s) | Location: %s, %s", custProf.Name, senderPhone, custLoc.City, custLoc.State)
+
 
 
 	// Check for manager commands (#reply, #resolve, #mute)
