@@ -33,6 +33,21 @@ EVO_KEY = os.environ.get("EVOLUTION_API_KEY", "F84B4F845BC6-464A-AD0E-553FD10469
 BOT_SENT_IDS = set()
 LAST_WEBHOOK_EVENT = {"timestamp": "None", "payload": None, "sender": None, "text": None}
 
+# ── KEEP-ALIVE THREAD FOR OPEN-SOURCE WHATSAPP ENGINE ──────────────────
+def _keep_evolution_awake():
+    while True:
+        try:
+            time.sleep(180)  # Ping every 3 minutes so open-source gateway never sleeps
+            req = urllib.request.Request(f"{EVO_URL}/instance/fetchInstances", headers={"apikey": EVO_KEY}, method="GET")
+            with urllib.request.urlopen(req, timeout=5) as r:
+                pass
+        except Exception:
+            pass
+
+import threading
+threading.Thread(target=_keep_evolution_awake, daemon=True).start()
+
+
 # ── TENANT CATALOG ────────────────────────────────────────────────────
 STORE_CATALOG = [
     {"id": "1", "name": "550W Monocrystalline Solar Panel", "price": 120000, "desc": "Tier-1 High Efficiency 550W Monocrystalline Solar Panel", "keywords": ["panel", "solar panel", "550w", "monocrystalline"]},
