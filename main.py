@@ -318,6 +318,20 @@ def process_webhook_async(instance_name: str, payload: dict):
             logger.info(f"[Voice Note Handler] Voice note from {sender_phone} routed to manager {owner_phone}")
             return
 
+        # ── 0. SAAS SELF-SERVICE MERCHANT ONBOARDING (#register StoreName | Industry) ─
+        if lower.startswith("#register") or lower.startswith("!register"):
+            parts = message_text.split(maxsplit=1)
+            reg_body = parts[1] if len(parts) > 1 else "My Store | Retail"
+            if "|" in reg_body:
+                store_n, ind_n = reg_body.split("|", 1)
+            else:
+                store_n, ind_n = reg_body, "General Retail"
+
+            from saas_innovation_engine import saas_innovation_engine
+            onboarding_res = saas_innovation_engine.register_new_merchant(sender_phone, store_n.strip(), ind_n.strip())
+            send_whatsapp_message(instance_name, sender_phone, onboarding_res)
+            return
+
         # If fromMe=True, allow ONLY if:
         # a) Starts with # or ! (Owner Admin Command)
         # b) Sender is messaging themselves / linked number (Owner Self-Test)
@@ -346,6 +360,7 @@ def process_webhook_async(instance_name: str, payload: dict):
                 )
                 send_whatsapp_message(instance_name, target_phone, manager_reply_msg)
                 send_whatsapp_message(instance_name, sender_phone, f"✅ Message delivered to customer `{target_phone}`.")
+
 
             elif cmd_data.startswith("RESOLVE_CMD:"):
                 _, target_phone = cmd_data.split(":", 1)
