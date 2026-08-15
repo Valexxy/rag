@@ -41,15 +41,24 @@ STORE_CATALOG = [
 ]
 
 
+from nigerian_waybill_engine import waybill_engine
+
+
 # ── FAST RULE-BASED CATALOG & INTENT MATCHER (SUB-5MS) ────────────────
 def fast_catalog_search(query: str) -> dict:
     q = query.lower().strip()
+
+    # 0. NIGERIAN WAYBILL & DELIVERY LOCATION EVALUATOR (Priority over greetings)
+    waybill_match = waybill_engine.detect_and_calculate(query)
+    if waybill_match:
+        return waybill_match
 
     # GREETINGS & SMALL TALK (Hi, Hello, Good morning, Good afternoon, Good evening, Hey, How far)
     greetings_list = [
         "hi", "hello", "hey", "good morning", "good afternoon", "good evening",
         "goodday", "good day", "how far", "how are you", "greetings", "wassup", "sup"
     ]
+
     if any(g in q for g in greetings_list) or q in greetings_list:
         return {
             "matched": True, "type": "greeting",
