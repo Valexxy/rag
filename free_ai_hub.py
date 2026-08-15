@@ -11,11 +11,6 @@ Three completely separate free AI providers chained as one hub:
 All use the same OpenAI-compatible API format.
 All have 4-second hard timeouts — no blocking sleep anywhere.
 All are completely separate from Groq and Gemini quotas.
-
-HOW TO GET FREE API KEYS:
-  Cerebras:  https://cloud.cerebras.ai       (email signup, no CC)
-  OpenRouter: https://openrouter.ai          (email signup, no CC)
-  Mistral:   https://console.mistral.ai      (select "Experiment" plan)
 """
 
 import os
@@ -27,7 +22,7 @@ import concurrent.futures
 
 logger = logging.getLogger(__name__)
 
-# ── API Keys (set these in Render environment variables) ─────────────
+# ── API Keys ──────────────────────────────────────────────────────────
 CEREBRAS_API_KEY  = os.environ.get("CEREBRAS_API_KEY", "")
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 MISTRAL_API_KEY   = os.environ.get("MISTRAL_API_KEY", "")
@@ -71,18 +66,38 @@ PROVIDERS = [
 ]
 
 
-STORE_SYSTEM_PROMPT = """You are the official 24/7 AI Sales & Customer Care Consultant for {business_name} located at {address}.
+STORE_SYSTEM_PROMPT = """You are the official Executive AI Sales & Customer Care Consultant for {business_name} located at {address}.
 
-CURRENT STORE CATALOG & BASE PRICES:
+CURRENT LIVE SUPABASE PRODUCT CATALOG & OFFICIAL PRICES:
 {catalog}
 
-YOUR PURPOSE & MISSION:
-1. You STAND IN FIRST for every customer conversation. Be warm, professional, respectful, and highly knowledgeable.
-2. For items in the store catalog: Explain their features, specs, and base prices accurately using ₦ (Naira).
-3. For technical / advisory questions (e.g., solar load calculations, inverter sizing, power needs, appliance compatibility): Answer intelligently and give expert recommendations.
-4. For questions about delivery / shipping to any location (e.g. Ibadan, Lagos, Abuja, PH, Kano): Confirm that {business_name} ships nationwide across Nigeria & West Africa. Explain that exact live delivery fees and final order terms are confirmed by the Store Manager (+2348072015725) to prevent price discrepancies.
-5. For items or services OUTSIDE the catalog or custom market errands/favors: Explain what {business_name} specializes in, offer to connect the customer directly to the Store Manager (+2348072015725) to check if it can be sourced, and offer help with our in-stock items.
-6. Tone: Warm, helpful, respectful, professional African commercial consultant. Keep responses concise, clear, and actionable (3-5 sentences). Always end with a helpful question or call to action."""
+STRICT COMMERCIAL CONSTITUTION & OPERATIONAL BOUNDARIES:
+
+1. PRODUCT PRICE BOUNDARY (STRICT RULE):
+   - The ONLY costs/prices you are authorized to state are the exact product prices listed in the Live Supabase Catalog above.
+   - Quoting any product price not in the database is strictly forbidden.
+
+2. ZERO EXTRA COST QUOTING RULE (MANDATORY HUMAN HANDOVER):
+   - You are STRICTLY PROHIBITED from stating or guessing any shipping fee, waybill cost, delivery fee, installation charge, or bulk discount.
+   - If a customer asks about ANY non-product cost (e.g., "how much for shipping to Sapele/Lagos/Abuja?", "what is the waybill fee?", "how much for installation?"):
+     a) Stating the product price is allowed if relevant.
+     b) Inform the customer warmly and respectfully that all delivery, waybill, and installation costs are custom-calculated and finalized exclusively by our Human Store Manager (+2348072015725) to guarantee the exact lowest rate for their location.
+     c) Append `[TRANSFER_HUMAN]` at the end of your response so our human manager is alerted instantly.
+
+3. SENSITIVE CONVERSATIONAL TONE & SENTIMENT MATCHING:
+   - Always maintain a warm, executive, highly respectful, and empathetic African commercial tone.
+   - Use clean, elegant formatting with bolding (*like this*) and appropriate professional emojis.
+   - Respond in concise, clear, and actionable paragraphs (2 to 4 sentences).
+
+4. TECHNICAL & ADVISORY INTELLIGENCE:
+   - Provide expert advice on solar sizing, inverter capacity, power bank battery needs, and product compatibility based on catalog specs.
+
+5. PAYMENT INTEGRITY & ANTI-DIVERSION:
+   - Never provide personal bank accounts. Payments are processed exclusively through official virtual accounts or verified store checkout.
+
+6. HUMAN ESCALATION TRIGGER:
+   - If user asks for human manager, expresses complaint, asks for waybill/shipping fees, or requests personal bank details, append `[TRANSFER_HUMAN]`.
+"""
 
 
 class FreeAIHub:
@@ -130,18 +145,22 @@ class FreeAIHub:
         """
         self._refresh_keys()
 
-        business_name = (tenant or {}).get("business_name", "Teeslux Global Store")
-        address = (tenant or {}).get("store_address", "Onitsha, Anambra State")
-        cat_lines = "\n".join([
-            f"- {i.get('name', 'Item')}: ₦{i.get('price', 0):,.0f} — {i.get('description', '')}"
-            for i in (catalog or [])[:12] if isinstance(i, dict)
-        ])
+        business_name = (tenant or {}).get("business_name", "Teeslux Global Electronics & Solar")
+        address = (tenant or {}).get("store_address", "Onitsha Main Market, Anambra State")
+
+        # Format Supabase catalog items
+        cat_lines = []
+        if isinstance(catalog, list):
+            for i in catalog[:12]:
+                if isinstance(i, dict):
+                    cat_lines.append(f"- {i.get('name', 'Item')}: ₦{i.get('price', 0):,.2f} — {i.get('description', '')}")
 
         system = STORE_SYSTEM_PROMPT.format(
             business_name=business_name,
-            catalog=cat_lines or "(No items listed yet)",
+            catalog="\n".join(cat_lines) if cat_lines else "(Catalog loading from Supabase DB...)",
             address=address
         )
+
         history = f"\nRecent chat:\n{chat_history[-400:]}\n" if chat_history else ""
         user_msg = f"{history}Customer: {query}"
 
@@ -154,19 +173,23 @@ class FreeAIHub:
             result = self._call(provider, key, system, user_msg)
             if result:
                 logger.info(f"[FreeAIHub] ✅ {provider['name']} responded successfully")
+
+                is_transfer = "[TRANSFER_HUMAN]" in result or "TRANSFER_HUMAN" in result
+                clean_reply = result.replace("[TRANSFER_HUMAN]", "").replace("TRANSFER_HUMAN", "").strip()
+
                 return {
                     "success": True,
-                    "reply": result,
+                    "reply": clean_reply,
                     "architecture": f"FreeAIHub_{provider['name']}",
-                    "needs_clarification": "?" in result,
+                    "is_human_transfer": is_transfer,
+                    "needs_clarification": "?" in clean_reply,
                 }
 
-        return None  # All providers failed
+        return None
 
     def _call(self, provider: dict, key: str, system: str, user_msg: str) -> str | None:
         """
-        Makes a single HTTP POST to the provider with a 4-second timeout.
-        Uses stdlib urllib only — no extra dependencies.
+        Makes a single HTTP POST to the provider with a 10-second timeout.
         """
         def _do_request():
             payload = json.dumps({
@@ -176,7 +199,7 @@ class FreeAIHub:
                     {"role": "user", "content": user_msg},
                 ],
                 "max_tokens": 400,
-                "temperature": 0.4,
+                "temperature": 0.3,
             }).encode("utf-8")
 
             headers = provider["headers"](key)
@@ -194,24 +217,9 @@ class FreeAIHub:
         try:
             with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
                 return ex.submit(_do_request).result(timeout=10.5)
-        except concurrent.futures.TimeoutError:
-            logger.warning(f"[FreeAIHub] {provider['name']} timed out after 10s")
-            return None
-        except urllib.error.HTTPError as e:
-            logger.warning(f"[FreeAIHub] {provider['name']} HTTP {e.code}: {e.reason}")
-            return None
         except Exception as e:
-            logger.warning(f"[FreeAIHub] {provider['name']} failed: {type(e).__name__}: {str(e)[:80]}")
+            logger.warning(f"[FreeAIHub] {provider['name']} error: {e}")
             return None
-
-    def status(self) -> dict:
-        """Returns which providers are currently configured with API keys."""
-        self._refresh_keys()
-        return {
-            "cerebras":   bool(self._keys.get("CEREBRAS_API_KEY")),
-            "openrouter": bool(self._keys.get("OPENROUTER_API_KEY")),
-            "mistral":    bool(self._keys.get("MISTRAL_API_KEY")),
-        }
 
 
 free_ai_hub = FreeAIHub()

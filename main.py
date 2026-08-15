@@ -363,13 +363,45 @@ def process_webhook_async(instance_name: str, payload: dict):
             send_whatsapp_message(instance_name, sender_phone, anti_div_reply)
             return
 
-        # ── 2. NIGERIAN WAYBILL & LOCATION CALCULATOR ─────────────────
-        waybill_match = waybill_engine.detect_and_calculate(message_text, owner_phone=owner_phone)
-        if waybill_match:
-            send_whatsapp_message(instance_name, sender_phone, waybill_match["reply"])
+        # ── 2. NON-PRODUCT COST INQUIRY DETECTOR (Waybill, Delivery, Shipping, Installation) ─
+        # Rule: ONLY Supabase product prices are quoted by AI. ALL other costs MUST be transferred to Human Agent!
+        non_product_cost_keywords = [
+            "how much to", "delivery fee", "waybill fee", "shipping cost", "delivery cost",
+            "installation fee", "installation cost", "shipping fee", "waybill cost",
+            "postage", "deliver to", "waybill to", "ship to", "discount", "price for shipping"
+        ]
+
+        is_extra_cost_query = any(kw in lower for kw in non_product_cost_keywords)
+
+        if is_extra_cost_query:
+            state_machine.set_state(remote_jid, "HUMAN_ESCALATED")
+
+            cost_transfer_notice = (
+                f"☀️ *[Teeslux Global Client Care — Manager Quote Request]*\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+                f"Thank you for inquiring about delivery / installation regarding *'{message_text}'*!\n\n"
+                f"All our product prices are fixed directly in our catalog. To ensure you receive the exact lowest live rate for your specific location and setup, our **Store Manager** will calculate and confirm your custom quote right here shortly!\n\n"
+                f"📞 Direct Manager Line: *+{owner_phone}*"
+            )
+            send_whatsapp_message(instance_name, sender_phone, cost_transfer_notice)
+
+            clean_owner = "".join(filter(str.isdigit, str(owner_phone)))
+            clean_sender = "".join(filter(str.isdigit, str(sender_phone)))
+            if clean_sender != clean_owner:
+                time.sleep(0.5)
+                manager_alert = (
+                    f"🚨 *[HIGH-PRIORITY WAYBILL & COST QUOTE REQUIRED]*\n\n"
+                    f"👤 *Customer:* `{sender_phone}`\n"
+                    f"❓ *Delivery/Cost Inquiry:* '{message_text}'\n"
+                    f"🔒 *Bot Status:* MUTED (Manager Control Active)\n\n"
+                    f"💬 Reply `#reply {sender_phone} | Your quote` to respond directly!"
+                )
+                send_whatsapp_message(instance_name, owner_phone, manager_alert)
+
+            logger.info(f"[Cost Boundary] Non-product cost inquiry '{message_text}' from {sender_phone} transferred to manager {owner_phone}")
             return
 
-        # ── 3. REAL INTELLIGENT AI LLM ENGINE (FreeAIHub / Llama-3.3-70b / OpenRouter) ─
+        # ── 3. INTELLIGENT EXECUTIVE AI LLM ENGINE (Supabase Product Prices ONLY) ─
         ai_res = free_ai_hub.generate_reply(
             query=message_text,
             catalog=STORE_CATALOG,
@@ -379,12 +411,29 @@ def process_webhook_async(instance_name: str, payload: dict):
         if ai_res and ai_res.get("reply"):
             send_whatsapp_message(instance_name, sender_phone, ai_res["reply"])
             logger.info(f"[Real AI Hub LLM] Responded to '{message_text[:30]}' via {ai_res.get('architecture')}")
+
+            # If AI flagged a human transfer requirement, mute bot and alert manager
+            if ai_res.get("is_human_transfer"):
+                state_machine.set_state(remote_jid, "HUMAN_ESCALATED")
+                clean_owner = "".join(filter(str.isdigit, str(owner_phone)))
+                clean_sender = "".join(filter(str.isdigit, str(sender_phone)))
+                if clean_sender != clean_owner:
+                    time.sleep(0.5)
+                    manager_alert = (
+                        f"🚨 *[AI SENSITIVE ESCALATION ALERT]*\n\n"
+                        f"👤 *Customer:* `{sender_phone}`\n"
+                        f"❓ *Inquiry:* '{message_text}'\n"
+                        f"🔒 *Bot Status:* MUTED (Manager Control Active)\n\n"
+                        f"💬 Reply `#reply {sender_phone} | Your message` to take over!"
+                    )
+                    send_whatsapp_message(instance_name, owner_phone, manager_alert)
             return
 
         # ── 4. FALLBACK: FAST MATCH ────────────────────────────────────
         fast_match = fast_catalog_search(message_text)
         send_whatsapp_message(instance_name, sender_phone, fast_match["reply"])
         return
+
 
 
 
