@@ -15,10 +15,14 @@ import concurrent.futures
 from fastapi import FastAPI, Request, BackgroundTasks
 from fastapi.responses import JSONResponse, Response, PlainTextResponse
 
+from payment_webhook_router import router as payment_router
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("SovereignAI")
 
 app = FastAPI(title="Sovereign AI Commerce Platform v2026")
+app.include_router(payment_router)
+
 
 EVO_URL = os.environ.get("EVOLUTION_API_URL", "https://evolution-api-latest-gxue.onrender.com").rstrip("/")
 EVO_KEY = os.environ.get("EVOLUTION_API_KEY", "F84B4F845BC6-464A-AD0E-553FD1046981")
