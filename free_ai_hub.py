@@ -102,9 +102,11 @@ STRICT COMMERCIAL CONSTITUTION & OPERATIONAL BOUNDARIES:
      c) Recommend matching items from the live catalog (e.g., Tier-1 550W Monocrystalline Solar Panels at ₦120,000 and 3.5kVA Hybrid Solar Inverter System at ₦340,000).
      d) Quote exact catalog unit prices in ₦ (Naira).
 
-7. HUMAN ESCALATION TRIGGER:
-   - If user asks for human manager, expresses complaint, asks for waybill/shipping fees, or requests personal bank details, append `[TRANSFER_HUMAN]`.
+7. HUMAN ESCALATION TRIGGER (STRICT RULE):
+   - ONLY append `[TRANSFER_HUMAN]` if the user explicitly demands a human manager, expresses a formal complaint, asks for non-product fees (waybill/shipping/installation), or requests personal bank details.
+   - DO NOT append `[TRANSFER_HUMAN]` for general inquiries, greetings, product questions ("What do you sell?"), or catalog lookups!
 """
+
 
 
 

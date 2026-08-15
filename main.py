@@ -397,9 +397,9 @@ def process_webhook_async(instance_name: str, payload: dict):
             logger.info(f"[State Machine] Bot is MUTED for customer '{remote_jid}' (Human Manager Active)")
             return
 
-        # Express Intent Intelligence: Human & Support Request Handler
+        # Express Intent Intelligence: Human & Support Request Handler (EXPLICIT HUMAN TAKEOVER ONLY)
         human_support_regex = re.compile(
-            r"\b(support|help|assist|assistance|care|complain|complaint|issue|problem|trouble|faulty|broken|damaged|refund|dispute|human|person|people|agent|rep|representative|manager|boss|director|owner|staff|personnel|team|executive|admin|administrator|head|talk to|speak to|speak with|talk with|connect me|transfer me|reach someone|call me|is anyone there|anybody there|who is there|need someone|want someone|need help|need support|need assistance|asap|urgent|now|emergency)\b",
+            r"\b(human manager|talk to human|speak to human|transfer to human|speak to manager|connect to manager|speak with manager|human agent|call manager|speak to director|speak to owner|human representative)\b",
             re.IGNORECASE
         )
         if human_support_regex.search(lower):
@@ -427,6 +427,7 @@ def process_webhook_async(instance_name: str, payload: dict):
             send_whatsapp_message(instance_name, owner_phone, manager_alert)
             logger.info(f"[Express Intent] Escalated human support query '{message_text}' from {sender_phone}")
             return
+
 
 
         owner_phone = os.environ.get("OWNER_PHONE", "2348072015725")
