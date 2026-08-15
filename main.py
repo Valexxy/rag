@@ -299,7 +299,8 @@ def process_webhook_async(instance_name: str, payload: dict):
                 f"🎙️ *[Teeslux Client Care — Voice Note Received]*\n"
                 f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
                 f"Thank you for sending a voice note! Our **Store Manager** is listening to your audio message right now and will reply to you here shortly!\n\n"
-                f"📞 Direct Manager Line: *+{owner_phone}*"
+                f"📞 *Tap to Call Manager Directly (GSM):* tel:+{owner_phone}\n"
+                f"💬 *Tap to Chat Manager Directly:* https://wa.me/{owner_phone}"
             )
             send_whatsapp_message(instance_name, sender_phone, voice_notice)
 
@@ -336,8 +337,14 @@ def process_webhook_async(instance_name: str, payload: dict):
         if is_cmd:
             if cmd_data.startswith("REPLY_CMD:"):
                 _, target_phone, msg_content = cmd_data.split(":", 2)
-                send_whatsapp_message(instance_name, target_phone, f"💬 *[Store Manager]:* {msg_content}")
+                manager_reply_msg = (
+                    f"💬 *[Store Manager]:* {msg_content}\n\n"
+                    f"📞 *Tap to Call Manager Directly (GSM):* tel:+{owner_phone}\n"
+                    f"💬 *Tap to Chat Manager Directly:* https://wa.me/{owner_phone}"
+                )
+                send_whatsapp_message(instance_name, target_phone, manager_reply_msg)
                 send_whatsapp_message(instance_name, sender_phone, f"✅ Message delivered to customer `{target_phone}`.")
+
             elif cmd_data.startswith("RESOLVE_CMD:"):
                 _, target_phone = cmd_data.split(":", 1)
                 send_whatsapp_message(instance_name, sender_phone, f"✅ Conversation with `{target_phone}` marked RESOLVED. Bot un-muted.")
