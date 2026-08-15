@@ -429,10 +429,21 @@ def process_webhook_async(instance_name: str, payload: dict):
                     send_whatsapp_message(instance_name, owner_phone, manager_alert)
             return
 
-        # ── 4. FALLBACK: FAST MATCH ────────────────────────────────────
+        # ── 4. FALLBACK: EXECUTIVE CONSULTANT ADVISORY ────────────────
         fast_match = fast_catalog_search(message_text)
-        send_whatsapp_message(instance_name, sender_phone, fast_match["reply"])
+        if fast_match["type"] == "greeting" and len(message_text.split()) > 3:
+            advisor_reply = (
+                f"☀️ *[Teeslux Executive Solar Advisory]*\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+                f"For a high-level home solar setup (powering ACs, Deep Freezers & Heavy Electronics), "
+                f"we recommend pairing our *550W Monocrystalline Solar Panels (₦120,000)* with our *3.5kVA Hybrid Solar Inverter System (₦340,000)*.\n\n"
+                f"📞 For a custom load calculation and engineering blueprint, our Store Manager (*+{owner_phone}*) is ready to assist you!"
+            )
+            send_whatsapp_message(instance_name, sender_phone, advisor_reply)
+        else:
+            send_whatsapp_message(instance_name, sender_phone, fast_match["reply"])
         return
+
 
 
 
