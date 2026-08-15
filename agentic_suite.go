@@ -140,9 +140,19 @@ func (or *OmniReminderAgent) ScheduleCustomReminder(phone, reminderText string, 
 	or.mu.Lock()
 	defer or.mu.Unlock()
 
-	if delayMinutes <= 0 {
+	lower := strings.ToLower(reminderText)
+	if strings.Contains(lower, "5min") || strings.Contains(lower, "5 min") || strings.Contains(lower, "5 mins") {
+		delayMinutes = 5
+	} else if strings.Contains(lower, "15min") || strings.Contains(lower, "15 min") {
+		delayMinutes = 15
+	} else if strings.Contains(lower, "30min") || strings.Contains(lower, "30 min") {
+		delayMinutes = 30
+	} else if strings.Contains(lower, "1min") || strings.Contains(lower, "1 min") {
+		delayMinutes = 1
+	} else if delayMinutes <= 0 {
 		delayMinutes = 10
 	}
+
 
 	id := fmt.Sprintf("REM-%d", time.Now().UnixNano())
 	targetTime := time.Now().Add(time.Duration(delayMinutes) * time.Minute)

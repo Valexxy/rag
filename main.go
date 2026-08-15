@@ -161,6 +161,10 @@ func processMetaPayloadAsync(payloadBytes []byte) {
 
 	log.Printf("[Golang Webhook Goroutine] Sender: %s | Message: '%s'", senderPhone, messageText)
 
+	// Dynamically detect & update customer location on FIRST CHAT and SUBSEQUENT CHATS
+	custLoc := globalLocationEngine.DetectAndUpdateLocation(senderPhone, messageText)
+	log.Printf("[Location Engine] Customer %s location updated: %s, %s", senderPhone, custLoc.City, custLoc.State)
+
 	// Check for manager commands (#reply, #resolve, #mute)
 	if isCmd, resultMsg := globalDialogueEngine.HandleManagerCommand(messageText, senderPhone); isCmd {
 		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, resultMsg)
@@ -169,9 +173,16 @@ func processMetaPayloadAsync(payloadBytes []byte) {
 
 	lower := strings.ToLower(messageText)
 
-	// Auto-unmute bot if customer asks a product/picture question
-	if strings.Contains(lower, "photo") || strings.Contains(lower, "picture") || strings.Contains(lower, "image") || strings.Contains(lower, "show me") || strings.Contains(lower, "buy") || strings.Contains(lower, "how much") || strings.Contains(lower, "price") || strings.Contains(lower, "panel") || strings.Contains(lower, "inverter") || strings.Contains(lower, "generator") {
+	// Auto-unmute bot if customer asks a product/picture/reminder question
+	if strings.Contains(lower, "photo") || strings.Contains(lower, "picture") || strings.Contains(lower, "image") || strings.Contains(lower, "show me") || strings.Contains(lower, "buy") || strings.Contains(lower, "how much") || strings.Contains(lower, "price") || strings.Contains(lower, "panel") || strings.Contains(lower, "inverter") || strings.Contains(lower, "generator") || strings.Contains(lower, "remind") || strings.Contains(lower, "drugs") {
 		globalDialogueEngine.SetState(senderPhone, "IDLE")
+	}
+
+	// Autonomous Omni-Reminder Agent (Catches drugs, meetings, solar check, custom reminders)
+	if strings.Contains(lower, "remind") || strings.Contains(lower, "reminder") || strings.Contains(lower, "drugs") || strings.Contains(lower, "medicine") || strings.Contains(lower, "take my") {
+		remReply := globalOmniReminderAgent.ScheduleCustomReminder(senderPhone, messageText, 5)
+		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, remReply)
+		return
 	}
 
 	// Check if bot is MUTED for this customer
@@ -187,18 +198,17 @@ func processMetaPayloadAsync(payloadBytes []byte) {
 		return
 	}
 
+	// FEATURE 5: Autonomous Neighborhood Group Buy & Co-Op Buying Intercept
+	if strings.Contains(lower, "group buy") || strings.Contains(lower, "neighborhood") || strings.Contains(lower, "co-op") || strings.Contains(lower, "pool") {
+		groupNotice := globalLocationEngine.GenerateNeighborhoodGroupBuyNotice(senderPhone)
+		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, groupNotice)
+		return
+	}
 
 	// Autonomous Logistics & Shipping Agent
 	if strings.Contains(lower, "waybill") || strings.Contains(lower, "shipping") || strings.Contains(lower, "delivery fee") || strings.Contains(lower, "deliver to") {
 		logisticsAgent := &LogisticsAgent{}
-		state := "Lagos"
-		for _, s := range []string{"Lagos", "Abuja", "Rivers", "Port Harcourt", "Kano", "Kaduna", "Enugu", "Anambra", "Oyo"} {
-			if strings.Contains(lower, strings.ToLower(s)) {
-				state = s
-				break
-			}
-		}
-		_, _, logQuote := logisticsAgent.CalculateWaybillRate(state)
+		_, _, logQuote := logisticsAgent.CalculateWaybillRate(custLoc.State)
 		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, logQuote)
 		return
 	}
@@ -232,18 +242,8 @@ func processMetaPayloadAsync(payloadBytes []byte) {
 		return
 	}
 
-	// Autonomous Omni-Reminder Agent
-	if strings.Contains(lower, "remind me") || strings.Contains(lower, "set reminder") || strings.Contains(lower, "reminder") {
-		remReply := globalOmniReminderAgent.ScheduleCustomReminder(senderPhone, messageText, 10)
-		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, remReply)
-		return
-	}
-
-
-
 	// Record conversation turn in memory
 	globalDialogueEngine.AddTurn(senderPhone, "user", messageText)
-
 
 	// Format Supabase live catalog
 	var catLines []string
@@ -255,9 +255,12 @@ func processMetaPayloadAsync(payloadBytes []byte) {
 	// Call Multi-LLM AI Engine (Cerebras + Groq + OpenRouter)
 	aiReply := globalAIEngine.GenerateReply(messageText, senderPhone, "Teeslux Global Electronics & Solar", "Onitsha Main Market", "Electronics & Solar", catalogStr)
 	if aiReply != "" {
-		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, aiReply)
-		globalDialogueEngine.AddTurn(senderPhone, "assistant", aiReply)
+		// FEATURE 6: Apply Hyper-Local Dialect & Pidgin Tone Adapter
+		personalizedReply := globalLocationEngine.ApplyDialectTone(senderPhone, aiReply)
+		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, personalizedReply)
+		globalDialogueEngine.AddTurn(senderPhone, "assistant", personalizedReply)
 	}
+
 }
 
 // ── 24/7 BACKGROUND KEEP-ALIVE GOROUTINE ──────────────────────────────
