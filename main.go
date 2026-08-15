@@ -22,28 +22,22 @@ var (
 	evoURL        = strings.TrimRight(getEnv("EVOLUTION_API_URL", "https://evolution-api-latest-gxue.onrender.com"), "/")
 	evoKey        = getEnv("EVOLUTION_API_KEY", "")
 	supabaseURL   = getEnv("SUPABASE_URL", "")
-	supabaseKey   = getEnv("SUPABASE_SERVICE_ROLE_KEY", "")
-	botSentIDs    = sync.Map{}
-	customerState = sync.Map{}
-)
-
-
-
-// ── PRODUCT CATALOG STRUCT ─────────────────────────────────────────────
+	supabaseKey   = getEnv("SUPAB// ── PRODUCT CATALOG STRUCT ─────────────────────────────────────────────
 type Product struct {
 	ID          string  `json:"id"`
 	Name        string  `json:"name"`
 	Price       float64 `json:"price"`
 	Description string  `json:"description"`
+	ImageURL    string  `json:"image_url"`
 }
 
 var storeCatalog = []Product{
-	{ID: "1", Name: "550W Monocrystalline Solar Panel", Price: 120000.0, Description: "Tier-1 High Efficiency 550W Monocrystalline Solar Panel"},
-	{ID: "2", Name: "20,000 mAh Solar Power Bank", Price: 18500.0, Description: "Fast-charging rugged outdoor solar power bank"},
-	{ID: "3", Name: "1.5kVA Dual Solar Generator", Price: 185000.0, Description: "Silent pure sine wave inverter generator with lithium battery"},
-	{ID: "4", Name: "50kg Premium White Rice Bag", Price: 60000.0, Description: "Premium long grain parboiled white rice"},
-	{ID: "5", Name: "24K Gold Bar Bullion (1-Gram)", Price: 68500.0, Description: "999.9 Fine Investment Grade Gold Bullion"},
-	{ID: "6", Name: "3.5kVA Hybrid Solar Inverter System", Price: 340000.0, Description: "3.5kVA 24V Pure Sine Wave Hybrid Solar Inverter"},
+	{ID: "1", Name: "550W Monocrystalline Solar Panel", Price: 120000.0, Description: "Tier-1 High Efficiency 550W Monocrystalline Solar Panel", ImageURL: "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=800"},
+	{ID: "2", Name: "20,000 mAh Solar Power Bank", Price: 18500.0, Description: "Fast-charging rugged outdoor solar power bank", ImageURL: "https://images.unsplash.com/photo-1609592424109-dd9892f1b177?w=800"},
+	{ID: "3", Name: "1.5kVA Dual Solar Generator", Price: 185000.0, Description: "Silent pure sine wave inverter generator with lithium battery", ImageURL: "https://images.unsplash.com/photo-1620714223084-8fcacc6dfd8d?w=800"},
+	{ID: "4", Name: "50kg Premium White Rice Bag", Price: 60000.0, Description: "Premium long grain parboiled white rice", ImageURL: "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=800"},
+	{ID: "5", Name: "24K Gold Bar Bullion (1-Gram)", Price: 68500.0, Description: "999.9 Fine Investment Grade Gold Bullion", ImageURL: "https://images.unsplash.com/photo-1610375461246-83df859d849d?w=800"},
+	{ID: "6", Name: "3.5kVA Hybrid Solar Inverter System", Price: 340000.0, Description: "3.5kVA 24V Pure Sine Wave Hybrid Solar Inverter", ImageURL: "https://images.unsplash.com/photo-1548611716-300188046830?w=800"},
 }
 
 // ── MAIN GOLANG SERVER ENTRYPOINT ──────────────────────────────────────
@@ -83,14 +77,13 @@ func main() {
 	}
 }
 
-
 // ── HEALTH HANDLER ─────────────────────────────────────────────────────
 func healthHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"status":    "online",
-		"engine":    "Golang High-Concurrency Webhook Gateway (v2026)",
-		"uptime":    time.Now().Format(time.RFC3339),
+		"status":     "online",
+		"engine":     "Golang High-Concurrency Webhook Gateway (v2026)",
+		"uptime":     time.Now().Format(time.RFC3339),
 		"goroutines": "50,000+ Concurrent Capacity",
 	})
 }
@@ -185,12 +178,32 @@ func processMetaPayloadAsync(payloadBytes []byte) {
 	if strings.Contains(lower, "human manager") || strings.Contains(lower, "speak to human") || strings.Contains(lower, "transfer to manager") {
 		globalDialogueEngine.SetState(senderPhone, "HUMAN_ESCALATED")
 		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, "🚨 *[Teeslux Store — Executive Transfer]*\n\nYour request has been escalated directly to our Store Manager (+"+ownerPhone+") on top priority. Our manager will reply here shortly!\n\n📞 Direct Call (GSM): tel:+"+ownerPhone)
-		globalWhatsAppEngine.SendMessage("sovereign-ai-master", ownerPhone, fmt.Sprintf("🚨 *[URGENT HUMAN TAKEOVER ALERT]*\n\n👤 *Customer:* `%s`\n❓ *Inquiry:* '%s'\n🔒 *Status:* MUTED\n\n💬 Reply `#reply %s | Your message` to respond!", senderPhone, messageText, senderPhone))
+		// Dispatch Manager Alert directly to Manager SIM
+		globalWhatsAppEngine.SendMessage("sovereign-ai-master", ownerPhone, fmt.Sprintf("🚨 *[URGENT HUMAN TAKEOVER ALERT]*\n\n👤 *Customer:* `%s`\n❓ *Inquiry:* '%s'\n🔒 *Status:* MUTED\n\n💬 Reply `#reply %s | Your message` to respond!\n📞 Direct Call (GSM): tel:+%s", senderPhone, messageText, senderPhone, ownerPhone))
+		return
+	}
+
+	// 24/7 Autonomous Visual Media Delivery Engine (Product Picture Requests)
+	if strings.Contains(lower, "picture") || strings.Contains(lower, "photo") || strings.Contains(lower, "image") || strings.Contains(lower, "show me") || strings.Contains(lower, "let me see") || strings.Contains(lower, "send pic") {
+		for _, p := range storeCatalog {
+			pName := strings.ToLower(p.Name)
+			if strings.Contains(lower, strings.ToLower(p.ID)) || (strings.Contains(pName, "panel") && strings.Contains(lower, "panel")) || (strings.Contains(pName, "inverter") && strings.Contains(lower, "inverter")) || (strings.Contains(pName, "generator") && strings.Contains(lower, "generator")) || (strings.Contains(pName, "rice") && strings.Contains(lower, "rice")) || (strings.Contains(pName, "gold") && strings.Contains(lower, "gold")) || (strings.Contains(pName, "power bank") && strings.Contains(lower, "power")) {
+				caption := fmt.Sprintf("📸 *[%s]*\n💰 *Price:* ₦%.2f\n📝 *Specs:* %s\n\nTo place your order, reply `#buy %s` or ask any questions!", p.Name, p.Price, p.Description, p.ID)
+				globalWhatsAppEngine.SendMediaImage("sovereign-ai-master", senderPhone, p.ImageURL, caption)
+				globalDialogueEngine.AddTurn(senderPhone, "assistant", fmt.Sprintf("[Sent product image for %s]", p.Name))
+				return
+			}
+		}
+		// Generic picture request fallback
+		p := storeCatalog[0]
+		caption := fmt.Sprintf("📸 *[%s]*\n💰 *Price:* ₦%.2f\n📝 *Specs:* %s\n\nReply with product name or ID to view more pictures!", p.Name, p.Price, p.Description)
+		globalWhatsAppEngine.SendMediaImage("sovereign-ai-master", senderPhone, p.ImageURL, caption)
 		return
 	}
 
 	// Record conversation turn in memory
 	globalDialogueEngine.AddTurn(senderPhone, "user", messageText)
+
 
 	// Format Supabase live catalog
 	var catLines []string

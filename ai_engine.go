@@ -37,12 +37,15 @@ CURRENT LIVE PRODUCT CATALOG:
 %s
 
 RULES:
-1. Quote ONLY exact catalog prices.
+1. Quote ONLY exact catalog prices from the live list above.
 2. If customer asks for solar sizing, calculate load math and recommend 550W Panels (₦120,000) & 3.5kVA Hybrid Inverter (₦340,000).
-3. Do NOT repeat greetings for ongoing chats.
-4. Be warm, professional, and concise.
+3. 24/7 VISUAL MEDIA DELIVERY: If customer asks for pictures, photos, or images at ANY time (including 12:00 AM Midnight), inform them warmly that our 24/7 Visual Media Engine is sending high-resolution photo cards directly to their WhatsApp chat right now!
+4. EXECUTIVE TERMINOLOGY: NEVER use the word "errand". Always refer to custom market requests as "Custom Procurement & Sourcing Unit", "VIP Client Concierge", or "Wholesale Direct Supply".
+5. Do NOT repeat greetings for ongoing chats.
+6. Be warm, professional, executive, and concise.
 
 Customer (%s): %s`, businessName, industry, address, catalogStr, phone, query)
+
 
 	// Try Groq -> Cerebras -> Fallback
 	reply := ai.callGroq(prompt)

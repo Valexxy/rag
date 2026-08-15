@@ -27,7 +27,7 @@ func (w *WhatsAppEngine) SendMessage(instanceName, phone, text string) {
 		return
 	}
 
-	// 1. Send via Open-Source Baileys / Evolution API Gateway (₦0.00 Meta Fees)
+	// Send via Open-Source Baileys / Evolution API Gateway (0 Meta Fees)
 	evoURL := strings.TrimRight(os.Getenv("EVOLUTION_API_URL"), "/")
 	if evoURL == "" {
 		evoURL = "https://evolution-api-latest-gxue.onrender.com"
@@ -52,6 +52,47 @@ func (w *WhatsAppEngine) SendMessage(instanceName, phone, text string) {
 	if err == nil {
 		resp.Body.Close()
 		log.Printf("[WhatsApp Engine] Sent zero-cost message to %s via Evolution API", cleanPhone)
+	}
+}
+
+func (w *WhatsAppEngine) SendMediaImage(instanceName, phone, imageURL, caption string) {
+	cleanPhone := strings.Map(func(r rune) rune {
+		if r >= '0' && r <= '9' {
+			return r
+		}
+		return -1
+	}, phone)
+
+	if cleanPhone == "" || imageURL == "" {
+		return
+	}
+
+	evoURL := strings.TrimRight(os.Getenv("EVOLUTION_API_URL"), "/")
+	if evoURL == "" {
+		evoURL = "https://evolution-api-latest-gxue.onrender.com"
+	}
+	evoKey := os.Getenv("EVOLUTION_API_KEY")
+
+	url := fmt.Sprintf("%s/message/sendMedia/%s", evoURL, instanceName)
+	payload := map[string]interface{}{
+		"number":    cleanPhone,
+		"media":     imageURL,
+		"mediatype": "image",
+		"caption":   caption,
+	}
+	jsonBytes, _ := json.Marshal(payload)
+
+	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonBytes))
+	req.Header.Set("Content-Type", "application/json")
+	if evoKey != "" {
+		req.Header.Set("apikey", evoKey)
+	}
+
+	client := &http.Client{Timeout: 8 * time.Second}
+	resp, err := client.Do(req)
+	if err == nil {
+		resp.Body.Close()
+		log.Printf("[WhatsApp Engine] Sent zero-cost media image card to %s", cleanPhone)
 	}
 }
 
