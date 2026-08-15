@@ -167,6 +167,13 @@ func processMetaPayloadAsync(payloadBytes []byte) {
 		return
 	}
 
+	lower := strings.ToLower(messageText)
+
+	// Auto-unmute bot if customer asks a product/picture question
+	if strings.Contains(lower, "photo") || strings.Contains(lower, "picture") || strings.Contains(lower, "image") || strings.Contains(lower, "show me") || strings.Contains(lower, "buy") || strings.Contains(lower, "how much") || strings.Contains(lower, "price") || strings.Contains(lower, "panel") || strings.Contains(lower, "inverter") || strings.Contains(lower, "generator") {
+		globalDialogueEngine.SetState(senderPhone, "IDLE")
+	}
+
 	// Check if bot is MUTED for this customer
 	if globalDialogueEngine.GetState(senderPhone) == "HUMAN_ESCALATED" {
 		log.Printf("[Golang State Machine] Bot is MUTED for customer %s", senderPhone)
@@ -174,12 +181,12 @@ func processMetaPayloadAsync(payloadBytes []byte) {
 	}
 
 	// Check for explicit human takeover request (VIP Concierge Agent)
-	lower := strings.ToLower(messageText)
 	if strings.Contains(lower, "human manager") || strings.Contains(lower, "speak to human") || strings.Contains(lower, "transfer to manager") {
 		vipAgent := &VIPConciergeAgent{}
 		vipAgent.HandleVIPEscalation(senderPhone, messageText)
 		return
 	}
+
 
 	// Autonomous Logistics & Shipping Agent
 	if strings.Contains(lower, "waybill") || strings.Contains(lower, "shipping") || strings.Contains(lower, "delivery fee") || strings.Contains(lower, "deliver to") {
