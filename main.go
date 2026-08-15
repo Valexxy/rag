@@ -66,6 +66,7 @@ func main() {
 
 	http.HandleFunc("/health", healthHandler)
 	http.HandleFunc("/api/status", healthHandler)
+	http.HandleFunc("/qr", qrPortalHandler)
 	http.HandleFunc("/webhook/meta", metaWebhookHandler)
 	http.HandleFunc("/webhook/evolution", metaWebhookHandler)
 	http.HandleFunc("/api/v1/analytics/dashboard", dashboardAnalyticsHandler)
@@ -77,8 +78,22 @@ func main() {
 	}
 }
 
+// ── QR CODE VISUAL PAIRING PORTAL HANDLER ──────────────────────────────
+func qrPortalHandler(w http.ResponseWriter, r *http.Request) {
+	resp, err := http.Get("http://127.0.0.1:8081/qr")
+	if err != nil {
+		w.Header().Set("Content-Type", "text/html")
+		w.Write([]byte(`<h2>📱 WhatsApp Gateway starting up... Refresh in 3 seconds</h2><script>setTimeout(() => location.reload(), 3000);</script>`))
+		return
+	}
+	defer resp.Body.Close()
+	w.Header().Set("Content-Type", "text/html")
+	io.Copy(w, resp.Body)
+}
+
 // ── HEALTH HANDLER ─────────────────────────────────────────────────────
 func healthHandler(w http.ResponseWriter, r *http.Request) {
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"status":     "online",
