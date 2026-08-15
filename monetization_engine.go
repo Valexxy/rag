@@ -32,6 +32,16 @@ func (m *MonetizationEngine) GenerateBankUSSDCode(bankName, accountNumber, amoun
 	}
 }
 
+func (m *MonetizationEngine) GenerateMonnifyCheckoutCard(itemName string, amount float64, customerPhone string) string {
+	txRef := fmt.Sprintf("MON-%d", time.Now().Unix())
+	ussdGTB := m.GenerateBankUSSDCode("GTB", "7820157250", fmt.Sprintf("%.0f", amount))
+	ussdZenith := m.GenerateBankUSSDCode("ZENITH", "7820157250", fmt.Sprintf("%.0f", amount))
+	ussdUBA := m.GenerateBankUSSDCode("UBA", "7820157250", fmt.Sprintf("%.0f", amount))
+
+	return fmt.Sprintf("💳 *[INSTANT MONNIFY & PAYSTACK ONLINE PAYMENT]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n✅ *Item:* %s\n💵 *Amount Due:* ₦%.2f\n🧾 *Transaction Ref:* `%s`\n\n🏦 *OPTION 1: MONNIFY DEDICATED VIRTUAL ACCOUNT*\n• *Bank Name:* Wema Bank / Monnify Checkout\n• *Account Name:* Teeslux Global Store\n• *Account Number:* `7820157250`\n*(Transfer to this account for instant 5-second payment confirmation!)*\n\n📲 *OPTION 2: 1-TAP BANK USSD CODES*\n• *GTBank:* `%s`\n• *Zenith Bank:* `%s`\n• *UBA Bank:* `%s`\n\n🌐 *OPTION 3: INSTANT ONLINE CARD PAYMENT LINK*\nhttps://sovereign-ai-backend-production.up.railway.app/portal?ref=%s\n\nOnce transferred, your payment is automatically verified in real-time!", itemName, amount, txRef, ussdGTB, ussdZenith, ussdUBA, txRef)
+}
+
+
 func (m *MonetizationEngine) VerifyPaystackSignature(payload []byte, signature, secret string) bool {
 	if secret == "" || signature == "" {
 		return true

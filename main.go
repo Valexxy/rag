@@ -185,11 +185,20 @@ func processMetaPayloadAsync(payloadBytes []byte) {
 		return
 	}
 
+	// Monnify & Paystack Online Payment Intercept
+	if strings.Contains(lower, "pay online") || strings.Contains(lower, "how to pay") || strings.Contains(lower, "account details") || strings.Contains(lower, "transfer") || strings.Contains(lower, "account number") || strings.Contains(lower, "monnify") || strings.Contains(lower, "can't i pay") || strings.Contains(lower, "can i pay") || strings.Contains(lower, "payment online") {
+		p := storeCatalog[0]
+		payCard := globalMonetizationEngine.GenerateMonnifyCheckoutCard(p.Name, p.Price, senderPhone)
+		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, payCard)
+		return
+	}
+
 	// Check if bot is MUTED for this customer
 	if globalDialogueEngine.GetState(senderPhone) == "HUMAN_ESCALATED" {
 		log.Printf("[Golang State Machine] Bot is MUTED for customer %s", senderPhone)
 		return
 	}
+
 
 	// Check for explicit human takeover request (VIP Concierge Agent)
 	if strings.Contains(lower, "human manager") || strings.Contains(lower, "speak to human") || strings.Contains(lower, "transfer to manager") {
