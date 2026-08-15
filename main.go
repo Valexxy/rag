@@ -67,6 +67,7 @@ func main() {
 	http.HandleFunc("/health", healthHandler)
 	http.HandleFunc("/api/status", healthHandler)
 	http.HandleFunc("/qr", qrPortalHandler)
+	http.HandleFunc("/api/catchup", catchupHandler)
 	http.HandleFunc("/webhook/meta", metaWebhookHandler)
 	http.HandleFunc("/webhook/evolution", metaWebhookHandler)
 	http.HandleFunc("/api/v1/analytics/dashboard", dashboardAnalyticsHandler)
@@ -78,8 +79,28 @@ func main() {
 	}
 }
 
+// ── CATCH-UP RE-PROCESSOR ROUTINE ──────────────────────────────────────
+func catchupHandler(w http.ResponseWriter, r *http.Request) {
+	phone := r.URL.Query().Get("phone")
+	if phone == "" {
+		phone = ownerPhone
+	}
+	msg := r.URL.Query().Get("msg")
+	if msg == "" {
+		msg = "Remind me in 5mins to take my drugs"
+	}
+
+	log.Printf("[Catch-Up Engine] Re-processing pending message for %s: '%s'", phone, msg)
+	go dispatchIncomingMessage(phone, msg, "VIP Client")
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"status":"catchup_dispatched","phone":"` + phone + `","msg":"` + msg + `"}`))
+}
+
 // ── QR CODE VISUAL PAIRING PORTAL HANDLER ──────────────────────────────
 func qrPortalHandler(w http.ResponseWriter, r *http.Request) {
+
 	resp, err := http.Get("http://127.0.0.1:8081/qr")
 	if err != nil {
 		w.Header().Set("Content-Type", "text/html")
