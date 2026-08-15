@@ -313,29 +313,7 @@ func keepEvolutionAwake() {
 }
 
 
-func executeAIInference(prompt string) string {
-	return globalAIEngine.callGroq(prompt)
-}
 
-
-func sendWhatsAppMessage(instanceName, phone, text string) {
-	globalWhatsAppEngine.SendMessage(instanceName, phone, text)
-}
-
-
-// ── 24/7 BACKGROUND KEEP-ALIVE GOROUTINE ──────────────────────────────
-func keepEvolutionAwake() {
-	for {
-		time.sleep(3 * time.Minute)
-		req, _ := http.NewRequest("GET", evoURL+"/instance/fetchInstances", nil)
-		req.Header.Set("apikey", evoKey)
-		client := &http.Client{Timeout: 5 * time.Second}
-		resp, err := client.Do(req)
-		if err == nil {
-			resp.Body.Close()
-		}
-	}
-}
 
 // ── ZERO-KOBO ANALYTICS HANDLER ────────────────────────────────────────
 func zeroCostAnalyticsHandler(w http.ResponseWriter, r *http.Request) {
