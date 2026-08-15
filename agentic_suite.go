@@ -5,8 +5,10 @@ import (
 	"log"
 	"math"
 	"strings"
+	"sync"
 	"time"
 )
+
 
 // AgenticSuite coordinates all 7 autonomous AI agents in Golang
 type AgenticSuite struct{}

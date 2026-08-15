@@ -1,10 +1,6 @@
 package main
 
 import (
-	"bytes"
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,9 +8,9 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"sync"
 	"time"
 )
+
 
 // ── CONFIGURATION & CONSTANTS ──────────────────────────────────────────
 var (
