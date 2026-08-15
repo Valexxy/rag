@@ -173,33 +173,58 @@ func processMetaPayloadAsync(payloadBytes []byte) {
 		return
 	}
 
-	// Check for explicit human takeover request
+	// Check for explicit human takeover request (VIP Concierge Agent)
 	lower := strings.ToLower(messageText)
 	if strings.Contains(lower, "human manager") || strings.Contains(lower, "speak to human") || strings.Contains(lower, "transfer to manager") {
-		globalDialogueEngine.SetState(senderPhone, "HUMAN_ESCALATED")
-		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, "🚨 *[Teeslux Store — Executive Transfer]*\n\nYour request has been escalated directly to our Store Manager (+"+ownerPhone+") on top priority. Our manager will reply here shortly!\n\n📞 Direct Call (GSM): tel:+"+ownerPhone)
-		// Dispatch Manager Alert directly to Manager SIM
-		globalWhatsAppEngine.SendMessage("sovereign-ai-master", ownerPhone, fmt.Sprintf("🚨 *[URGENT HUMAN TAKEOVER ALERT]*\n\n👤 *Customer:* `%s`\n❓ *Inquiry:* '%s'\n🔒 *Status:* MUTED\n\n💬 Reply `#reply %s | Your message` to respond!\n📞 Direct Call (GSM): tel:+%s", senderPhone, messageText, senderPhone, ownerPhone))
+		vipAgent := &VIPConciergeAgent{}
+		vipAgent.HandleVIPEscalation(senderPhone, messageText)
 		return
+	}
+
+	// Autonomous Logistics & Shipping Agent
+	if strings.Contains(lower, "waybill") || strings.Contains(lower, "shipping") || strings.Contains(lower, "delivery fee") || strings.Contains(lower, "deliver to") {
+		logisticsAgent := &LogisticsAgent{}
+		state := "Lagos"
+		for _, s := range []string{"Lagos", "Abuja", "Rivers", "Port Harcourt", "Kano", "Kaduna", "Enugu", "Anambra", "Oyo"} {
+			if strings.Contains(lower, strings.ToLower(s)) {
+				state = s
+				break
+			}
+		}
+		_, _, logQuote := logisticsAgent.CalculateWaybillRate(state)
+		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, logQuote)
+		return
+	}
+
+	// Autonomous AI Bargainer & Discount Negotiator Agent
+	if strings.Contains(lower, "bulk") || strings.Contains(lower, "discount") || strings.Contains(lower, "units") || strings.Contains(lower, "quantity") {
+		bargainerAgent := &BargainerAgent{}
+		qty := 5
+		if strings.Contains(lower, "10") {
+			qty = 10
+		}
+		p := storeCatalog[0]
+		isApproved, _, bargainReply := bargainerAgent.EvaluateBulkDiscount(p.Name, p.Price, qty)
+		if isApproved {
+			globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, bargainReply)
+			return
+		}
 	}
 
 	// 24/7 Autonomous Visual Media Delivery Engine (Product Picture Requests)
 	if strings.Contains(lower, "picture") || strings.Contains(lower, "photo") || strings.Contains(lower, "image") || strings.Contains(lower, "show me") || strings.Contains(lower, "let me see") || strings.Contains(lower, "send pic") {
+		mediaAgent := &VisualMediaAgent{}
 		for _, p := range storeCatalog {
 			pName := strings.ToLower(p.Name)
 			if strings.Contains(lower, strings.ToLower(p.ID)) || (strings.Contains(pName, "panel") && strings.Contains(lower, "panel")) || (strings.Contains(pName, "inverter") && strings.Contains(lower, "inverter")) || (strings.Contains(pName, "generator") && strings.Contains(lower, "generator")) || (strings.Contains(pName, "rice") && strings.Contains(lower, "rice")) || (strings.Contains(pName, "gold") && strings.Contains(lower, "gold")) || (strings.Contains(pName, "power bank") && strings.Contains(lower, "power")) {
-				caption := fmt.Sprintf("📸 *[%s]*\n💰 *Price:* ₦%.2f\n📝 *Specs:* %s\n\nTo place your order, reply `#buy %s` or ask any questions!", p.Name, p.Price, p.Description, p.ID)
-				globalWhatsAppEngine.SendMediaImage("sovereign-ai-master", senderPhone, p.ImageURL, caption)
-				globalDialogueEngine.AddTurn(senderPhone, "assistant", fmt.Sprintf("[Sent product image for %s]", p.Name))
+				mediaAgent.DispatchProductPhoto(p.ID, senderPhone)
 				return
 			}
 		}
-		// Generic picture request fallback
-		p := storeCatalog[0]
-		caption := fmt.Sprintf("📸 *[%s]*\n💰 *Price:* ₦%.2f\n📝 *Specs:* %s\n\nReply with product name or ID to view more pictures!", p.Name, p.Price, p.Description)
-		globalWhatsAppEngine.SendMediaImage("sovereign-ai-master", senderPhone, p.ImageURL, caption)
+		mediaAgent.DispatchProductPhoto("1", senderPhone)
 		return
 	}
+
 
 	// Record conversation turn in memory
 	globalDialogueEngine.AddTurn(senderPhone, "user", messageText)
