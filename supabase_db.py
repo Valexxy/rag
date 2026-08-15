@@ -123,12 +123,13 @@ def call_atomic_purchase(
     try:
         res = db.rpc("process_atomic_purchase", {
             "p_tenant_id": tenant_id,
-            "p_product_id": product_id,
+            "p_product_id": str(product_id),
             "p_quantity": quantity,
             "p_customer_phone": customer_phone,
             "p_reference": reference,
             "p_amount_received": amount_received
         }).execute()
+
         return res.data if res.data else {"success": False, "reason": "RPC_EMPTY_RESPONSE"}
     except Exception as e:
         logger.error(f"[SupabaseDB] call_atomic_purchase error: {e}")

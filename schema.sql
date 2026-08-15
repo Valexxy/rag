@@ -46,7 +46,8 @@ CREATE TABLE IF NOT EXISTS public.orders (
     id SERIAL PRIMARY KEY,
     tenant_id UUID REFERENCES public.tenants(id) ON DELETE CASCADE,
     customer_phone TEXT NOT NULL,
-    product_id INT REFERENCES public.products(id),
+    product_id TEXT,
+
     quantity INT DEFAULT 1 CHECK (quantity > 0),
     amount_expected NUMERIC(12, 2) NOT NULL,
     amount_paid NUMERIC(12, 2) DEFAULT 0.00,
@@ -99,7 +100,7 @@ CREATE INDEX IF NOT EXISTS idx_customer_ledgers_phone ON public.customer_ledgers
 -- =============================================================
 CREATE OR REPLACE FUNCTION process_atomic_purchase(
     p_tenant_id UUID, 
-    p_product_id INT, 
+    p_product_id TEXT, 
     p_quantity INT, 
     p_customer_phone TEXT, 
     p_reference TEXT,
@@ -117,8 +118,9 @@ BEGIN
     -- 1. Lock Product Row for Update (Pessimistic Locking)
     SELECT stock, price INTO v_stock, v_price 
     FROM products 
-    WHERE id = p_product_id AND tenant_id = p_tenant_id 
+    WHERE id::text = p_product_id AND tenant_id = p_tenant_id 
     FOR UPDATE;
+
 
     IF NOT FOUND THEN
         RETURN jsonb_build_object('success', false, 'reason', 'PRODUCT_NOT_FOUND');
@@ -160,7 +162,8 @@ BEGIN
     END IF;
 
     -- Deduct Stock
-    UPDATE products SET stock = stock - p_quantity WHERE id = p_product_id AND tenant_id = p_tenant_id;
+    UPDATE products SET stock = stock - p_quantity WHERE id::text = p_product_id AND tenant_id = p_tenant_id;
+
 
     -- Record / Update Order as PENDING_HUMAN_VERIFICATION (Mandatory Human Protocol)
     IF v_order_id IS NOT NULL THEN
