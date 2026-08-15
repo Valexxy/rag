@@ -49,10 +49,18 @@ func (w *WhatsAppEngine) SendMessage(instanceName, phone, text string) {
 
 	client := &http.Client{Timeout: 5 * time.Second}
 	resp, err := client.Do(req)
-	if err == nil {
+	if err == nil && (resp.StatusCode == 200 || resp.StatusCode == 201) {
 		resp.Body.Close()
 		log.Printf("[WhatsApp Engine] Sent zero-cost message to %s via Evolution API", cleanPhone)
+		return
 	}
+	if resp != nil {
+		resp.Body.Close()
+	}
+
+	// Automatic Failover to Meta Cloud Graph API
+	log.Printf("[WhatsApp Engine] Evolution API unavailable (503/Timeout). Hot-swapping to Meta Cloud API for %s", cleanPhone)
+	w.SendMetaCloudMessage(cleanPhone, text)
 }
 
 func (w *WhatsAppEngine) SendMediaImage(instanceName, phone, imageURL, caption string) {
@@ -90,11 +98,19 @@ func (w *WhatsAppEngine) SendMediaImage(instanceName, phone, imageURL, caption s
 
 	client := &http.Client{Timeout: 8 * time.Second}
 	resp, err := client.Do(req)
-	if err == nil {
+	if err == nil && (resp.StatusCode == 200 || resp.StatusCode == 201) {
 		resp.Body.Close()
 		log.Printf("[WhatsApp Engine] Sent zero-cost media image card to %s", cleanPhone)
+		return
 	}
+	if resp != nil {
+		resp.Body.Close()
+	}
+
+	// Automatic Failover to Meta Cloud Graph API with text caption
+	w.SendMetaCloudMessage(cleanPhone, caption+"\n🖼️ Image: "+imageURL)
 }
+
 
 func (w *WhatsAppEngine) SendMetaCloudMessage(senderPhone, text string) {
 	phoneID := os.Getenv("META_PHONE_NUMBER_ID")
