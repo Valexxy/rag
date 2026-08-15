@@ -1,0 +1,10 @@
+{
+  "name": "sovereign-whatsapp-gateway",
+  "version": "1.0.0",
+  "main": "index.js",
+  "dependencies": {
+    "@whiskeysockets/baileys": "^6.7.0",
+    "express": "^4.19.2",
+    "qrcode-terminal": "^0.12.0"
+  }
+}

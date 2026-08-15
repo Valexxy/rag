@@ -1,12 +1,24 @@
-# Multistage Dockerfile for Golang Enterprise Gateway (12MB RAM Footprint)
-FROM golang:1.22-alpine AS builder
+# Multi-stage Dockerfile: Golang Engine + Embedded 24/7 Baileys WhatsApp Gateway
+FROM golang:1.22-alpine AS go-builder
 WORKDIR /app
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o server .
 
-FROM alpine:latest
-RUN apk --no-cache add ca-certificates tzdata
-WORKDIR /root/
-COPY --from=builder /app/server .
-EXPOSE 8080
-CMD ["./server"]
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+# Install ca-certificates, tzdata, and supervisor
+RUN apk add --no-cache ca-certificates tzdata supervisor
+
+# Copy Golang compiled binary
+COPY --from=go-builder /app/server /app/server
+
+# Copy Baileys WhatsApp Gateway & install dependencies
+COPY gateway /app/gateway
+RUN cd /app/gateway && npm install --production
+
+# Copy Supervisor configuration
+COPY supervisord.conf /etc/supervisord.conf
+
+EXPOSE 8080 8081
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]

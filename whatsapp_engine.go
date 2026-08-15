@@ -30,9 +30,10 @@ func (w *WhatsAppEngine) SendMessage(instanceName, phone, text string) {
 	// Send via Open-Source Baileys / Evolution API Gateway (0 Meta Fees)
 	evoURL := strings.TrimRight(os.Getenv("EVOLUTION_API_URL"), "/")
 	if evoURL == "" {
-		evoURL = "https://evolution-api-latest-gxue.onrender.com"
+		evoURL = "http://127.0.0.1:8081"
 	}
 	evoKey := os.Getenv("EVOLUTION_API_KEY")
+
 
 	url := fmt.Sprintf("%s/message/sendText/%s", evoURL, instanceName)
 	payload := map[string]string{
@@ -77,9 +78,10 @@ func (w *WhatsAppEngine) SendMediaImage(instanceName, phone, imageURL, caption s
 
 	evoURL := strings.TrimRight(os.Getenv("EVOLUTION_API_URL"), "/")
 	if evoURL == "" {
-		evoURL = "https://evolution-api-latest-gxue.onrender.com"
+		evoURL = "http://127.0.0.1:8081"
 	}
 	evoKey := os.Getenv("EVOLUTION_API_KEY")
+
 
 	url := fmt.Sprintf("%s/message/sendMedia/%s", evoURL, instanceName)
 	payload := map[string]interface{}{
