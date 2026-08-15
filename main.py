@@ -16,12 +16,15 @@ from fastapi import FastAPI, Request, BackgroundTasks
 from fastapi.responses import JSONResponse, Response, PlainTextResponse
 
 from payment_webhook_router import router as payment_router
+from free_ai_hub import free_ai_hub
+from security_fortress import security_fortress
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("SovereignAI")
 
 app = FastAPI(title="Sovereign AI Commerce Platform v2026")
 app.include_router(payment_router)
+
 
 
 EVO_URL = os.environ.get("EVOLUTION_API_URL", "https://evolution-api-latest-gxue.onrender.com").rstrip("/")
@@ -352,57 +355,37 @@ def process_webhook_async(instance_name: str, payload: dict):
             return
 
 
-        # Greetings Quick Action Menu
-        if lower in ["hi", "hello", "hey", "good morning", "good afternoon", "good evening", "good day", "how far"]:
-            greeting_menu = (
-                "☀️ *[Teeslux Global Client Care]*\n\n"
-                "Welcome to Teeslux Global Electronics & Solar!\n\n"
-                "1️⃣ *Catalog & Products* — View current prices & items\n"
-                "2️⃣ *Book Inspection* — Schedule a physical store visit\n"
-                "3️⃣ *Track Order* — Check status of shipment\n"
-                "4️⃣ *Human Support* — Speak with manager\n\n"
-                "Reply 1, 2, 3, or 4 to proceed!"
-            )
-            send_whatsapp_message(instance_name, sender_phone, greeting_menu)
-            return
-
-        # Fast Catalog Search (< 1ms)
-        fast_match = fast_catalog_search(message_text)
-        if fast_match["matched"]:
-            send_whatsapp_message(instance_name, sender_phone, fast_match["reply"])
-            return
-
-        # -------------------------------------------------------------
-        # 🚨 HIGH-PRIORITY MANAGER HANDOVER ROUTER (ZERO DELAY)
-        # If a product is NOT in the database, route directly to Manager!
-        # No advice, no recommendations, just instant high-priority transfer.
-        # -------------------------------------------------------------
         owner_phone = os.environ.get("OWNER_PHONE", "2348072015725")
 
-        # 1. Send High-Priority Manager Transfer Notice to Customer
-        customer_transfer_notice = (
-            f"🚨 *[Teeslux Store — High-Priority Manager Transfer]*\n\n"
-            f"Thank you for your inquiry regarding *'{message_text}'*!\n\n"
-            f"I have routed your request directly to our Business Manager on highest priority. "
-            f"Our manager will reply to you here shortly!"
-        )
-        send_whatsapp_message(instance_name, sender_phone, customer_transfer_notice)
+        # ── 1. ANTI-ACCOUNT-DIVERSION LOCK ────────────────────────────
+        if security_fortress.detect_account_diversion_attempt(message_text):
+            anti_div_reply = security_fortress.anti_diversion_response(owner_phone)
+            send_whatsapp_message(instance_name, sender_phone, anti_div_reply)
+            return
 
-        # 2. Send Urgent Manager Alert to Store Owner (only if customer is not owner self-testing)
-        clean_owner = "".join(filter(str.isdigit, str(owner_phone)))
-        clean_sender = "".join(filter(str.isdigit, str(sender_phone)))
-        if clean_sender != clean_owner:
-            time.sleep(0.5)
-            manager_alert = (
-                f"🚨 *[URGENT MANAGER ACTION REQUIRED]*\n\n"
-                f"👤 *Customer:* `{sender_phone}`\n"
-                f"❓ *Out-of-Catalog Inquiry:* '{message_text}'\n"
-                f"⚡ *Priority:* HIGHEST (Instant Routing)\n\n"
-                f"💬 Reply `#reply {sender_phone} | Your message` to respond directly to this customer!"
-            )
-            send_whatsapp_message(instance_name, owner_phone, manager_alert)
-        logger.info(f"[High-Priority Handover] Out-of-catalog query '{message_text}' from {sender_phone} routed to manager {owner_phone}")
+        # ── 2. NIGERIAN WAYBILL & LOCATION CALCULATOR ─────────────────
+        waybill_match = waybill_engine.detect_and_calculate(message_text, owner_phone=owner_phone)
+        if waybill_match:
+            send_whatsapp_message(instance_name, sender_phone, waybill_match["reply"])
+            return
+
+        # ── 3. REAL INTELLIGENT AI LLM ENGINE (FreeAIHub / Llama-3.3-70b / OpenRouter) ─
+        ai_res = free_ai_hub.generate_reply(
+            query=message_text,
+            catalog=STORE_CATALOG,
+            chat_history=""
+        )
+
+        if ai_res and ai_res.get("reply"):
+            send_whatsapp_message(instance_name, sender_phone, ai_res["reply"])
+            logger.info(f"[Real AI Hub LLM] Responded to '{message_text[:30]}' via {ai_res.get('architecture')}")
+            return
+
+        # ── 4. FALLBACK: FAST MATCH ────────────────────────────────────
+        fast_match = fast_catalog_search(message_text)
+        send_whatsapp_message(instance_name, sender_phone, fast_match["reply"])
         return
+
 
 
     except Exception as e:
