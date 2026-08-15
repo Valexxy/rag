@@ -159,6 +159,7 @@ class FreeAIHub:
 
         business_name = (tenant or {}).get("business_name", "Teeslux Global Electronics & Solar")
         address = (tenant or {}).get("store_address", "Onitsha Main Market, Anambra State")
+        industry = (tenant or {}).get("industry", "Electronics & Solar")
 
         # Format Supabase catalog items
         cat_lines = []
@@ -171,8 +172,9 @@ class FreeAIHub:
 
         # 🧠 Construct Master System Prompt & Memory Context
         if phone:
-            system, user_msg = billion_dollar_brain.construct_master_prompt(phone, query, business_name, cat_str, address)
+            system, user_msg = billion_dollar_brain.construct_master_prompt(phone, query, business_name, cat_str, address, industry=industry)
         else:
+
             system = STORE_SYSTEM_PROMPT.format(business_name=business_name, catalog=cat_str, address=address)
             history = f"\nRecent chat:\n{chat_history[-400:]}\n" if chat_history else ""
             user_msg = f"{history}Customer: {query}"
