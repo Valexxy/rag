@@ -18,11 +18,14 @@ import (
 
 // ── CONFIGURATION & CONSTANTS ──────────────────────────────────────────
 var (
-	ownerPhone    = getEnv("OWNER_PHONE", "2348072015725")
-	evoURL        = strings.TrimRight(getEnv("EVOLUTION_API_URL", "https://evolution-api-latest-gxue.onrender.com"), "/")
-	evoKey        = getEnv("EVOLUTION_API_KEY", "")
-	supabaseURL   = getEnv("SUPABASE_URL", "")
-	supabaseKey   = getEnv("SUPAB// ── PRODUCT CATALOG STRUCT ─────────────────────────────────────────────
+	ownerPhone  = getEnv("OWNER_PHONE", "2348072015725")
+	evoURL      = strings.TrimRight(getEnv("EVOLUTION_API_URL", "https://evolution-api-latest-gxue.onrender.com"), "/")
+	evoKey      = getEnv("EVOLUTION_API_KEY", "")
+	supabaseURL = getEnv("SUPABASE_URL", "")
+	supabaseKey = getEnv("SUPABASE_SERVICE_ROLE_KEY", "")
+)
+
+// ── PRODUCT CATALOG STRUCT ─────────────────────────────────────────────
 type Product struct {
 	ID          string  `json:"id"`
 	Name        string  `json:"name"`
@@ -30,6 +33,7 @@ type Product struct {
 	Description string  `json:"description"`
 	ImageURL    string  `json:"image_url"`
 }
+
 
 var storeCatalog = []Product{
 	{ID: "1", Name: "550W Monocrystalline Solar Panel", Price: 120000.0, Description: "Tier-1 High Efficiency 550W Monocrystalline Solar Panel", ImageURL: "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=800"},
