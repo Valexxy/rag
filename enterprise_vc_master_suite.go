@@ -22,8 +22,9 @@ type TenantConfig struct {
 	AllowAIBargaining   bool               `json:"allow_ai_bargaining"`
 	MinQtyForDiscount   int                `json:"min_qty_for_discount"`
 	MaxDiscountPct      float64            `json:"max_discount_pct"`
-	Catalog             []StoreProduct     `json:"catalog"`
+	Catalog             []Product          `json:"catalog"`
 }
+
 
 type MultiTenantRegistry struct {
 	mu      sync.RWMutex

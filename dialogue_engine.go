@@ -12,14 +12,26 @@ type ChatTurn struct {
 }
 
 type DialogueEngine struct {
-	mu           sync.RWMutex
-	states       map[string]string
+	mu            sync.RWMutex
+	states        map[string]string
 	memoryThreads map[string][]ChatTurn
+	lastActivity  map[string]time.Time
 }
 
 var globalDialogueEngine = &DialogueEngine{
 	states:        make(map[string]string),
 	memoryThreads: make(map[string][]ChatTurn),
+	lastActivity:  make(map[string]time.Time),
+}
+
+func (d *DialogueEngine) GetLastActivityTime(phone string) time.Time {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	t, exists := d.lastActivity[phone]
+	if !exists {
+		return time.Now().Add(-24 * time.Hour)
+	}
+	return t
 }
 
 func (d *DialogueEngine) GetState(phone string) string {
@@ -36,7 +48,9 @@ func (d *DialogueEngine) SetState(phone, state string) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	d.states[phone] = state
+	d.lastActivity[phone] = time.Now()
 }
+
 
 func (d *DialogueEngine) AddTurn(phone, role, content string) {
 	d.mu.Lock()
