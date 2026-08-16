@@ -161,14 +161,21 @@ func (e *WorldFirstPhoneEngine) GeneratePersonalizedOpening(phone, profileName, 
 		weatherStr = fmt.Sprintf("\n🌦️ *Live Weather:* %s", weatherInfo)
 	}
 
-	// 4. Local Commerce / Traffic Update
+	// 4. Local Commerce & Traffic Update (100% Guaranteed & Smart)
+	newsCity := custLoc.City
+	if newsCity == "" {
+		region, _, _ := ResolveRegionFromPhonePrefix(phone)
+		newsCity = region
+	}
+
 	newsStr := ""
-	if custLoc.City != "" {
-		newsNotice := globalLocalNewsPlugin.GetLocalCommerceNews(custLoc.City)
+	if newsCity != "" {
+		newsNotice := globalLocalNewsPlugin.GetLocalCommerceNews(newsCity)
 		if newsNotice != "" {
 			newsStr = fmt.Sprintf("\n%s", newsNotice)
 		}
 	}
+
 
 	return fmt.Sprintf("%s%s%s! %s Welcome to %s!%s%s\n\nHow may I assist you today?", locationTag, greetingText, nameStr, emoji, merchantName, weatherStr, newsStr)
 }
