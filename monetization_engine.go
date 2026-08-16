@@ -41,9 +41,17 @@ func (m *MonetizationEngine) GenerateBankUSSDCode(bankName, accountNumber, amoun
 	}
 }
 
+func (m *MonetizationEngine) GenerateDedicatedVirtualAccount(bankName, phone string) string {
+	if strings.Contains(strings.ToUpper(bankName), "STERLING") {
+		return "2210094665"
+	}
+	return "4112328816"
+}
+
 func (m *MonetizationEngine) GenerateMonnifyCheckoutCard(itemName string, amount float64, senderPhone string) string {
 	txRef := fmt.Sprintf("MON-%d", time.Now().UnixNano()%10000000000)
 	globalPaymentLedger.RecordCheckoutSession(txRef, senderPhone)
+
 
 	wemaAcc := m.GenerateDedicatedVirtualAccount("WEMA", senderPhone)
 	sterlingAcc := m.GenerateDedicatedVirtualAccount("STERLING", senderPhone)
