@@ -93,6 +93,12 @@ func main() {
 	http.HandleFunc("/webhook/evolution", metaWebhookHandler)
 	http.HandleFunc("/api/v1/analytics/dashboard", dashboardAnalyticsHandler)
 	http.HandleFunc("/api/v1/analytics/zero-cost", zeroCostAnalyticsHandler)
+	http.HandleFunc("/api/v1/vc-metrics", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(fmt.Sprintf(`{"status":"success","vc_metrics":{"active_tenants":%d,"arr_usd":%.2f,"gmv_usd":%.2f,"sla_latency_ms":%.2f,"conversion_rate_pct":%.1f}}`, globalVCMetrics.ActiveTenantsCount, globalVCMetrics.MonthlyRecurringRev*12, globalVCMetrics.GrossMerchandiseVal, globalVCMetrics.AvgResponseTimeMs, globalVCMetrics.ConversionRatePct)))
+	})
+
 
 	log.Printf("🚀 [Golang Enterprise Gateway] Server listening on port %s (50,000 req/sec SLA)...", port)
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
@@ -297,11 +303,21 @@ func processUnifiedPayloadAsync(payloadBytes []byte) {
 
 // ── UNIFIED MESSAGE DISPATCHER (ALL 7 AGENTS + LOCATIONS + REMINDERS) ─
 func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
-	log.Printf("[Golang Webhook Dispatcher] Sender: %s (%s) | Message: '%s'", profileName, senderPhone, messageText)
+	// VC-Grade Security: Sanitize incoming message for PII & GDPR compliance
+	cleanMsg := globalPIIGuard.SanitizeMessage(messageText)
 
-	custProf := globalWorldFirstEngine.UpdateCustomerProfile(senderPhone, profileName, messageText)
-	custLoc := globalLocationEngine.DetectAndUpdateLocation(senderPhone, messageText)
+	// VC-Grade Cooldown Guard: Rate-limit messages per phone line to protect WhatsApp WABA line
+	if !globalAntiBanGuard.AllowSend(senderPhone) {
+		log.Printf("[Anti-Ban Guard] Rate limit throttled for phone %s to prevent Meta anti-spam flagging.", senderPhone)
+		return
+	}
+
+	log.Printf("[Golang Webhook Dispatcher] Sender: %s (%s) | Message: '%s'", profileName, senderPhone, cleanMsg)
+
+	custProf := globalWorldFirstEngine.UpdateCustomerProfile(senderPhone, profileName, cleanMsg)
+	custLoc := globalLocationEngine.DetectAndUpdateLocation(senderPhone, cleanMsg)
 	log.Printf("[World-First Engine] Customer: %s (%s) | Location: %s, %s", custProf.Name, senderPhone, custLoc.City, custLoc.State)
+
 
 
 
