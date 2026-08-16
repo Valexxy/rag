@@ -67,21 +67,22 @@ func main() {
 
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/" && r.URL.Path != "/portal" && r.URL.Path != "/dashboard" && r.URL.Path != "/market" {
-			http.NotFound(w, r)
+		if r.URL.Path == "/" || r.URL.Path == "/portal" || r.URL.Path == "/dashboard" || r.URL.Path == "/market" {
+			if _, err := os.Stat("unified_portal.html"); err == nil {
+				http.ServeFile(w, r, "unified_portal.html")
+				return
+			}
+			if _, err := os.Stat("dashboard.html"); err == nil {
+				http.ServeFile(w, r, "dashboard.html")
+				return
+			}
+			w.Header().Set("Content-Type", "text/html")
+			w.Write([]byte("<h1>Sovereign AI Commerce Platform (Golang Core) Online</h1>"))
 			return
 		}
-		if _, err := os.Stat("unified_portal.html"); err == nil {
-			http.ServeFile(w, r, "unified_portal.html")
-			return
-		}
-		if _, err := os.Stat("dashboard.html"); err == nil {
-			http.ServeFile(w, r, "dashboard.html")
-			return
-		}
-		w.Header().Set("Content-Type", "text/html")
-		w.Write([]byte("<h1>Sovereign AI Commerce Platform (Golang Core) Online</h1>"))
+		http.NotFound(w, r)
 	})
+
 
 	http.HandleFunc("/health", healthHandler)
 	http.HandleFunc("/api/status", healthHandler)
