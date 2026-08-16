@@ -49,19 +49,57 @@ func (m *MonetizationEngine) GenerateMonnifyCheckoutCard(itemName string, amount
 	ussdZenith := m.GenerateBankUSSDCode("ZENITH", wemaAcc, fmt.Sprintf("%.0f", amount))
 	ussdUBA := m.GenerateBankUSSDCode("UBA", wemaAcc, fmt.Sprintf("%.0f", amount))
 
-	return fmt.Sprintf("💳 *[INSTANT MONNIFY ONLINE PAYMENT]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n✅ *Item:* %s\n💵 *Amount Due:* ₦%.2f\n🧾 *Transaction Ref:* `%s`\n\n🏦 *OPTION 1: DEDICATED MONNIFY VIRTUAL ACCOUNT*\n• *Bank Name:* Wema Bank\n• *Account Name:* Teeslux Global Store\n• *Account Number:* `%s`\n\n🏦 *OPTION 2: ALTERNATIVE STERLING BANK VIRTUAL ACCOUNT*\n• *Bank Name:* Sterling Bank\n• *Account Name:* Teeslux Global Store\n• *Account Number:* `%s`\n\n📲 *OPTION 3: 1-TAP BANK USSD CODES*\n• *GTBank:* `%s`\n• *Zenith Bank:* `%s`\n• *UBA Bank:* `%s`\n\n🌐 *OPTION 4: INSTANT ONLINE CARD PAYMENT LINK*\nhttps://sovereign-ai-backend-production.up.railway.app/portal?ref=%s\n\nOnce transferred, your payment is automatically verified in 5 seconds!", itemName, amount, txRef, wemaAcc, sterlingAcc, ussdGTB, ussdZenith, ussdUBA, txRef)
-}
-
-
-
-func (m *MonetizationEngine) VerifyPaystackSignature(payload []byte, signature, secret string) bool {
+	return fmt.Sprintf("💳 *[INSTANT MONNIFY ONLINE PAYMENT]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n✅ *Item:* %s\n💵 *Amount Due:* ₦%.2f\n🧾 *Transaction Ref:* `%s`\n\n🏦 *OPTION 1: DEDICATED MONNIFY VIRTUAL ACCOUNT*\n• *Bank Name:* Wema Bank\n• *Account Name:* Teeslux Global Store\n• *Account Number:* `%s`\n\n🏦 *OPTION 2: ALTERNATIVE STERLING BANK VIRTUAL ACCOUNT*\n• *Bank Name:* Sterling Bank\n• *Account Name:* Teeslux Global Store\n• *Account Number:* `%s`\n\n📲 *OPTION 3: 1-TAP BANK USSD CODES*\n• *GTBank:* `%s`\n• *Zenith Bank:* `%s`\n• *UBA Bank:* `%s`\n\n🌐 *OPTION 4: INSTANT ONLINE CARD PAYMENT LINK*\nhttps://sovereign-ai-backend-production.up.railway.app/portal?ref=%s\n\nOnce transferred, your payment is automatically verified in 5 sfunc (m *MonetizationEngine) VerifyMonnifySignature(payload []byte, signature, secret string) bool {
 	if secret == "" || signature == "" {
-		return true
+		return true // Allow sandbox testing if secret key is not set
 	}
 	h := hmac.New(sha512.New, []byte(secret))
 	h.Write(payload)
 	expectedHex := hex.EncodeToString(h.Sum(nil))
 	return hmac.Equal([]byte(expectedHex), []byte(signature))
+}
+
+// ── FINTECH THREAD-SAFE IDEMPOTENCY & ACCUMULATIVE PAYMENT LEDGER ─────
+type PaymentLedger struct {
+	mu                 sync.RWMutex
+	processedTxRefs   map[string]bool
+	customerCumulative map[string]float64
+}
+
+var globalPaymentLedger = &PaymentLedger{
+	processedTxRefs:   make(map[string]bool),
+	customerCumulative: make(map[string]float64),
+}
+
+func (p *PaymentLedger) IsProcessed(txRef string) bool {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	return p.processedTxRefs[txRef]
+}
+
+func (p *PaymentLedger) RecordTransaction(txRef string) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.processedTxRefs[txRef] = true
+}
+
+func (p *PaymentLedger) AddPayment(phone string, amount float64) float64 {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.customerCumulative[phone] += amount
+	return p.customerCumulative[phone]
+}
+
+func (p *PaymentLedger) ClearBalance(phone string) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	delete(p.customerCumulative, phone)
+}
+
+func (p *PaymentLedger) GetCumulative(phone string) float64 {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	return p.customerCumulative[phone]
 }
 
 func (m *MonetizationEngine) CalculateZeroCostSavings(merchantsCount int) map[string]interface{} {
@@ -90,17 +128,26 @@ func (m *MonetizationEngine) CalculateZeroCostSavings(merchantsCount int) map[st
 	}
 }
 
-// 🏦 MONNIFY LIVE PAYMENT WEBHOOK HANDLER
+// 🏦 MONNIFY LIVE PAYMENT WEBHOOK HANDLER (SILICON-VALLEY FINTECH ENGINE)
 func monnifyWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Monnify Webhook Endpoint Active"))
+		w.Write([]byte("Monnify Enterprise Webhook Endpoint Active"))
 		return
 	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+
+	// 1. Cryptographic Signature Verification (HMAC SHA-512)
+	monnifySignature := r.Header.Get("monnify-signature")
+	monnifySecret := os.Getenv("MONNIFY_SECRET_KEY")
+	if !globalMonetizationEngine.VerifyMonnifySignature(body, monnifySignature, monnifySecret) {
+		log.Printf("[Fintech Security Alert] Invalid Monnify HMAC Signature rejected!")
+		http.Error(w, "Unauthorized signature", http.StatusUnauthorized)
 		return
 	}
 
@@ -136,24 +183,15 @@ func monnifyWebhookHandler(w http.ResponseWriter, r *http.Request) {
 			custName = "Valued Customer"
 		}
 
-		// 1. Identify closest catalog item or active item
-		itemName := "Store Product Order"
-		itemPrice := 0.0
-
-		for _, p := range storeCatalog {
-			if amt >= p.Price {
-				if p.Price > itemPrice {
-					itemName = p.Name
-					itemPrice = p.Price
-				}
-			}
+		// 2. Transaction Replay Attack Prevention (Idempotency Check)
+		if globalPaymentLedger.IsProcessed(txRef) {
+			log.Printf("[Fintech Idempotency Engine] Duplicate transaction reference %s ignored.", txRef)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`{"status":"already_processed"}`))
+			return
 		}
-
-		if itemPrice == 0 {
-			// Default to power bank (₦18,500) for partial payment comparison
-			itemName = storeCatalog[1].Name
-			itemPrice = storeCatalog[1].Price
-		}
+		globalPaymentLedger.RecordTransaction(txRef)
 
 		// Extract recipient customer phone (dynamic from payment metadata)
 		customerPhone := "2348072015725"
@@ -166,30 +204,55 @@ func monnifyWebhookHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		// ── CASE A: UNDERPAYMENT / PARTIAL PAYMENT BALANCE RECOGNITION ─────
-		if amt < itemPrice {
-			balanceDue := itemPrice - amt
-			custReceipt := fmt.Sprintf("🟡 *[PARTIAL PAYMENT RECEIVED — MONNIFY]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nDear %s,\nWe received your partial bank transfer payment!\n\n📦 *Item:* %s\n🏷️ *Catalog Price:* ₦%.2f\n💵 *Amount Paid Today:* ₦%.2f\n⚠️ *OUTSTANDING BALANCE DUE:* ₦%.2f\n🧾 *Transaction Ref:* `%s`\n\nPlease transfer the remaining balance of *₦%.2f* to complete your order!", custName, itemName, itemPrice, amt, balanceDue, txRef, balanceDue)
+		// 3. Accumulate total payments for this customer phone line
+		totalCumulativePaid := globalPaymentLedger.AddPayment(customerPhone, amt)
+
+		// 4. Identify closest catalog item based on total accumulated paid amount
+		itemName := "Store Product Order"
+		itemPrice := 0.0
+
+		for _, p := range storeCatalog {
+			if totalCumulativePaid >= p.Price {
+				if p.Price > itemPrice {
+					itemName = p.Name
+					itemPrice = p.Price
+				}
+			}
+		}
+
+		if itemPrice == 0 {
+			// Default to power bank (₦18,500) for balance comparison
+			itemName = storeCatalog[1].Name
+			itemPrice = storeCatalog[1].Price
+		}
+
+		// ── CASE A: UNDERPAYMENT / PARTIAL PAYMENT ACCUMULATION ────────────
+		if totalCumulativePaid < itemPrice {
+			balanceDue := itemPrice - totalCumulativePaid
+			custReceipt := fmt.Sprintf("🟡 *[PARTIAL PAYMENT RECEIVED — MONNIFY]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nDear %s,\nWe received your partial bank transfer payment of *₦%.2f*!\n\n📦 *Item:* %s\n🏷️ *Catalog Price:* ₦%.2f\n💵 *Total Paid So Far:* ₦%.2f\n⚠️ *OUTSTANDING BALANCE DUE:* ₦%.2f\n🧾 *Transaction Ref:* `%s`\n\nPlease transfer the remaining balance of *₦%.2f* to complete your order!", custName, amt, itemName, itemPrice, totalCumulativePaid, balanceDue, txRef, balanceDue)
 
 			globalWhatsAppEngine.SendMessage("sovereign-ai-master", customerPhone, custReceipt)
 
-			managerAlert := fmt.Sprintf("🟡 *[MANAGER ALERT — PARTIAL PAYMENT RECEIVED]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Customer:* %s (`%s`)\n📦 *Item:* %s\n💵 *Amount Paid:* ₦%.2f (Catalog Price: ₦%.2f)\n⚠️ *OUTSTANDING BALANCE:* ₦%.2f\n🧾 *Tx Ref:* `%s`", custName, customerPhone, itemName, amt, itemPrice, balanceDue, txRef)
+			managerAlert := fmt.Sprintf("🟡 *[MANAGER ALERT — PARTIAL PAYMENT RECEIVED]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Customer:* %s (`%s`)\n📦 *Item:* %s\n💵 *Latest Payment:* ₦%.2f\n💵 *Total Paid So Far:* ₦%.2f (Catalog Price: ₦%.2f)\n⚠️ *OUTSTANDING BALANCE:* ₦%.2f\n🧾 *Tx Ref:* `%s`", custName, customerPhone, itemName, amt, totalCumulativePaid, itemPrice, balanceDue, txRef)
 			globalWhatsAppEngine.SendMessage("sovereign-ai-master", managerPhone, managerAlert)
 			return
 		}
 
 		// ── CASE B: FULL PAYMENT OR OVERPAYMENT (BOT DISENGAGES TO HUMAN AGENT)
 		var overpaid float64 = 0.0
-		if amt > itemPrice {
-			overpaid = amt - itemPrice
+		if totalCumulativePaid > itemPrice {
+			overpaid = totalCumulativePaid - itemPrice
 		}
+
+		// Clear customer accumulation balance ledger since order is fully paid
+		globalPaymentLedger.ClearBalance(customerPhone)
 
 		overpaidNote := ""
 		if overpaid > 0 {
 			overpaidNote = fmt.Sprintf("\n\n⚠️ *OVERPAYMENT DETECTED:* You paid *₦%.2f* extra above the catalog price (₦%.2f). Our Store Manager has been notified to issue your manual bank refund of *₦%.2f*!", overpaid, itemPrice, overpaid)
 		}
 
-		receiptMsg := fmt.Sprintf("🎉 *[PAYMENT CONFIRMED — CONNECTED TO HUMAN AGENT]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nDear %s,\nThank you for your patronage! We received your live bank transfer payment!\n\n📦 *Item Paid For:* %s\n💵 *Amount Paid:* ₦%.2f\n🏷️ *Catalog Price:* ₦%.2f\n🧾 *Transaction Ref:* `%s`\n✅ *Status:* PAID & VERIFIED%s\n\n👔 *Human Agent Handoff:* The AI Bot has disengaged. You are now connected directly with our Store Manager for further discussion and order finalization!", custName, itemName, amt, itemPrice, txRef, overpaidNote)
+		receiptMsg := fmt.Sprintf("🎉 *[PAYMENT CONFIRMED — CONNECTED TO HUMAN AGENT]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nDear %s,\nThank you for your patronage! We received your live bank transfer payment!\n\n📦 *Item Paid For:* %s\n💵 *Total Amount Paid:* ₦%.2f\n🏷️ *Catalog Price:* ₦%.2f\n🧾 *Transaction Ref:* `%s`\n✅ *Status:* PAID & VERIFIED%s\n\n👔 *Human Agent Handoff:* The AI Bot has disengaged. You are now connected directly with our Store Manager for further discussion and order finalization!", custName, itemName, totalCumulativePaid, itemPrice, txRef, overpaidNote)
 
 		// 1. Send receipt & handoff note to Customer
 		globalWhatsAppEngine.SendMessage("sovereign-ai-master", customerPhone, receiptMsg)
@@ -203,16 +266,13 @@ func monnifyWebhookHandler(w http.ResponseWriter, r *http.Request) {
 			refundNotice = fmt.Sprintf("\n\n🚨 *ACTION REQUIRED (MANUAL REFUND DUE):* Customer overpaid ₦%.2f extra! Please request customer bank details to transfer manual refund of ₦%.2f.", overpaid, overpaid)
 		}
 
-		managerNotice := fmt.Sprintf("👔 *[STORE MANAGER ALERT — NEW PAID CUSTOMER HANDOFF]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n👤 *Customer Name:* %s\n📱 *Customer Phone:* `%s`\n📦 *Item Purchased:* %s\n💵 *Amount Paid:* ₦%.2f\n🧾 *Transaction Ref:* `%s`\n✅ *Status:* PAID & VERIFIED (BOT DISENGAGED)%s\n\n💬 *Action Required:* The AI bot is now disengaged. Please chat directly with the customer to finalize dispatch or manual refund!", custName, customerPhone, itemName, amt, txRef, refundNotice)
+		managerNotice := fmt.Sprintf("👔 *[STORE MANAGER ALERT — NEW PAID CUSTOMER HANDOFF]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n👤 *Customer Name:* %s\n📱 *Customer Phone:* `%s`\n📦 *Item Purchased:* %s\n💵 *Total Amount Paid:* ₦%.2f\n🧾 *Transaction Ref:* `%s`\n✅ *Status:* PAID & VERIFIED (BOT DISENGAGED)%s\n\n💬 *Action Required:* The AI bot is now disengaged. Please chat directly with the customer to finalize dispatch or manual refund!", custName, customerPhone, itemName, totalCumulativePaid, txRef, refundNotice)
 		globalWhatsAppEngine.SendMessage("sovereign-ai-master", managerPhone, managerNotice)
 	}
-
-
-
-
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`{"status":"success","message":"Monnify Payment Webhook Processed"}`))
 }
+
 

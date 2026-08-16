@@ -110,20 +110,34 @@ func (d *DialogueEngine) HandleManagerCommand(command, senderPhone string) (bool
 		globalWhatsAppEngine.SendMessage("sovereign-ai-master", targetPhone, replyPayload)
 		return true, fmt.Sprintf("✅ Message delivered to customer `%s`.", targetPhone)
 
-	case "#resolve", "#unmute":
+	case "#reengage", "#resolve", "#unmute":
 		if len(parts) >= 2 {
 			targetPhone := strings.TrimSpace(parts[1])
-			d.SetState(targetPhone, "IDLE")
-			return true, fmt.Sprintf("✅ Conversation with `%s` marked RESOLVED. Bot un-muted.", targetPhone)
+			d.ResetHumanHandoff(targetPhone)
+			globalWhatsAppEngine.SendMessage("sovereign-ai-master", targetPhone, "🤖 *[AI Sales Assistant Re-engaged]*\nHow may I assist you further?")
+			return true, fmt.Sprintf("✅ AI Bot re-engaged for customer `%s`.", targetPhone)
+		}
+
+	case "#ledger", "#status":
+		if len(parts) >= 2 {
+			targetPhone := strings.TrimSpace(parts[1])
+			cum := globalPaymentLedger.GetCumulative(targetPhone)
+			handoffStatus := d.IsHumanHandoff(targetPhone)
+			statusStr := "AI Bot Active"
+			if handoffStatus {
+				statusStr = "Bot Disengaged (Human Agent Active)"
+			}
+			return true, fmt.Sprintf("📊 *[CUSTOMER FINTECH LEDGER]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n• *Customer Phone:* `%s`\n• *Cumulative Paid:* ₦%.2f\n• *Conversation Mode:* %s", targetPhone, cum, statusStr)
 		}
 
 	case "#mute":
 		if len(parts) >= 2 {
 			targetPhone := strings.TrimSpace(parts[1])
-			d.SetState(targetPhone, "HUMAN_ESCALATED")
-			return true, fmt.Sprintf("🤫 Bot MUTED for customer `%s`.", targetPhone)
+			d.SetHumanHandoff(targetPhone)
+			return true, fmt.Sprintf("🤫 Bot MUTED / Disengaged for customer `%s`.", targetPhone)
 		}
 	}
+
 
 	return false, ""
 }
