@@ -122,6 +122,24 @@ func (p *PaymentLedger) GetCumulativeKobo(phone string) int64 {
 	return p.customerCumulative[phone]
 }
 
+func (p *PaymentLedger) GetCustomerLedgerSummary(phone string) string {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	cumKobo := p.customerCumulative[phone]
+	cumNgn := KoboToNgn(cumKobo)
+
+	if order, exists := p.activeOrders[phone]; exists {
+		return fmt.Sprintf("Active Item: %s | Catalog Price: ₦%.2f | Total Paid So Far: ₦%.2f | Balance Due: ₦%.2f | Status: %s", order.ItemName, KoboToNgn(order.ItemPriceKobo), cumNgn, KoboToNgn(order.BalanceKobo), order.Status)
+	}
+
+	if cumKobo > 0 {
+		return fmt.Sprintf("Customer has paid ₦%.2f in accumulated transfers on file.", cumNgn)
+	}
+
+	return "No active unpaid balance. All previous orders fully verified."
+}
+
+
 
 
 func (m *MonetizationEngine) CalculateZeroCostSavings(merchantsCount int) map[string]interface{} {

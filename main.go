@@ -335,12 +335,27 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 
 	// Check if Bot is DISENGAGED (Human Agent Handoff Active for this customer line)
 	if globalDialogueEngine.IsHumanHandoff(senderPhone) {
-		// Forward customer message to Store Manager (2348072015725)
-		managerNotice := fmt.Sprintf("💬 *[HUMAN CHAT — CUSTOMER MESSAGE]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Customer:* %s (`%s`)\n💬 *Message:* \"%s\"\n\n(Reply using `#reply %s | your response`)", profileName, senderPhone, messageText, senderPhone)
-		globalWhatsAppEngine.SendMessage("sovereign-ai-master", managerPhone, managerNotice)
-		log.Printf("[Bot Disengaged - Human Handoff Active] Forwarded message from %s to Store Manager %s.", senderPhone, managerPhone)
-		return
+		lower := strings.ToLower(messageText)
+
+		// Smart Listener A: If customer wants to buy more or explore new catalog items, auto-reengage AI bot!
+		if strings.Contains(lower, "buy another") || strings.Contains(lower, "new order") || strings.Contains(lower, "buy more") || strings.Contains(lower, "explore") {
+			globalDialogueEngine.ResetHumanHandoff(senderPhone)
+			log.Printf("[Smart Listener] Re-engaged AI Bot for customer %s to explore new purchase.", senderPhone)
+		} else if strings.Contains(lower, "how long") || strings.Contains(lower, "waiting") || strings.Contains(lower, "manager") || strings.Contains(lower, "anyone") || strings.Contains(lower, "hello") {
+			// Smart Listener B: Re-ping Store Manager and encourage customer to hold on or browse
+			globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, "⏳ *[Store Manager Re-alerted]*\nOur Store Manager has been notified and will connect with you shortly! In the meantime, feel free to ask me about any other items in our catalog.")
+			managerNotice := fmt.Sprintf("⏰ *[RE-ALERT — WAITING CUSTOMER]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Customer:* %s (`%s`)\n💬 *Message:* \"%s\"\n\nPlease connect with customer!", profileName, senderPhone, messageText)
+			globalWhatsAppEngine.SendMessage("sovereign-ai-master", managerPhone, managerNotice)
+			return
+		} else {
+			// Forward customer message to Store Manager (2348072015725)
+			managerNotice := fmt.Sprintf("💬 *[HUMAN CHAT — CUSTOMER MESSAGE]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Customer:* %s (`%s`)\n💬 *Message:* \"%s\"\n\n(Reply using `#reply %s | your response`)", profileName, senderPhone, messageText, senderPhone)
+			globalWhatsAppEngine.SendMessage("sovereign-ai-master", managerPhone, managerNotice)
+			log.Printf("[Bot Disengaged - Human Handoff Active] Forwarded message from %s to Store Manager %s.", senderPhone, managerPhone)
+			return
+		}
 	}
+
 
 
 	lower := strings.ToLower(messageText)
