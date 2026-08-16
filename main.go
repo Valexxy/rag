@@ -67,6 +67,50 @@ func main() {
 
 	// Start 24/7 background keep-alive goroutine
 	go keepEvolutionAwake()
+
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/" || r.URL.Path == "/portal" || r.URL.Path == "/dashboard" || r.URL.Path == "/market" {
+			if _, err := os.Stat("unified_portal.html"); err == nil {
+				http.ServeFile(w, r, "unified_portal.html")
+				return
+			}
+			if _, err := os.Stat("dashboard.html"); err == nil {
+				http.ServeFile(w, r, "dashboard.html")
+				return
+			}
+			w.Header().Set("Content-Type", "text/html")
+			w.Write([]byte("<h1>Sovereign AI Commerce Platform (Golang Core) Online</h1>"))
+			return
+		}
+		http.NotFound(w, r)
+	})
+
+	http.HandleFunc("/health", healthHandler)
+	http.HandleFunc("/api/status", healthHandler)
+	http.HandleFunc("/qr", qrPortalHandler)
+	http.HandleFunc("/pair-submit", pairSubmitHandler)
+	http.HandleFunc("/api/v1/pair-code", pairCodeJSONHandler)
+	http.HandleFunc("/api/catchup", catchupHandler)
+	http.HandleFunc("/webhook/meta", metaWebhookHandler)
+	http.HandleFunc("/webhook/evolution", metaWebhookHandler)
+	http.HandleFunc("/webhook/monnify", monnifyWebhookHandler)
+	http.HandleFunc("/loc", locationPortalHandler)
+	http.HandleFunc("/l/", locationShortlinkHandler)
+	http.HandleFunc("/l", locationShortlinkHandler)
+	http.HandleFunc("/submit-loc", submitLocationAPIHandler)
+
+	http.HandleFunc("/api/v1/analytics/dashboard", dashboardAnalyticsHandler)
+	http.HandleFunc("/api/v1/analytics/zero-cost", zeroCostAnalyticsHandler)
+	http.HandleFunc("/api/v1/vc-metrics", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(fmt.Sprintf(`{"status":"success","vc_metrics":{"active_tenants":%d,"arr_usd":%.2f,"gmv_usd":%.2f,"sla_latency_ms":%.2f,"conversion_rate_pct":%.1f}}`, globalVCMetrics.ActiveTenantsCount, globalVCMetrics.MonthlyRecurringRev*12, globalVCMetrics.GrossMerchandiseVal, globalVCMetrics.AvgResponseTimeMs, globalVCMetrics.ConversionRatePct)))
+	})
+
+	log.Printf("🚀 [Golang Enterprise Gateway] Server listening on port %s (50,000 req/sec SLA)...", port)
+	if err := http.ListenAndServe(":"+port, nil); err != nil {
+		log.Fatalf("Server failed: %v", err)
+	}
 }
 
 type SessionTracker struct {
@@ -94,56 +138,6 @@ func (s *SessionTracker) MarkGreeted(phone string) {
 	s.greetedUsers[phone] = time.Now()
 }
 
-
-
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/" || r.URL.Path == "/portal" || r.URL.Path == "/dashboard" || r.URL.Path == "/market" {
-			if _, err := os.Stat("unified_portal.html"); err == nil {
-				http.ServeFile(w, r, "unified_portal.html")
-				return
-			}
-			if _, err := os.Stat("dashboard.html"); err == nil {
-				http.ServeFile(w, r, "dashboard.html")
-				return
-			}
-			w.Header().Set("Content-Type", "text/html")
-			w.Write([]byte("<h1>Sovereign AI Commerce Platform (Golang Core) Online</h1>"))
-			return
-		}
-		http.NotFound(w, r)
-	})
-
-
-	http.HandleFunc("/health", healthHandler)
-	http.HandleFunc("/api/status", healthHandler)
-	http.HandleFunc("/qr", qrPortalHandler)
-	http.HandleFunc("/pair-submit", pairSubmitHandler)
-	http.HandleFunc("/api/v1/pair-code", pairCodeJSONHandler)
-	http.HandleFunc("/api/catchup", catchupHandler)
-	http.HandleFunc("/webhook/meta", metaWebhookHandler)
-	http.HandleFunc("/webhook/evolution", metaWebhookHandler)
-	http.HandleFunc("/webhook/monnify", monnifyWebhookHandler)
-	http.HandleFunc("/loc", locationPortalHandler)
-	http.HandleFunc("/l/", locationShortlinkHandler)
-	http.HandleFunc("/l", locationShortlinkHandler)
-	http.HandleFunc("/submit-loc", submitLocationAPIHandler)
-
-
-	http.HandleFunc("/api/v1/analytics/dashboard", dashboardAnalyticsHandler)
-
-	http.HandleFunc("/api/v1/analytics/zero-cost", zeroCostAnalyticsHandler)
-	http.HandleFunc("/api/v1/vc-metrics", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(fmt.Sprintf(`{"status":"success","vc_metrics":{"active_tenants":%d,"arr_usd":%.2f,"gmv_usd":%.2f,"sla_latency_ms":%.2f,"conversion_rate_pct":%.1f}}`, globalVCMetrics.ActiveTenantsCount, globalVCMetrics.MonthlyRecurringRev*12, globalVCMetrics.GrossMerchandiseVal, globalVCMetrics.AvgResponseTimeMs, globalVCMetrics.ConversionRatePct)))
-	})
-
-
-	log.Printf("🚀 [Golang Enterprise Gateway] Server listening on port %s (50,000 req/sec SLA)...", port)
-	if err := http.ListenAndServe(":"+port, nil); err != nil {
-		log.Fatalf("Server failed: %v", err)
-	}
-}
 
 // ── PROGRAMMATIC 8-DIGIT PAIRING CODE HANDLER ──────────────────────────
 func pairCodeJSONHandler(w http.ResponseWriter, r *http.Request) {
