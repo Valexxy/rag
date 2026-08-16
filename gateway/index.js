@@ -14,101 +14,12 @@ const GOLANG_BACKEND = 'http://127.0.0.1:8080';
 const logger = pino({ level: 'silent' });
 
 let sock = null;
-let currentQRCodeHTML = `<!DOCTYPE html>
-<html>
-<head>
-    <title>WhatsApp 24/7 QR Pair Portal</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="refresh" content="3">
-    <style>
-        body { background: #0d1117; color: #c9d1d9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; text-align: center; }
-        .card { background: #161b22; border: 1px solid #30363d; border-radius: 16px; padding: 30px; max-width: 400px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        h1 { color: #58a6ff; font-size: 22px; margin-bottom: 8px; }
-        p { color: #8b949e; font-size: 14px; margin-top: 0; }
-        .spinner { border: 4px solid rgba(255,255,255,0.1); width: 40px; height: 40px; border-radius: 50%; border-left-color: #58a6ff; animation: spin 1s linear infinite; margin: 20px auto; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    </style>
-</head>
-<body>
-    <div class="card">
-        <h1>📱 Initializing WhatsApp Web Socket...</h1>
-        <div class="spinner"></div>
-        <p>Connecting to WhatsApp servers... Auto-refreshing in 3 seconds to load QR code.</p>
-    </div>
-</body>
-</html>`;
+let latestDataUrl = '';
+let isConnected = false;
 
-async function connectToWhatsApp() {
-    try {
-        if (!fs.existsSync('baileys_auth')) {
-            fs.mkdirSync('baileys_auth', { recursive: true });
-        }
-
-        const { state, saveCreds } = await useMultiFileAuthState('baileys_auth');
-        sock = makeWASocket({
-            auth: state,
-            logger: logger,
-            printQRInTerminal: true,
-            browser: ['Sovereign AI Commerce', 'Chrome', '1.0.0']
-        });
-
-        sock.ev.on('creds.update', saveCreds);
-
-        sock.ev.on('connection.update', async (update) => {
-            const { connection, lastDisconnect, qr } = update;
-            console.log('[Baileys Update] Connection:', connection, qr ? '| QR Code Generated!' : '');
-            
-            if (qr) {
-                try {
-                    const dataUrl = await QRCode.toDataURL(qr);
-                    currentQRCodeHTML = `<!DOCTYPE html>
-<html>
-<head>
-    <title>WhatsApp 24/7 QR Pair Portal</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="refresh" content="10">
-    <style>
-        body { background: #0d1117; color: #c9d1d9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; text-align: center; }
-        .card { background: #161b22; border: 1px solid #30363d; border-radius: 16px; padding: 30px; max-width: 400px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        h1 { color: #58a6ff; font-size: 22px; margin-bottom: 8px; }
-        p { color: #8b949e; font-size: 14px; margin-top: 0; }
-        img { width: 260px; height: 260px; border-radius: 12px; border: 4px solid #238636; margin: 20px 0; padding: 10px; background: white; }
-        .steps { text-align: left; background: #0d1117; border-radius: 8px; padding: 15px; font-size: 13px; color: #8b949e; margin-top: 15px; }
-        .steps ol { margin: 0; padding-left: 20px; }
-        .steps li { margin-bottom: 6px; }
-    </style>
-</head>
-<body>
-    <div class="card">
-        <h1>📲 Pair WhatsApp Web 24/7</h1>
-        <p>Scan this QR code with WhatsApp to connect your bot</p>
-        <img src="${dataUrl}" alt="WhatsApp QR Code">
-        <div class="steps">
-            <ol>
-                <li>Open WhatsApp on your phone</li>
-                <li>Tap <b>Menu (⋮)</b> or <b>Settings</b></li>
-                <li>Select <b>Linked Devices</b></li>
-                <li>Tap <b>Link a Device</b> and scan this QR code</li>
-            </ol>
-        </div>
-    </div>
-</body>
-</html>`;
-                } catch (e) {
-                    console.error('[QR Error]', e.message);
-                }
-            }
-
-            if (connection === 'close') {
-                const statusCode = lastDisconnect?.error?.output?.statusCode;
-                const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
-                console.log('[Baileys Closed] Status Code:', statusCode, 'Reconnect:', shouldReconnect);
-                if (shouldReconnect) {
-                    setTimeout(connectToWhatsApp, 3000);
-                }
-            } else if (connection === 'open') {
-                console.log('[Baileys Gateway] 🚀 24/7 Embedded WhatsApp Web Socket Connected Successfully!');
-                currentQRCodeHTML = `<!DOCTYPE html>
+function buildHTMLPage(qrDataUrl, pairingCodeMsg = '') {
+    if (isConnected) {
+        return `<!DOCTYPE html>
 <html>
 <head>
     <title>WhatsApp 24/7 Engine Live</title>
@@ -121,11 +32,107 @@ async function connectToWhatsApp() {
 </head>
 <body>
     <div class="card">
-        <h1>🚀 24/7 WhatsApp Engine CONNECTED & LIVE!</h1>
-        <p>Your WhatsApp account is paired and running 24/7 with zero sleep. All incoming customer messages are processed instantly by your Golang AI Engine.</p>
+        <h1>🚀 24/7 WHATSAPP ENGINE IS CONNECTED & LIVE!</h1>
+        <p>Your WhatsApp account is linked and running 24/7 with zero sleep. All customer messages are processed instantly by your Golang AI Engine.</p>
     </div>
 </body>
 </html>`;
+    }
+
+    const qrBlock = qrDataUrl ? `<img src="${qrDataUrl}" alt="WhatsApp QR Code">` : `<div style="padding:30px;color:#8b949e;">Initializing socket... Auto-refreshing in 3 seconds...</div>`;
+    
+    const pairingBlock = pairingCodeMsg ? `<div style="background:#1f6feb;color:white;padding:15px;border-radius:10px;font-size:20px;font-weight:bold;margin:15px 0;">${pairingCodeMsg}</div>` : '';
+
+    return `<!DOCTYPE html>
+<html>
+<head>
+    <title>WhatsApp 24/7 Pair Portal</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="6">
+    <style>
+        body { background: #0d1117; color: #c9d1d9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; text-align: center; }
+        .card { background: #161b22; border: 1px solid #30363d; border-radius: 16px; padding: 30px; max-width: 420px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        h1 { color: #58a6ff; font-size: 22px; margin-bottom: 8px; }
+        p { color: #8b949e; font-size: 14px; margin-top: 0; }
+        img { width: 250px; height: 250px; border-radius: 12px; border: 4px solid #238636; margin: 15px 0; padding: 8px; background: white; }
+        .divider { border-top: 1px solid #30363d; margin: 20px 0; }
+        input { width: 80%; padding: 12px; border-radius: 8px; border: 1px solid #30363d; background: #0d1117; color: white; font-size: 16px; text-align: center; margin-bottom: 10px; }
+        button { background: #238636; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; width: 85%; }
+        button:hover { background: #2ea043; }
+        .steps { text-align: left; background: #0d1117; border-radius: 8px; padding: 15px; font-size: 13px; color: #8b949e; margin-top: 15px; }
+        .steps ol { margin: 0; padding-left: 20px; }
+        .steps li { margin-bottom: 6px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>📲 Pair WhatsApp 24/7</h1>
+        <p>Method 1: Scan QR Code with Phone Camera</p>
+        ${qrBlock}
+        ${pairingBlock}
+
+        <div class="divider"></div>
+        <p style="color:#58a6ff;font-weight:bold;">Method 2: Link via 8-Digit Code (No Camera Needed)</p>
+        <form action="/pair-submit" method="GET">
+            <input type="text" name="phone" placeholder="e.g. 2348072015725" value="2348072015725" required />
+            <br>
+            <button type="submit">Get 8-Digit Pairing Code ⚡</button>
+        </form>
+
+        <div class="steps">
+            <ol>
+                <li>Open WhatsApp on your phone</li>
+                <li>Tap <b>Menu (⋮)</b> or <b>Settings</b> $\rightarrow$ <b>Linked Devices</b></li>
+                <li>Tap <b>Link a Device</b> $\rightarrow$ Tap <b>Link with phone number instead</b></li>
+                <li>Enter the 8-digit code shown above!</li>
+            </ol>
+        </div>
+    </div>
+</body>
+</html>`;
+}
+
+let activePairingCode = '';
+
+async function connectToWhatsApp() {
+    try {
+        if (!fs.existsSync('baileys_auth')) {
+            fs.mkdirSync('baileys_auth', { recursive: true });
+        }
+
+        const { state, saveCreds } = await useMultiFileAuthState('baileys_auth');
+        sock = makeWASocket({
+            auth: state,
+            logger: logger,
+            printQRInTerminal: true,
+            browser: ['Ubuntu', 'Chrome', '120.0.0.0']
+        });
+
+        sock.ev.on('creds.update', saveCreds);
+
+        sock.ev.on('connection.update', async (update) => {
+            const { connection, lastDisconnect, qr } = update;
+            console.log('[Baileys Connection Update]', connection || '', qr ? 'QR Code Available' : '');
+
+            if (qr) {
+                try {
+                    latestDataUrl = await QRCode.toDataURL(qr);
+                } catch (e) {
+                    console.error('[QR DataURL Error]', e.message);
+                }
+            }
+
+            if (connection === 'close') {
+                isConnected = false;
+                const statusCode = lastDisconnect?.error?.output?.statusCode;
+                const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
+                console.log('[Baileys Socket Closed] Status Code:', statusCode, 'Reconnect:', shouldReconnect);
+                if (shouldReconnect) {
+                    setTimeout(connectToWhatsApp, 3000);
+                }
+            } else if (connection === 'open') {
+                isConnected = true;
+                console.log('[Baileys Gateway] 🚀 24/7 Embedded WhatsApp Web Socket Connected Successfully!');
             }
         });
 
@@ -171,7 +178,23 @@ async function connectToWhatsApp() {
 
 app.get('/qr', (req, res) => {
     res.setHeader('Content-Type', 'text/html');
-    res.send(currentQRCodeHTML);
+    res.send(buildHTMLPage(latestDataUrl, activePairingCode));
+});
+
+app.get('/pair-submit', async (req, res) => {
+    const phone = req.query.phone || '2348072015725';
+    const cleanPhone = phone.replace(/[^0-9]/g, '');
+    if (sock && cleanPhone) {
+        try {
+            const code = await sock.requestPairingCode(cleanPhone);
+            activePairingCode = `🔑 YOUR PAIRING CODE: ${code}`;
+            console.log(`[Baileys Pairing Code] Generated code for ${cleanPhone}: ${code}`);
+        } catch (err) {
+            activePairingCode = `⚠️ Pairing Error: ${err.message}`;
+        }
+    }
+    res.setHeader('Content-Type', 'text/html');
+    res.send(buildHTMLPage(latestDataUrl, activePairingCode));
 });
 
 // Outbound text message endpoint

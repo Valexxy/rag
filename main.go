@@ -67,6 +67,7 @@ func main() {
 	http.HandleFunc("/health", healthHandler)
 	http.HandleFunc("/api/status", healthHandler)
 	http.HandleFunc("/qr", qrPortalHandler)
+	http.HandleFunc("/pair-submit", pairSubmitHandler)
 	http.HandleFunc("/api/catchup", catchupHandler)
 	http.HandleFunc("/webhook/meta", metaWebhookHandler)
 	http.HandleFunc("/webhook/evolution", metaWebhookHandler)
@@ -78,6 +79,21 @@ func main() {
 		log.Fatalf("Server failed: %v", err)
 	}
 }
+
+// ── PHONE NUMBER PAIRING CODE SUBMIT HANDLER ───────────────────────────
+func pairSubmitHandler(w http.ResponseWriter, r *http.Request) {
+	phone := r.URL.Query().Get("phone")
+	resp, err := http.Get("http://127.0.0.1:8081/pair-submit?phone=" + phone)
+	if err != nil {
+		w.Header().Set("Content-Type", "text/html")
+		w.Write([]byte(`<h2>📱 WhatsApp Gateway starting up... Refresh in 3 seconds</h2><script>setTimeout(() => location.reload(), 3000);</script>`))
+		return
+	}
+	defer resp.Body.Close()
+	w.Header().Set("Content-Type", "text/html")
+	io.Copy(w, resp.Body)
+}
+
 
 // ── CATCH-UP RE-PROCESSOR ROUTINE ──────────────────────────────────────
 func catchupHandler(w http.ResponseWriter, r *http.Request) {
