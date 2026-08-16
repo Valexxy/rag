@@ -65,6 +65,13 @@ func (d *DialogueEngine) AddTurn(phone, role, content string) {
 	d.memoryThreads[phone] = turns
 }
 
+func (d *DialogueEngine) GetTurns(phone string) []ChatTurn {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	return d.memoryThreads[phone]
+}
+
+
 func (d *DialogueEngine) HandleManagerCommand(command, senderPhone string) (bool, string) {
 	cmd := strings.TrimSpace(command)
 	if !strings.HasPrefix(cmd, "#") {

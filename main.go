@@ -446,10 +446,18 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 	aiReply := globalAIEngine.GenerateReply(messageText, senderPhone, "Teeslux Global Electronics & Solar", "Onitsha Main Market", "Electronics & Solar", catalogStr)
 	if aiReply != "" {
 		personalizedReply := globalLocationEngine.ApplyDialectTone(senderPhone, aiReply)
-		taggedReply := fmt.Sprintf("🤖 *[Bot Assistant]:*\n%s", personalizedReply)
+		
+		// Prepend dynamic WAT time-of-day greeting ("Good afternoon!") on initial chat opening
+		opening := ""
+		if len(globalDialogueEngine.GetTurns(senderPhone)) <= 2 {
+			opening = globalWorldFirstEngine.GeneratePersonalizedOpening(senderPhone, profileName, messageText) + "\n\n"
+		}
+
+		taggedReply := fmt.Sprintf("🤖 *[Bot Assistant]:*\n%s%s", opening, personalizedReply)
 		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, taggedReply)
 		globalDialogueEngine.AddTurn(senderPhone, "assistant", personalizedReply)
 	}
+
 
 
 }
