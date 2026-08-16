@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 )
@@ -20,6 +21,7 @@ var (
 	supabaseURL = getEnv("SUPABASE_URL", "")
 	supabaseKey = getEnv("SUPABASE_SERVICE_ROLE_KEY", "")
 )
+
 
 // ── PRODUCT CATALOG STRUCT ─────────────────────────────────────────────
 type Product struct {
@@ -44,8 +46,25 @@ var storeCatalog = []Product{
 func main() {
 	port := getEnv("PORT", "8080")
 
+	// Launch Node.js Baileys WhatsApp Gateway concurrently in background Goroutine
+	go func() {
+		nodePath := "node"
+		if _, err := os.Stat("/usr/local/bin/node"); err == nil {
+			nodePath = "/usr/local/bin/node"
+		}
+		cmd := exec.Command(nodePath, "/app/gateway/index.js")
+		cmd.Dir = "/app/gateway"
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		log.Printf("[Golang Process Master] Spawning Baileys WhatsApp Gateway on port 8081 via %s...", nodePath)
+		if err := cmd.Run(); err != nil {
+			log.Printf("[Golang Process Master Warning] Gateway process exited: %v", err)
+		}
+	}()
+
 	// Start 24/7 background keep-alive goroutine
 	go keepEvolutionAwake()
+
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" && r.URL.Path != "/portal" && r.URL.Path != "/dashboard" && r.URL.Path != "/market" {

@@ -17,8 +17,5 @@ COPY --from=go-builder /app/server /app/server
 COPY gateway /app/gateway
 RUN cd /app/gateway && npm install --production && cp -r node_modules /app/node_modules
 
-# Copy Supervisor configuration
-COPY supervisord.conf /etc/supervisord.conf
-
 EXPOSE 8080 8081
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
+CMD ["/app/server"]
