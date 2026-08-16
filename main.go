@@ -341,11 +341,17 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 		return
 	}
 
-	// Check if bot is MUTED for this customer
+	// Check if bot is MUTED for this customer (Auto-resets on explicit product inquiry)
 	if globalDialogueEngine.GetState(senderPhone) == "HUMAN_ESCALATED" {
-		log.Printf("[Golang State Machine] Bot is MUTED for customer %s", senderPhone)
-		return
+		if strings.Contains(lower, "product") || strings.Contains(lower, "solar") || strings.Contains(lower, "panel") || strings.Contains(lower, "inverter") || strings.Contains(lower, "price") || strings.Contains(lower, "hello") || strings.Contains(lower, "hi") || strings.Contains(lower, "available") {
+			globalDialogueEngine.SetState(senderPhone, "IDLE")
+			log.Printf("[Golang State Machine] Auto-unmuted bot for customer %s on product inquiry", senderPhone)
+		} else {
+			log.Printf("[Golang State Machine] Bot is MUTED for customer %s", senderPhone)
+			return
+		}
 	}
+
 
 
 	// Check for explicit human takeover request (VIP Concierge Agent)
