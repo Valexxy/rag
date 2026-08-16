@@ -115,15 +115,18 @@ func (e *WorldFirstPhoneEngine) GetLocalWeatherNotice(city string) string {
 	}
 }
 
-// 📱 GENERATE WORLD-FIRST PERSONALIZED GREETING CARD
+// 📱 GENERATE NATURAL & PERSONALIZED GREETING
 func (e *WorldFirstPhoneEngine) GeneratePersonalizedOpening(phone, profileName, text string) string {
 	prof := e.UpdateCustomerProfile(phone, profileName, text)
-	custLoc := globalLocationEngine.GetLocation(phone)
 	greetingText, emoji := e.GetTimeOfDayGreeting()
-	weatherInfo := e.GetLocalWeatherNotice(custLoc.City)
 
-	return fmt.Sprintf("%s %s %s!\nWelcome to Teeslux Global Electronics & Solar! How are you doing today? %s %s\n\nHow may we assist your power and electronics needs today?", greetingText, prof.Name, emoji, weatherInfo, emoji)
+	displayName := prof.Name
+	if displayName == "Valued Client" || displayName == "" {
+		return fmt.Sprintf("%s! %s Welcome to Teeslux Electronics & Solar. How may I help you today?", greetingText, emoji)
+	}
+	return fmt.Sprintf("%s, %s! %s Welcome to Teeslux Electronics & Solar. How may I help you today?", greetingText, displayName, emoji)
 }
+
 
 // 📱 PHONE IN-BUILT NATIVE VCF CONTACT CARD GENERATOR
 func (e *WorldFirstPhoneEngine) GenerateVCardPayload() string {
