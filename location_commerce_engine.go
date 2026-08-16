@@ -103,25 +103,25 @@ func (l *LocationCommerceEngine) GenerateNeighborhoodGroupBuyNotice(phone string
 	return fmt.Sprintf("🎉 *[NEIGHBORHOOD GROUP BUY — %s]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n3 buyers in *%s (%s State)* are currently pooling an order for 550W Monocrystalline Solar Panels!\n\nJoin their group pool before 6:00 PM today to unlock **12%% GROUP DISCOUNT (₦105,600/panel)** and split waybill shipping costs!\n\nReply `#buy group` to join the pool!", strings.ToUpper(loc.City), loc.City, loc.State)
 }
 
-// FEATURE 6: Hyper-Local Dialect & Pidgin Tone Personalizer
+// FEATURE 6: Smart Location Dialect Adapter (Only applied when city is explicitly confirmed)
 func (l *LocationCommerceEngine) ApplyDialectTone(phone, responseText string) string {
 	loc := l.GetLocation(phone)
+	if loc.City == "" {
+		return responseText
+	}
 	stateUpper := strings.ToUpper(loc.State)
 	cityUpper := strings.ToUpper(loc.City)
 
 	var greeting string
 	switch {
 	case strings.Contains(stateUpper, "EDO") || strings.Contains(stateUpper, "DELTA") || strings.Contains(cityUpper, "BENIN") || strings.Contains(cityUpper, "WARRI") || strings.Contains(cityUpper, "SAPELE"):
-		greeting = fmt.Sprintf("📍 *[Location Detected: %s, %s]*\nHow body my boss! For your location at %s, express waybill delivery takes just 24 hours!\n\n", loc.City, loc.State, loc.City)
+		greeting = fmt.Sprintf("📍 *[Location: %s, %s]*\n", loc.City, loc.State)
 	case strings.Contains(stateUpper, "FCT") || strings.Contains(cityUpper, "ABUJA"):
-		greeting = fmt.Sprintf("📍 *[Executive Service: %s, FCT]*\nGood day Executive! For delivery to %s, our VIP courier unit ensures 24-hour white-glove delivery.\n\n", loc.City, loc.City)
-	case strings.Contains(stateUpper, "KANO") || strings.Contains(stateUpper, "KADUNA"):
-		greeting = fmt.Sprintf("📍 *[Location Detected: %s, Northern Hub]*\nSannu da zuwa! For our esteemed customer in %s, direct logistics dispatch is available daily.\n\n", loc.City, loc.City)
-	case strings.Contains(stateUpper, "RIVERS") || strings.Contains(cityUpper, "PORT HARCOURT"):
-		greeting = fmt.Sprintf("📍 *[Location Detected: %s, Rivers State]*\nGreat day Boss! Fast logistics dispatch to %s is ready for immediate fulfillment.\n\n", loc.City, loc.City)
+		greeting = fmt.Sprintf("📍 *[Location: %s, FCT]*\n", loc.City)
 	default:
-		greeting = fmt.Sprintf("📍 *[Location Detected: %s, %s]*\nWelcome! Doorstep delivery to %s is available via our express delivery network.\n\n", loc.City, loc.State, loc.City)
+		greeting = fmt.Sprintf("📍 *[Location: %s, %s]*\n", loc.City, loc.State)
 	}
 
 	return greeting + responseText
 }
+
