@@ -6,12 +6,13 @@ process.on('unhandledRejection', (reason) => {
     console.error('[Baileys Unhandled Rejection]', reason);
 });
 
-const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, Browsers } = require('@whiskeysockets/baileys');
 const express = require('express');
 const http = require('http');
 const QRCode = require('qrcode');
 const fs = require('fs');
 const pino = require('pino');
+
 
 const app = express();
 app.use(express.json());
@@ -123,8 +124,9 @@ async function connectToWhatsApp() {
             auth: state,
             logger: logger,
             printQRInTerminal: true,
-            browser: ['Ubuntu', 'Chrome', '120.0.0.0']
+            browser: Browsers ? Browsers.macOS('Desktop') : ['Mac OS', 'Chrome', '125.0.0.0']
         });
+
 
         sock.ev.on('creds.update', saveCreds);
 
