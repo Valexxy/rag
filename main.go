@@ -442,16 +442,27 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 	}
 	catalogStr := strings.Join(catLines, "\n")
 
+	tenant := globalMultiTenantRegistry.GetTenant("tenant_default")
+	merchantName := tenant.MerchantName
+	if merchantName == "" {
+		merchantName = "Teeslux Global Electronics & Solar"
+	}
+	address := tenant.Address
+	if address == "" {
+		address = "Commercial District"
+	}
+
 	// Call Multi-LLM AI Engine (Cerebras + Groq + OpenRouter)
-	aiReply := globalAIEngine.GenerateReply(messageText, senderPhone, "Teeslux Global Electronics & Solar", "Onitsha Main Market", "Electronics & Solar", catalogStr)
+	aiReply := globalAIEngine.GenerateReply(messageText, senderPhone, merchantName, address, "Commerce & Retail", catalogStr)
 	if aiReply != "" {
 		personalizedReply := globalLocationEngine.ApplyDialectTone(senderPhone, aiReply)
 		
 		// Prepend dynamic WAT time-of-day greeting ("Good afternoon!") on initial chat opening
 		opening := ""
 		if len(globalDialogueEngine.GetTurns(senderPhone)) <= 2 {
-			opening = globalWorldFirstEngine.GeneratePersonalizedOpening(senderPhone, profileName, messageText) + "\n\n"
+			opening = globalWorldFirstEngine.GeneratePersonalizedOpening(senderPhone, profileName, messageText, merchantName) + "\n\n"
 		}
+
 
 		taggedReply := fmt.Sprintf("🤖 *[Bot Assistant]:*\n%s%s", opening, personalizedReply)
 		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, taggedReply)

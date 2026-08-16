@@ -126,11 +126,15 @@ func (e *WorldFirstPhoneEngine) GetLocalWeatherNotice(city, phone string) string
 	return ""
 }
 
-// 📱 GENERATE COMPLETE 7-ELEMENT INITIAL OPENING CARD
-func (e *WorldFirstPhoneEngine) GeneratePersonalizedOpening(phone, profileName, text string) string {
+// 📱 GENERATE 100% HARDCODING-FREE INITIAL OPENING CARD
+func (e *WorldFirstPhoneEngine) GeneratePersonalizedOpening(phone, profileName, text, merchantName string) string {
 	prof := e.UpdateCustomerProfile(phone, profileName, text)
 	custLoc := globalLocationEngine.GetLocation(phone)
 	greetingText, emoji := e.GetTimeOfDayGreeting()
+
+	if merchantName == "" {
+		merchantName = "our Store"
+	}
 
 	// 1. Dynamic Location / Region Tag
 	locationTag := ""
@@ -165,8 +169,9 @@ func (e *WorldFirstPhoneEngine) GeneratePersonalizedOpening(phone, profileName, 
 		}
 	}
 
-	return fmt.Sprintf("%s%s%s! %s Welcome to Teeslux Global Electronics & Solar!%s%s\n\nHow may I assist your electronics, solar, or purchasing needs today?", locationTag, greetingText, nameStr, emoji, weatherStr, newsStr)
+	return fmt.Sprintf("%s%s%s! %s Welcome to %s!%s%s\n\nHow may I assist you today?", locationTag, greetingText, nameStr, emoji, merchantName, weatherStr, newsStr)
 }
+
 
 
 
