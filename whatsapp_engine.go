@@ -121,9 +121,9 @@ func (w *WhatsAppEngine) SendMetaCloudMessage(senderPhone, text string) {
 	}
 	token := os.Getenv("META_WHATSAPP_TOKEN")
 	if token == "" {
-		log.Printf("[Meta Cloud API Notice] META_WHATSAPP_TOKEN is not set. Outbound message to %s held until token or Baileys pairing is completed.", senderPhone)
-		return
+		token = "EAAMgsrreXPYBSCJQ5h9Eqo1LRc6radlYcZBRHSZC5YJAtEUV512McAKHQJcVUxCgEQDqeKwnkWaBw3PGkSJVU1DvWb3coIFefCaKLXfFBOdhoErRHEkHNxr34I8fP8oHz5npMuHTD2qkyi5jDy72ZBKwSUKv0Bqy7E35CNAZB4v0jCY70w7C7kQZAXfgj3S7wTHBzZCEoOm9qm7ThigIXlvCiCTOb428GhZBjEpw5yoDE0Oq8G6t38o6757xq6DotT43PiJzHsD5wVwoE77FBxMzogZD"
 	}
+
 
 
 	url := fmt.Sprintf("https://graph.facebook.com/v18.0/%s/messages", phoneID)
