@@ -124,7 +124,10 @@ func (s *SessionTracker) MarkGreeted(phone string) {
 	http.HandleFunc("/webhook/evolution", metaWebhookHandler)
 	http.HandleFunc("/webhook/monnify", monnifyWebhookHandler)
 	http.HandleFunc("/loc", locationPortalHandler)
+	http.HandleFunc("/l/", locationShortlinkHandler)
+	http.HandleFunc("/l", locationShortlinkHandler)
 	http.HandleFunc("/submit-loc", submitLocationAPIHandler)
+
 
 	http.HandleFunc("/api/v1/analytics/dashboard", dashboardAnalyticsHandler)
 
@@ -227,6 +230,11 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// 🔗 BRANDED SHORTLINK REDIRECT HANDLER (/l/<phone> or /l?r=<phone>)
+func locationShortlinkHandler(w http.ResponseWriter, r *http.Request) {
+	locationPortalHandler(w, r)
+}
+
 // 📍 HARDWARE GPS ANTI-FRAUD PORTAL HANDLER
 func locationPortalHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -273,6 +281,7 @@ func locationPortalHandler(w http.ResponseWriter, r *http.Request) {
                 var lat = pos.coords.latitude;
                 var lng = pos.coords.longitude;
                 var acc = pos.coords.accuracy;
+                var phoneRef = new URLSearchParams(window.location.search).get('ref') || new URLSearchParams(window.location.search).get('r') || window.location.pathname.split('/').filter(Boolean).pop();
 
                 status.innerText = '⏳ Verifying Nigerian territory & checking VPN shield...';
 
@@ -280,12 +289,13 @@ func locationPortalHandler(w http.ResponseWriter, r *http.Request) {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        ref: new URLSearchParams(window.location.search).get('ref'),
+                        ref: phoneRef,
                         latitude: lat,
                         longitude: lng,
                         accuracy: acc
                     })
                 })
+
                 .then(res => res.json())
                 .then(data => {
                     if (data.status === 'verified') {
