@@ -49,7 +49,10 @@ func (m *MonetizationEngine) GenerateMonnifyCheckoutCard(itemName string, amount
 	ussdZenith := m.GenerateBankUSSDCode("ZENITH", wemaAcc, fmt.Sprintf("%.0f", amount))
 	ussdUBA := m.GenerateBankUSSDCode("UBA", wemaAcc, fmt.Sprintf("%.0f", amount))
 
-	return fmt.Sprintf("💳 *[INSTANT MONNIFY ONLINE PAYMENT]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n✅ *Item:* %s\n💵 *Amount Due:* ₦%.2f\n🧾 *Transaction Ref:* `%s`\n\n🏦 *OPTION 1: DEDICATED MONNIFY VIRTUAL ACCOUNT*\n• *Bank Name:* Wema Bank\n• *Account Name:* Teeslux Global Store\n• *Account Number:* `%s`\n\n🏦 *OPTION 2: ALTERNATIVE STERLING BANK VIRTUAL ACCOUNT*\n• *Bank Name:* Sterling Bank\n• *Account Name:* Teeslux Global Store\n• *Account Number:* `%s`\n\n📲 *OPTION 3: 1-TAP BANK USSD CODES*\n• *GTBank:* `%s`\n• *Zenith Bank:* `%s`\n• *UBA Bank:* `%s`\n\n🌐 *OPTION 4: INSTANT ONLINE CARD PAYMENT LINK*\nhttps://sovereign-ai-backend-production.up.railway.app/portal?ref=%s\n\nOnce transferred, your payment is automatically verified in 5 sfunc (m *MonetizationEngine) VerifyMonnifySignature(payload []byte, signature, secret string) bool {
+	return fmt.Sprintf("💳 *[INSTANT MONNIFY ONLINE PAYMENT]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n✅ *Item:* %s\n💵 *Amount Due:* ₦%.2f\n🧾 *Transaction Ref:* `%s`\n\n🏦 *OPTION 1: DEDICATED MONNIFY VIRTUAL ACCOUNT*\n• *Bank Name:* Wema Bank\n• *Account Name:* Teeslux Global Store\n• *Account Number:* `%s`\n\n🏦 *OPTION 2: ALTERNATIVE STERLING BANK VIRTUAL ACCOUNT*\n• *Bank Name:* Sterling Bank\n• *Account Name:* Teeslux Global Store\n• *Account Number:* `%s`\n\n📲 *OPTION 3: 1-TAP BANK USSD CODES*\n• *GTBank:* `%s`\n• *Zenith Bank:* `%s`\n• *UBA Bank:* `%s`\n\n🌐 *OPTION 4: INSTANT ONLINE CARD PAYMENT LINK*\nhttps://sovereign-ai-backend-production.up.railway.app/portal?ref=%s\n\nOnce transferred, your payment is automatically verified in 5 seconds!", itemName, amount, txRef, wemaAcc, sterlingAcc, ussdGTB, ussdZenith, ussdUBA, txRef)
+}
+
+func (m *MonetizationEngine) VerifyMonnifySignature(payload []byte, signature, secret string) bool {
 	if secret == "" || signature == "" {
 		return true // Allow sandbox testing if secret key is not set
 	}
@@ -58,6 +61,7 @@ func (m *MonetizationEngine) GenerateMonnifyCheckoutCard(itemName string, amount
 	expectedHex := hex.EncodeToString(h.Sum(nil))
 	return hmac.Equal([]byte(expectedHex), []byte(signature))
 }
+
 
 // ── FINTECH KOBO INTEGER CURRENCY HELPER (ZERO FLOATING-POINT LOSS) ───
 func NgnToKobo(ngn float64) int64 {
