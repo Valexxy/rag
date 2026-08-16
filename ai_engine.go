@@ -30,15 +30,31 @@ var globalAIEngine = &AIEngine{
 	},
 }
 
-func (ai *AIEngine) GenerateReply(query, phone, businessName, address, industry, catalogStr string) string {
+func (ai *AIEngine) GenerateReply(query, phone, businessName, address, industry, catalogStr string, history []ChatTurn) string {
+	var histLines []string
+	for _, turn := range history {
+		if turn.Role == "user" {
+			histLines = append(histLines, fmt.Sprintf("Customer: %s", turn.Content))
+		} else {
+			histLines = append(histLines, fmt.Sprintf("Assistant: %s", turn.Content))
+		}
+	}
+	historyStr := strings.Join(histLines, "\n")
+	if historyStr == "" {
+		historyStr = "None (First message)"
+	}
+
 	prompt := fmt.Sprintf(`You are the official Customer Care & Sales Assistant for %s (Industry: %s) located at %s.
 
 CURRENT LIVE PRODUCT CATALOG:
 %s
 
+RECENT CONVERSATION HISTORY (CRITICAL - Maintain full context of what item the customer is asking about! E.g. if the user says "tell me more", explain the exact item previously discussed!):
+%s
+
 RULES:
-1. Quote ONLY exact catalog prices from the live list above.
-2. Be natural, warm, conversational, intelligent, and genuinely helpful. Follow the exact direction of the customer's chat.
+1. Maintain strict conversation continuity. If the customer says "tell me more", "how much", "details", or asks follow-up questions, refer directly to the specific product previously mentioned in the conversation history above!
+2. Quote ONLY exact catalog prices from the live list above.
 3. ONLINE PAYMENT & BANK ACCOUNT DETAILS:
    - When the customer asks about payments, how to pay, bank account numbers, transfer details, or Monnify options, provide our dedicated accounts:
      🏦 Wema Bank: 4112328816 (Account Name: Teeslux Global Store)
@@ -46,10 +62,10 @@ RULES:
      📲 1-Tap USSD: *737*50*4112328816#
      (Transfers are automatically verified in real-time!)
 4. NEVER invent fake names. Use the customer's real name if provided, otherwise address them naturally.
-5. Do NOT guess or state the customer's location or weather unless the customer explicitly tells you where they are located.
-6. Keep responses concise, helpful, and natural.
+5. Keep responses concise, helpful, clear, and natural.
 
-Customer Query: %s`, businessName, industry, address, catalogStr, query)
+Latest Customer Query: %s`, businessName, industry, address, catalogStr, historyStr, query)
+
 
 
 

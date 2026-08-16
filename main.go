@@ -452,8 +452,11 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 		address = "Commercial District"
 	}
 
+	history := globalDialogueEngine.GetTurns(senderPhone)
+
 	// Call Multi-LLM AI Engine (Cerebras + Groq + OpenRouter)
-	aiReply := globalAIEngine.GenerateReply(messageText, senderPhone, merchantName, address, "Commerce & Retail", catalogStr)
+	aiReply := globalAIEngine.GenerateReply(messageText, senderPhone, merchantName, address, "Commerce & Retail", catalogStr, history)
+
 	if aiReply != "" {
 		personalizedReply := globalLocationEngine.ApplyDialectTone(senderPhone, aiReply)
 		
