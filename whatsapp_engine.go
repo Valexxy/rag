@@ -116,11 +116,15 @@ func (w *WhatsAppEngine) SendMediaImage(instanceName, phone, imageURL, caption s
 
 func (w *WhatsAppEngine) SendMetaCloudMessage(senderPhone, text string) {
 	phoneID := os.Getenv("META_PHONE_NUMBER_ID")
+	if phoneID == "" {
+		phoneID = "1242614362274985"
+	}
 	token := os.Getenv("META_WHATSAPP_TOKEN")
-	if phoneID == "" || token == "" {
-		w.SendMessage("sovereign-ai-master", senderPhone, text)
+	if token == "" {
+		log.Printf("[Meta Cloud API Notice] META_WHATSAPP_TOKEN is not set. Outbound message to %s held until token or Baileys pairing is completed.", senderPhone)
 		return
 	}
+
 
 	url := fmt.Sprintf("https://graph.facebook.com/v18.0/%s/messages", phoneID)
 	payload := map[string]interface{}{
