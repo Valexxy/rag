@@ -457,17 +457,22 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 	if aiReply != "" {
 		personalizedReply := globalLocationEngine.ApplyDialectTone(senderPhone, aiReply)
 		
-		// Prepend dynamic WAT time-of-day greeting ("Good afternoon!") on initial chat opening
-		opening := ""
+		finalReply := personalizedReply
 		if len(globalDialogueEngine.GetTurns(senderPhone)) <= 2 {
-			opening = globalWorldFirstEngine.GeneratePersonalizedOpening(senderPhone, profileName, messageText, merchantName) + "\n\n"
+			opening := globalWorldFirstEngine.GeneratePersonalizedOpening(senderPhone, profileName, messageText, merchantName)
+			lowerMsg := strings.ToLower(strings.TrimSpace(messageText))
+			if lowerMsg == "hello" || lowerMsg == "hi" || lowerMsg == "hey" || lowerMsg == "good morning" || lowerMsg == "good afternoon" || lowerMsg == "good evening" || lowerMsg == "haiii" {
+				finalReply = opening
+			} else {
+				finalReply = fmt.Sprintf("%s\n\n%s", opening, personalizedReply)
+			}
 		}
 
-
-		taggedReply := fmt.Sprintf("🤖 *[Bot Assistant]:*\n%s%s", opening, personalizedReply)
+		taggedReply := fmt.Sprintf("🤖 *[Bot Assistant]:*\n%s", finalReply)
 		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, taggedReply)
-		globalDialogueEngine.AddTurn(senderPhone, "assistant", personalizedReply)
+		globalDialogueEngine.AddTurn(senderPhone, "assistant", finalReply)
 	}
+
 
 
 
