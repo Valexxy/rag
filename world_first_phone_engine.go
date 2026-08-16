@@ -126,7 +126,7 @@ func (e *WorldFirstPhoneEngine) GetLocalWeatherNotice(city, phone string) string
 	return ""
 }
 
-// 📱 GENERATE 100% DYNAMIC PERSONALIZED GREETING (WAT TIME + LIVE OPEN-METEO WEATHER)
+// 📱 GENERATE 100% DYNAMIC PERSONALIZED GREETING (WAT TIME + LIVE OPEN-METEO WEATHER + LOCAL COMMERCE NEWS)
 func (e *WorldFirstPhoneEngine) GeneratePersonalizedOpening(phone, profileName, text string) string {
 	prof := e.UpdateCustomerProfile(phone, profileName, text)
 	custLoc := globalLocationEngine.GetLocation(phone)
@@ -138,12 +138,21 @@ func (e *WorldFirstPhoneEngine) GeneratePersonalizedOpening(phone, profileName, 
 		weatherPrefix = fmt.Sprintf(" %s", weatherInfo)
 	}
 
+	newsInfo := ""
+	if custLoc.City != "" {
+		newsNotice := globalLocalNewsPlugin.GetLocalCommerceNews(custLoc.City)
+		if newsNotice != "" {
+			newsInfo = fmt.Sprintf("\n%s", newsNotice)
+		}
+	}
+
 	displayName := prof.Name
 	if displayName == "Valued Client" || displayName == "" {
-		return fmt.Sprintf("%s! %s%s Welcome to Teeslux Electronics & Solar.", greetingText, emoji, weatherPrefix)
+		return fmt.Sprintf("%s! %s%s%s Welcome to Teeslux Electronics & Solar.", greetingText, emoji, weatherPrefix, newsInfo)
 	}
-	return fmt.Sprintf("%s %s! %s%s Welcome to Teeslux Electronics & Solar.", greetingText, displayName, emoji, weatherPrefix)
+	return fmt.Sprintf("%s %s! %s%s%s Welcome to Teeslux Electronics & Solar.", greetingText, displayName, emoji, weatherPrefix, newsInfo)
 }
+
 
 
 
