@@ -105,11 +105,20 @@ let activePairingCode = '';
 
 async function connectToWhatsApp() {
     try {
-        if (!fs.existsSync('baileys_auth')) {
+        let authResult;
+        try {
+            if (!fs.existsSync('baileys_auth')) {
+                fs.mkdirSync('baileys_auth', { recursive: true });
+            }
+            authResult = await useMultiFileAuthState('baileys_auth');
+        } catch (e) {
+            console.error('[Baileys Self-Healing] Clearing corrupted auth session:', e.message);
+            try { fs.rmSync('baileys_auth', { recursive: true, force: true }); } catch (rmErr) {}
             fs.mkdirSync('baileys_auth', { recursive: true });
+            authResult = await useMultiFileAuthState('baileys_auth');
         }
+        const { state, saveCreds } = authResult;
 
-        const { state, saveCreds } = await useMultiFileAuthState('baileys_auth');
         sock = makeWASocket({
             auth: state,
             logger: logger,
@@ -118,6 +127,7 @@ async function connectToWhatsApp() {
         });
 
         sock.ev.on('creds.update', saveCreds);
+
 
         sock.ev.on('connection.update', async (update) => {
             const { connection, lastDisconnect, qr } = update;
