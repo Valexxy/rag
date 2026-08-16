@@ -350,13 +350,8 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 		return
 	}
 
-	// Monnify & Paystack Online Payment Intercept
-	if strings.Contains(lower, "pay") || strings.Contains(lower, "payment") || strings.Contains(lower, "how to pay") || strings.Contains(lower, "account details") || strings.Contains(lower, "transfer") || strings.Contains(lower, "account number") || strings.Contains(lower, "monnify") || strings.Contains(lower, "can't i pay") || strings.Contains(lower, "can i pay") || strings.Contains(lower, "how can i pay") {
-		p := storeCatalog[0]
-		payCard := globalMonetizationEngine.GenerateMonnifyCheckoutCard(p.Name, p.Price, senderPhone)
-		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, payCard)
-		return
-	}
+	// 100% Autonomous AI Conversational Engine Handles Payments, Sizing, Catalog & Product Queries
+
 
 
 	// Smart Co-Pilot State Machine: Auto-unmutes after 15 minutes of manager inactivity
