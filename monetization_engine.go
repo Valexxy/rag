@@ -59,25 +59,34 @@ func (m *MonetizationEngine) GenerateMonnifyCheckoutCard(itemName string, amount
 	return hmac.Equal([]byte(expectedHex), []byte(signature))
 }
 
+// ── FINTECH KOBO INTEGER CURRENCY HELPER (ZERO FLOATING-POINT LOSS) ───
+func NgnToKobo(ngn float64) int64 {
+	return int64(ngn*100.0 + 0.5)
+}
+
+func KoboToNgn(kobo int64) float64 {
+	return float64(kobo) / 100.0
+}
+
 // ── FINTECH THREAD-SAFE IDEMPOTENCY & ACCUMULATIVE PAYMENT LEDGER ─────
 type CustomerOrder struct {
-	ItemName   string  `json:"item_name"`
-	ItemPrice  float64 `json:"item_price"`
-	AmountPaid float64 `json:"amount_paid"`
-	BalanceDue float64 `json:"balance_due"`
-	Status     string  `json:"status"`
+	ItemName   string `json:"item_name"`
+	ItemPriceKobo int64 `json:"item_price_kobo"`
+	PaidKobo   int64  `json:"paid_kobo"`
+	BalanceKobo int64 `json:"balance_kobo"`
+	Status     string `json:"status"`
 }
 
 type PaymentLedger struct {
-	mu                 sync.RWMutex
-	processedTxRefs   map[string]bool
-	customerCumulative map[string]float64
-	activeOrders       map[string]*CustomerOrder
+	mu                  sync.RWMutex
+	processedTxRefs    map[string]bool
+	customerCumulative map[string]int64 // phone -> Kobo integer accumulated
+	activeOrders        map[string]*CustomerOrder
 }
 
 var globalPaymentLedger = &PaymentLedger{
 	processedTxRefs:   make(map[string]bool),
-	customerCumulative: make(map[string]float64),
+	customerCumulative: make(map[string]int64),
 	activeOrders:       make(map[string]*CustomerOrder),
 }
 
@@ -93,10 +102,10 @@ func (p *PaymentLedger) RecordTransaction(txRef string) {
 	p.processedTxRefs[txRef] = true
 }
 
-func (p *PaymentLedger) AddPayment(phone string, amount float64) float64 {
+func (p *PaymentLedger) AddPaymentKobo(phone string, kobo int64) int64 {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	p.customerCumulative[phone] += amount
+	p.customerCumulative[phone] += kobo
 	return p.customerCumulative[phone]
 }
 
@@ -107,11 +116,12 @@ func (p *PaymentLedger) ClearBalance(phone string) {
 	delete(p.activeOrders, phone)
 }
 
-func (p *PaymentLedger) GetCumulative(phone string) float64 {
+func (p *PaymentLedger) GetCumulativeKobo(phone string) int64 {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	return p.customerCumulative[phone]
 }
+
 
 
 func (m *MonetizationEngine) CalculateZeroCostSavings(merchantsCount int) map[string]interface{} {
@@ -216,68 +226,86 @@ func monnifyWebhookHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		// 3. Accumulate total payments for this customer phone line
-		totalCumulativePaid := globalPaymentLedger.AddPayment(customerPhone, amt)
+		// 3. Accumulate total payments for this customer phone line (Cent-Precision Kobo Integer)
+		amtKobo := NgnToKobo(amt)
+		totalCumulativeKobo := globalPaymentLedger.AddPaymentKobo(customerPhone, amtKobo)
 
-		// 4. Identify exact item paid for (Exact price match takes priority)
+		// 4. Identify exact item paid for (Quantity multiplier & exact price match priority)
 		itemName := ""
-		itemPrice := 0.0
+		itemPriceKobo := int64(0)
+		matched := false
 
-		// Step A: Check for exact catalog price match first (e.g. ₦60,000 for Rice Bag, ₦120,000 for Solar Panel)
+		// Step A: Check for exact catalog price or quantity multiplier match (e.g. 2 x ₦120,000 = ₦240,000)
 		for _, p := range storeCatalog {
-			if amt == p.Price {
-				itemName = p.Name
-				itemPrice = p.Price
+			pKobo := NgnToKobo(p.Price)
+			for qty := 1; qty <= 10; qty++ {
+				targetKobo := pKobo * int64(qty)
+				if amtKobo == targetKobo {
+					if qty > 1 {
+						itemName = fmt.Sprintf("%d x %s", qty, p.Name)
+					} else {
+						itemName = p.Name
+					}
+					itemPriceKobo = targetKobo
+					matched = true
+					break
+				}
+			}
+			if matched {
 				break
 			}
 		}
 
-		// Step B: If not an exact single-item price match, check accumulated balance against closest catalog item
-		if itemPrice == 0 {
+		// Step B: Check accumulative payment balance if not an exact single/multi-item match
+		if itemPriceKobo == 0 {
 			for _, p := range storeCatalog {
-				if totalCumulativePaid >= p.Price {
-					if p.Price > itemPrice {
+				pKobo := NgnToKobo(p.Price)
+				if totalCumulativeKobo >= pKobo {
+					if pKobo > itemPriceKobo {
 						itemName = p.Name
-						itemPrice = p.Price
+						itemPriceKobo = pKobo
 					}
 				}
 			}
 		}
 
-		if itemPrice == 0 {
-			// Default fallback to 20,000 mAh Solar Power Bank (₦18,500)
+		if itemPriceKobo == 0 {
 			itemName = storeCatalog[1].Name
-			itemPrice = storeCatalog[1].Price
+			itemPriceKobo = NgnToKobo(storeCatalog[1].Price)
 		}
 
+		amtNgn := KoboToNgn(amtKobo)
+		totalCumulativeNgn := KoboToNgn(totalCumulativeKobo)
+		itemPriceNgn := KoboToNgn(itemPriceKobo)
 
 		// ── CASE A: UNDERPAYMENT / PARTIAL PAYMENT ACCUMULATION ────────────
-		if totalCumulativePaid < itemPrice {
-			balanceDue := itemPrice - totalCumulativePaid
-			custReceipt := fmt.Sprintf("🟡 *[PARTIAL PAYMENT RECEIVED — MONNIFY]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nDear %s,\nWe received your partial bank transfer payment of *₦%.2f*!\n\n📦 *Item:* %s\n🏷️ *Catalog Price:* ₦%.2f\n💵 *Total Paid So Far:* ₦%.2f\n⚠️ *OUTSTANDING BALANCE DUE:* ₦%.2f\n🧾 *Transaction Ref:* `%s`\n\nPlease transfer the remaining balance of *₦%.2f* to complete your order!", custName, amt, itemName, itemPrice, totalCumulativePaid, balanceDue, txRef, balanceDue)
+		if totalCumulativeKobo < itemPriceKobo {
+			balanceKobo := itemPriceKobo - totalCumulativeKobo
+			balanceNgn := KoboToNgn(balanceKobo)
+			custReceipt := fmt.Sprintf("🟡 *[PARTIAL PAYMENT RECEIVED — MONNIFY]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nDear %s,\nWe received your partial bank transfer payment of *₦%.2f*!\n\n📦 *Item:* %s\n🏷️ *Catalog Price:* ₦%.2f\n💵 *Total Paid So Far:* ₦%.2f\n⚠️ *OUTSTANDING BALANCE DUE:* ₦%.2f\n🧾 *Transaction Ref:* `%s`\n\nPlease transfer the remaining balance of *₦%.2f* to complete your order!", custName, amtNgn, itemName, itemPriceNgn, totalCumulativeNgn, balanceNgn, txRef, balanceNgn)
 
 			globalWhatsAppEngine.SendMessage("sovereign-ai-master", customerPhone, custReceipt)
 
-			managerAlert := fmt.Sprintf("🟡 *[MANAGER ALERT — PARTIAL PAYMENT RECEIVED]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Customer:* %s (`%s`)\n📦 *Item:* %s\n💵 *Latest Payment:* ₦%.2f\n💵 *Total Paid So Far:* ₦%.2f (Catalog Price: ₦%.2f)\n⚠️ *OUTSTANDING BALANCE:* ₦%.2f\n🧾 *Tx Ref:* `%s`", custName, customerPhone, itemName, amt, totalCumulativePaid, itemPrice, balanceDue, txRef)
+			managerAlert := fmt.Sprintf("🟡 *[MANAGER ALERT — PARTIAL PAYMENT RECEIVED]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Customer:* %s (`%s`)\n📦 *Item:* %s\n💵 *Latest Payment:* ₦%.2f\n💵 *Total Paid So Far:* ₦%.2f (Catalog Price: ₦%.2f)\n⚠️ *OUTSTANDING BALANCE:* ₦%.2f\n🧾 *Tx Ref:* `%s`", custName, customerPhone, itemName, amtNgn, totalCumulativeNgn, itemPriceNgn, balanceNgn, txRef)
 			globalWhatsAppEngine.SendMessage("sovereign-ai-master", managerPhone, managerAlert)
 			return
 		}
 
 		// ── CASE B: FULL PAYMENT OR OVERPAYMENT (BOT DISENGAGES TO HUMAN AGENT)
-		var overpaid float64 = 0.0
-		if totalCumulativePaid > itemPrice {
-			overpaid = totalCumulativePaid - itemPrice
+		var overpaidKobo int64 = 0
+		if totalCumulativeKobo > itemPriceKobo {
+			overpaidKobo = totalCumulativeKobo - itemPriceKobo
 		}
+		overpaidNgn := KoboToNgn(overpaidKobo)
 
-		// Clear customer accumulation balance ledger since order is fully paid
 		globalPaymentLedger.ClearBalance(customerPhone)
 
 		overpaidNote := ""
-		if overpaid > 0 {
-			overpaidNote = fmt.Sprintf("\n\n⚠️ *OVERPAYMENT DETECTED:* You paid *₦%.2f* extra above the catalog price (₦%.2f). Our Store Manager has been notified to issue your manual bank refund of *₦%.2f*!", overpaid, itemPrice, overpaid)
+		if overpaidKobo > 0 {
+			overpaidNote = fmt.Sprintf("\n\n⚠️ *OVERPAYMENT DETECTED:* You paid *₦%.2f* extra above the catalog price (₦%.2f). Our Store Manager has been notified to issue your manual bank refund of *₦%.2f*!", overpaidNgn, itemPriceNgn, overpaidNgn)
 		}
 
-		receiptMsg := fmt.Sprintf("🎉 *[PAYMENT CONFIRMED — CONNECTED TO HUMAN AGENT]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nDear %s,\nThank you for your patronage! We received your live bank transfer payment!\n\n📦 *Item Paid For:* %s\n💵 *Total Amount Paid:* ₦%.2f\n🏷️ *Catalog Price:* ₦%.2f\n🧾 *Transaction Ref:* `%s`\n✅ *Status:* PAID & VERIFIED%s\n\n👔 *Human Agent Handoff:* The AI Bot has disengaged. You are now connected directly with our Store Manager for further discussion and order finalization!", custName, itemName, totalCumulativePaid, itemPrice, txRef, overpaidNote)
+		receiptMsg := fmt.Sprintf("🎉 *[PAYMENT CONFIRMED — CONNECTED TO HUMAN AGENT]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nDear %s,\nThank you for your patronage! We received your live bank transfer payment!\n\n📦 *Item Paid For:* %s\n💵 *Total Amount Paid:* ₦%.2f\n🏷️ *Catalog Price:* ₦%.2f\n🧾 *Transaction Ref:* `%s`\n✅ *Status:* PAID & VERIFIED%s\n\n👔 *Human Agent Handoff:* The AI Bot has disengaged. You are now connected directly with our Store Manager for further discussion and order finalization!", custName, itemName, totalCumulativeNgn, itemPriceNgn, txRef, overpaidNote)
 
 		// 1. Send receipt & handoff note to Customer
 		globalWhatsAppEngine.SendMessage("sovereign-ai-master", customerPhone, receiptMsg)
@@ -287,13 +315,14 @@ func monnifyWebhookHandler(w http.ResponseWriter, r *http.Request) {
 
 		// 3. Send Executive Alert to Store Manager (2348072015725)
 		refundNotice := ""
-		if overpaid > 0 {
-			refundNotice = fmt.Sprintf("\n\n🚨 *ACTION REQUIRED (MANUAL REFUND DUE):* Customer overpaid ₦%.2f extra! Please request customer bank details to transfer manual refund of ₦%.2f.", overpaid, overpaid)
+		if overpaidKobo > 0 {
+			refundNotice = fmt.Sprintf("\n\n🚨 *ACTION REQUIRED (MANUAL REFUND DUE):* Customer overpaid ₦%.2f extra! Please request customer bank details to transfer manual refund of ₦%.2f.", overpaidNgn, overpaidNgn)
 		}
 
-		managerNotice := fmt.Sprintf("👔 *[STORE MANAGER ALERT — NEW PAID CUSTOMER HANDOFF]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n👤 *Customer Name:* %s\n📱 *Customer Phone:* `%s`\n📦 *Item Purchased:* %s\n💵 *Total Amount Paid:* ₦%.2f\n🧾 *Transaction Ref:* `%s`\n✅ *Status:* PAID & VERIFIED (BOT DISENGAGED)%s\n\n💬 *Action Required:* The AI bot is now disengaged. Please chat directly with the customer to finalize dispatch or manual refund!", custName, customerPhone, itemName, totalCumulativePaid, txRef, refundNotice)
+		managerNotice := fmt.Sprintf("👔 *[STORE MANAGER ALERT — NEW PAID CUSTOMER HANDOFF]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n👤 *Customer Name:* %s\n📱 *Customer Phone:* `%s`\n📦 *Item Purchased:* %s\n💵 *Total Amount Paid:* ₦%.2f\n🧾 *Transaction Ref:* `%s`\n✅ *Status:* PAID & VERIFIED (BOT DISENGAGED)%s\n\n💬 *Action Required:* The AI bot is now disengaged. Please chat directly with the customer to finalize dispatch or manual refund!", custName, customerPhone, itemName, totalCumulativeNgn, txRef, refundNotice)
 		globalWhatsAppEngine.SendMessage("sovereign-ai-master", managerPhone, managerNotice)
 	}
+
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
