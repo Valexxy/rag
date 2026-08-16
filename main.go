@@ -321,8 +321,12 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 	log.Printf("[Golang Webhook Dispatcher] Sender: %s (%s) | Message: '%s'", profileName, senderPhone, cleanMsg)
 
 	custProf := globalWorldFirstEngine.UpdateCustomerProfile(senderPhone, profileName, cleanMsg)
-	custLoc := globalLocationEngine.DetectAndUpdateLocation(senderPhone, cleanMsg)
+	if city, lat, lng := DetectCityFromText(cleanMsg); city != "" {
+		globalLocationEngine.SetLocation(senderPhone, city, "Nigeria", lat, lng)
+	}
+	custLoc := globalLocationEngine.GetLocation(senderPhone)
 	log.Printf("[World-First Engine] Customer: %s (%s) | Location: %s, %s", custProf.Name, senderPhone, custLoc.City, custLoc.State)
+
 
 
 

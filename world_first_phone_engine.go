@@ -136,16 +136,18 @@ func (e *WorldFirstPhoneEngine) GeneratePersonalizedOpening(phone, profileName, 
 		merchantName = "our Store"
 	}
 
-	// 1. Dynamic Community / Location Tag
+	// 1. Dynamic Community / Location Tag (Zero Fake Defaults)
 	locationTag := ""
 	if custLoc.City != "" {
-		locationTag = fmt.Sprintf("📍 *[Community: %s, %s]*\n", custLoc.City, custLoc.State)
-	} else {
-		region, _, _ := ResolveRegionFromPhonePrefix(phone)
-		if region != "" {
-			locationTag = fmt.Sprintf("📍 *[Community: %s]*\n", region)
+		if custLoc.State != "" {
+			locationTag = fmt.Sprintf("📍 *[Location: %s, %s]*\n", custLoc.City, custLoc.State)
+		} else {
+			locationTag = fmt.Sprintf("📍 *[Location: %s]*\n", custLoc.City)
 		}
+	} else {
+		locationTag = "📍 *[Region: Nigeria]*\n📍 *Tip: Send your WhatsApp Location Pin or reply with your City/Town for 100% precise local weather & delivery rates!*\n"
 	}
+
 
 
 	// 2. Customer Name Greeting

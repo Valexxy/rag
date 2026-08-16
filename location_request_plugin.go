@@ -69,28 +69,77 @@ func BuildMetaLocationRequestPayload(recipientPhone string) map[string]interface
 	}
 }
 
-// 📱 TELECOM NETWORK PREFIX HYPER-ACCURATE REGIONAL & COMMUNITY RESOLVER
+// 📱 TELECOM NETWORK REGIONAL RESOLVER (ZERO FAKE DEFAULT)
 func ResolveRegionFromPhonePrefix(phone string) (string, float64, float64) {
 	clean := strings.TrimPrefix(phone, "234")
 	clean = strings.TrimPrefix(clean, "+234")
 	clean = strings.TrimPrefix(clean, "0")
 
-	// Map telecom routing nodes down to hyper-accurate commercial cities & communities
-	switch {
-	case strings.HasPrefix(clean, "803") || strings.HasPrefix(clean, "806") || strings.HasPrefix(clean, "813") || strings.HasPrefix(clean, "816") || strings.HasPrefix(clean, "903") || strings.HasPrefix(clean, "906"):
-		return "Ikeja / Lagos Central", 6.6018, 3.3515
-	case strings.HasPrefix(clean, "805") || strings.HasPrefix(clean, "807") || strings.HasPrefix(clean, "815") || strings.HasPrefix(clean, "905"):
-		return "Surulere / Lagos Mainland", 6.4994, 3.3582
-	case strings.HasPrefix(clean, "802") || strings.HasPrefix(clean, "812") || strings.HasPrefix(clean, "708") || strings.HasPrefix(clean, "902"):
-		return "Maitama / Abuja Central", 9.0765, 7.3986
-	case strings.HasPrefix(clean, "809") || strings.HasPrefix(clean, "818") || strings.HasPrefix(clean, "817") || strings.HasPrefix(clean, "909"):
-		return "GRA Phase 2 / Port Harcourt", 4.8156, 7.0498
-	case strings.HasPrefix(clean, "808") || strings.HasPrefix(clean, "701") || strings.HasPrefix(clean, "703"):
-		return "Onitsha Main Commercial Axis", 6.1437, 6.7865
-	default:
-		return "Lagos Commercial Hub", 6.5244, 3.3792
-	}
+	// Return neutral Nigeria centroid without forcing fake local cities
+	return "Nigeria Hub", 9.0765, 7.3986
 }
+
+// 🗺️ EXTRACT EXACT NIGERIAN CITY/TOWN/STATE FROM TEXT MENTIONS
+func DetectCityFromText(text string) (string, float64, float64) {
+	lower := strings.ToLower(text)
+
+	switch {
+	// ABUJA (FCT)
+	case strings.Contains(lower, "abuja") || strings.Contains(lower, "maitama") || strings.Contains(lower, "wuse") || strings.Contains(lower, "gwarinpa") || strings.Contains(lower, "asokoro") || strings.Contains(lower, "utako") || strings.Contains(lower, "kubwa") || strings.Contains(lower, "lugbe") || strings.Contains(lower, "garki") || strings.Contains(lower, "jabi"):
+		return "Abuja FCT", 9.0765, 7.3986
+
+	// RIVERS / PORT HARCOURT
+	case strings.Contains(lower, "port harcourt") || strings.Contains(lower, "phc") || strings.Contains(lower, "gra phase") || strings.Contains(lower, "diobu") || strings.Contains(lower, "rumuokoro") || strings.Contains(lower, "trans amadi") || strings.Contains(lower, "choba") || strings.Contains(lower, "eleme") || strings.Contains(lower, "rivers"):
+		return "Port Harcourt", 4.8156, 7.0498
+
+	// OYO / IBADAN
+	case strings.Contains(lower, "ibadan") || strings.Contains(lower, "bodija") || strings.Contains(lower, "dugbe") || strings.Contains(lower, "challenge") || strings.Contains(lower, "mokola") || strings.Contains(lower, "iwo road") || strings.Contains(lower, "ring road") || strings.Contains(lower, "oyo"):
+		return "Ibadan", 7.3775, 3.9470
+
+	// EDO / BENIN
+	case strings.Contains(lower, "benin") || strings.Contains(lower, "uselu") || strings.Contains(lower, "ekenwan") || strings.Contains(lower, "edo"):
+		return "Benin City", 6.3350, 5.6037
+
+	// ENUGU
+	case strings.Contains(lower, "enugu") || strings.Contains(lower, "new haven") || strings.Contains(lower, "trans ekulu") || strings.Contains(lower, "ogui"):
+		return "Enugu", 6.4584, 7.5464
+
+	// DELTA
+	case strings.Contains(lower, "asaba") || strings.Contains(lower, "warri") || strings.Contains(lower, "effurun") || strings.Contains(lower, "sapele") || strings.Contains(lower, "delta"):
+		return "Asaba", 6.1983, 6.7291
+
+	// KANO
+	case strings.Contains(lower, "kano") || strings.Contains(lower, "sabon gari") || strings.Contains(lower, "nassarawa"):
+		return "Kano", 12.0022, 8.5920
+
+	// KADUNA
+	case strings.Contains(lower, "kaduna") || strings.Contains(lower, "barnawa") || strings.Contains(lower, "sabot tasha") || strings.Contains(lower, "kawo"):
+		return "Kaduna", 10.5105, 7.4165
+
+	// OGUN
+	case strings.Contains(lower, "abeokuta") || strings.Contains(lower, "sagamu") || strings.Contains(lower, "ota") || strings.Contains(lower, "ijebu") || strings.Contains(lower, "mowe") || strings.Contains(lower, "ibafo") || strings.Contains(lower, "ogun"):
+		return "Abeokuta", 7.1557, 3.3458
+
+	// ANAMBRA
+	case strings.Contains(lower, "onitsha") || strings.Contains(lower, "nnewi") || strings.Contains(lower, "awka") || strings.Contains(lower, "anambra"):
+		return "Onitsha", 6.1437, 6.7865
+
+	// IMO / ABIA
+	case strings.Contains(lower, "owerri") || strings.Contains(lower, "aba") || strings.Contains(lower, "umuahia") || strings.Contains(lower, "imo") || strings.Contains(lower, "abia"):
+		return "Owerri", 5.4833, 7.0333
+
+	// AKWA IBOM / CROSS RIVER
+	case strings.Contains(lower, "uyo") || strings.Contains(lower, "calabar") || strings.Contains(lower, "eket") || strings.Contains(lower, "akwa ibom") || strings.Contains(lower, "cross river"):
+		return "Uyo", 5.0377, 7.9128
+
+	// LAGOS (STRICT MATCHING)
+	case strings.Contains(lower, "lagos") || strings.Contains(lower, "ikeja") || strings.Contains(lower, "surulere") || strings.Contains(lower, "lekki") || strings.Contains(lower, "vi") || strings.Contains(lower, "yaba") || strings.Contains(lower, "victoria island") || strings.Contains(lower, "ikoyi") || strings.Contains(lower, "ikorodu") || strings.Contains(lower, "festac") || strings.Contains(lower, "alaba"):
+		return "Lagos Hub", 6.5244, 3.3792
+	}
+
+	return "", 0, 0
+}
+
 
 // 🌐 REVERSE GEOCODE GPS COORDINATES DOWN TO EXACT COMMUNITY, STREET & LGA
 func ReverseGeocodeCoords(lat, lng float64) (string, string, string) {
