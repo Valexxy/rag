@@ -126,32 +126,48 @@ func (e *WorldFirstPhoneEngine) GetLocalWeatherNotice(city, phone string) string
 	return ""
 }
 
-// 📱 GENERATE 100% DYNAMIC PERSONALIZED GREETING (WAT TIME + LIVE OPEN-METEO WEATHER + LOCAL COMMERCE NEWS)
+// 📱 GENERATE COMPLETE 7-ELEMENT INITIAL OPENING CARD
 func (e *WorldFirstPhoneEngine) GeneratePersonalizedOpening(phone, profileName, text string) string {
 	prof := e.UpdateCustomerProfile(phone, profileName, text)
 	custLoc := globalLocationEngine.GetLocation(phone)
 	greetingText, emoji := e.GetTimeOfDayGreeting()
 
-	weatherInfo := e.GetLocalWeatherNotice(custLoc.City, phone)
-	weatherPrefix := ""
-	if weatherInfo != "" {
-		weatherPrefix = fmt.Sprintf(" %s", weatherInfo)
-	}
-
-	newsInfo := ""
+	// 1. Dynamic Location / Region Tag
+	locationTag := ""
 	if custLoc.City != "" {
-		newsNotice := globalLocalNewsPlugin.GetLocalCommerceNews(custLoc.City)
-		if newsNotice != "" {
-			newsInfo = fmt.Sprintf("\n%s", newsNotice)
+		locationTag = fmt.Sprintf("📍 *[Location: %s, %s]*\n", custLoc.City, custLoc.State)
+	} else {
+		region, _, _ := ResolveRegionFromPhonePrefix(phone)
+		if region != "" {
+			locationTag = fmt.Sprintf("📍 *[Region: %s]*\n", region)
 		}
 	}
 
-	displayName := prof.Name
-	if displayName == "Valued Client" || displayName == "" {
-		return fmt.Sprintf("%s! %s%s%s Welcome to Teeslux Electronics & Solar.", greetingText, emoji, weatherPrefix, newsInfo)
+	// 2. Customer Name Greeting
+	nameStr := ""
+	if prof.Name != "" && prof.Name != "Valued Client" && prof.Name != "WhatsApp User" && !strings.HasPrefix(prof.Name, "+") {
+		nameStr = fmt.Sprintf(" %s", prof.Name)
 	}
-	return fmt.Sprintf("%s %s! %s%s%s Welcome to Teeslux Electronics & Solar.", greetingText, displayName, emoji, weatherPrefix, newsInfo)
+
+	// 3. Live Satellite Weather
+	weatherInfo := e.GetLocalWeatherNotice(custLoc.City, phone)
+	weatherStr := ""
+	if weatherInfo != "" {
+		weatherStr = fmt.Sprintf("\n🌦️ *Live Weather:* %s", weatherInfo)
+	}
+
+	// 4. Local Commerce / Traffic Update
+	newsStr := ""
+	if custLoc.City != "" {
+		newsNotice := globalLocalNewsPlugin.GetLocalCommerceNews(custLoc.City)
+		if newsNotice != "" {
+			newsStr = fmt.Sprintf("\n%s", newsNotice)
+		}
+	}
+
+	return fmt.Sprintf("%s%s%s! %s Welcome to Teeslux Global Electronics & Solar!%s%s\n\nHow may I assist your electronics, solar, or purchasing needs today?", locationTag, greetingText, nameStr, emoji, weatherStr, newsStr)
 }
+
 
 
 
