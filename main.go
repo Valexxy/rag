@@ -89,15 +89,17 @@ func pairCodeJSONHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	resp, err := http.Get("http://127.0.0.1:8081/pair-json?phone=" + phone)
 	if err != nil {
+		log.Printf("[Pair Code Error] Could not connect to internal gateway on 8081: %v", err)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusServiceUnavailable)
-		w.Write([]byte(`{"status":"starting_up","message":"Baileys socket initializing... Retry in 3 seconds"}`))
+		w.Write([]byte(fmt.Sprintf(`{"status":"starting_up","error":"%v"}`, err)))
 		return
 	}
 	defer resp.Body.Close()
 	w.Header().Set("Content-Type", "application/json")
 	io.Copy(w, resp.Body)
 }
+
 
 
 // ── PHONE NUMBER PAIRING CODE SUBMIT HANDLER ───────────────────────────
