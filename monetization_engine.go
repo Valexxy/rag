@@ -163,21 +163,25 @@ func monnifyWebhookHandler(w http.ResponseWriter, r *http.Request) {
 
 		receiptMsg := fmt.Sprintf("🎉 *[INSTANT PAYMENT VERIFIED — MONNIFY]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nDear %s,\nWe received your live bank transfer payment!\n\n📦 *Item Paid For:* %s\n💵 *Amount Paid:* ₦%.2f\n🏷️ *Catalog Price:* ₦%.2f\n🧾 *Transaction Ref:* `%s`\n✅ *Status:* PAID & VERIFIED%s\n\nThank you for shopping with Teeslux Global Store!", custName, itemName, amt, itemPrice, txRef, overpaidNotice)
 
-
-		// Extract recipient phone
-		recipientPhone := ownerPhone
+		// Extract recipient customer phone
+		customerPhone := "2348072015725"
 		if payload.EventData.Customer.Phone != "" {
-			recipientPhone = payload.EventData.Customer.Phone
+			customerPhone = payload.EventData.Customer.Phone
 		} else if strings.Contains(payload.EventData.Customer.Email, "@") {
 			parts := strings.Split(payload.EventData.Customer.Email, "@")
 			if len(parts[0]) >= 10 {
-				recipientPhone = parts[0]
+				customerPhone = parts[0]
 			}
 		}
 
-		// Send instant verified receipt to customer WhatsApp phone line
-		globalWhatsAppEngine.SendMessage("sovereign-ai-master", recipientPhone, receiptMsg)
+		// 1. Send receipt to Customer WhatsApp line
+		globalWhatsAppEngine.SendMessage("sovereign-ai-master", customerPhone, receiptMsg)
+
+		// 2. Send Executive Alert to Store Manager WhatsApp line (2349036857618)
+		managerNotice := fmt.Sprintf("👔 *[STORE MANAGER ALERT — LIVE PAYMENT RECEIVED]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n👤 *Customer Name:* %s\n📱 *Customer Phone:* %s\n📦 *Item Purchased:* %s\n💵 *Amount Paid:* ₦%.2f\n🧾 *Transaction Ref:* `%s`\n✅ *Status:* PAID & VERIFIED\n\nPlease prepare waybill and order dispatch!", custName, customerPhone, itemName, amt, txRef)
+		globalWhatsAppEngine.SendMessage("sovereign-ai-master", managerPhone, managerNotice)
 	}
+
 
 
 	w.Header().Set("Content-Type", "application/json")

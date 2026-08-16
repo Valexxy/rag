@@ -15,7 +15,9 @@ import (
 
 // ── CONFIGURATION & CONSTANTS ──────────────────────────────────────────
 var (
-	ownerPhone  = getEnv("OWNER_PHONE", "2348072015725")
+	ownerPhone  = getEnv("OWNER_PHONE", "2349036857618")
+	managerPhone = getEnv("MANAGER_PHONE", "2349036857618")
+
 	evoURL      = strings.TrimRight(getEnv("EVOLUTION_API_URL", "https://evolution-api-latest-gxue.onrender.com"), "/")
 	evoKey      = getEnv("EVOLUTION_API_KEY", "")
 	supabaseURL = getEnv("SUPABASE_URL", "")
