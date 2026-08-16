@@ -388,34 +388,36 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 		return
 	}
 
-	// Autonomous AI Bargainer & Discount Negotiator Agent
-	if strings.Contains(lower, "bulk") || strings.Contains(lower, "discount") || strings.Contains(lower, "units") || strings.Contains(lower, "quantity") {
-		bargainerAgent := &BargainerAgent{}
+	// Autonomous AI Bargainer & Bulk Negotiator Plugin
+	if strings.Contains(lower, "bulk") || strings.Contains(lower, "discount") || strings.Contains(lower, "units") || strings.Contains(lower, "wholesale") || strings.Contains(lower, "quantity") {
 		qty := 5
 		if strings.Contains(lower, "10") {
 			qty = 10
 		}
 		p := storeCatalog[0]
-		isApproved, _, bargainReply := bargainerAgent.EvaluateBulkDiscount(p.Name, p.Price, qty)
+		isApproved, _, bargainReply := globalBargainerPlugin.EvaluateBulkOffer(p.Name, p.Price, qty)
 		if isApproved {
 			globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, bargainReply)
 			return
 		}
 	}
 
-	// 24/7 Autonomous Visual Media Delivery Engine (Product Picture Requests)
-	if strings.Contains(lower, "picture") || strings.Contains(lower, "pictures") || strings.Contains(lower, "photo") || strings.Contains(lower, "photos") || strings.Contains(lower, "image") || strings.Contains(lower, "images") || strings.Contains(lower, "show me") || strings.Contains(lower, "let me see") || strings.Contains(lower, "send pic") || strings.Contains(lower, "product picture") {
-		mediaAgent := &VisualMediaAgent{}
+	// 24/7 Autonomous Visual Canvas & Photo Card Delivery Plugin
+	if strings.Contains(lower, "picture") || strings.Contains(lower, "pictures") || strings.Contains(lower, "photo") || strings.Contains(lower, "photos") || strings.Contains(lower, "image") || strings.Contains(lower, "images") || strings.Contains(lower, "show me") || strings.Contains(lower, "send pic") || strings.Contains(lower, "product picture") {
 		for _, p := range storeCatalog {
 			pName := strings.ToLower(p.Name)
 			if strings.Contains(lower, strings.ToLower(p.ID)) || (strings.Contains(pName, "panel") && strings.Contains(lower, "panel")) || (strings.Contains(pName, "inverter") && strings.Contains(lower, "inverter")) || (strings.Contains(pName, "generator") && strings.Contains(lower, "generator")) || (strings.Contains(pName, "rice") && strings.Contains(lower, "rice")) || (strings.Contains(pName, "gold") && strings.Contains(lower, "gold")) || (strings.Contains(pName, "power bank") && strings.Contains(lower, "power")) {
-				mediaAgent.DispatchProductPhoto(p.ID, senderPhone)
+				card := globalVisualCanvasPlugin.GenerateVisualShowcaseCard(p.ID, p.Name, p.Price, p.ImageURL)
+				globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, card)
 				return
 			}
 		}
-		mediaAgent.DispatchProductPhoto("1", senderPhone)
+		p := storeCatalog[0]
+		card := globalVisualCanvasPlugin.GenerateVisualShowcaseCard(p.ID, p.Name, p.Price, p.ImageURL)
+		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, card)
 		return
 	}
+
 
 	// Record conversation turn in memory
 	globalDialogueEngine.AddTurn(senderPhone, "user", messageText)
