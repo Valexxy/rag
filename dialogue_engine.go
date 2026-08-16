@@ -173,14 +173,23 @@ Reply with an item name or type #pay to receive transfer details!`
 		return true, fmt.Sprintf("📇 *[TEESLUX STORE OFFICIAL VCARD]*\nSave contact into your native phone contacts:\n\n```vcard\n%s\n```", vcfCard)
 
 	case "#weather":
-		custLoc := globalLocationEngine.DetectAndUpdateLocation(senderPhone, "")
-		weat := globalWorldFirstEngine.GetLiveWeatherReport(custLoc.City)
-		return true, fmt.Sprintf("🌦️ *[LIVE WEATHER REPORT]*\nLocation: %s\nReport: %s", custLoc.City, weat)
+		custLoc := globalLocationEngine.GetLocation(senderPhone)
+		weat := globalWorldFirstEngine.GetLocalWeatherNotice(custLoc.City, senderPhone)
+		locName := custLoc.City
+		if locName == "" {
+			locName = "Nigeria"
+		}
+		return true, fmt.Sprintf("🌦️ *[LIVE WEATHER REPORT]*\nLocation: %s\nReport: %s", locName, weat)
 
 	case "#news", "#traffic":
-		custLoc := globalLocationEngine.DetectAndUpdateLocation(senderPhone, "")
-		news := globalLocalNewsEngine.GetLocalNews(custLoc.City)
-		return true, fmt.Sprintf("📰 *[LOCAL COMMERCE & TRANSIT NEWS]*\nLocation: %s\nUpdate: %s", custLoc.City, news)
+		custLoc := globalLocationEngine.GetLocation(senderPhone)
+		news := globalLocalNewsPlugin.GetLocalCommerceNews(custLoc.City)
+		locName := custLoc.City
+		if locName == "" {
+			locName = "Nigeria"
+		}
+		return true, fmt.Sprintf("📰 *[LOCAL COMMERCE & TRANSIT NEWS]*\nLocation: %s\nUpdate: %s", locName, news)
+
 
 	case "#reply":
 		if len(parts) < 2 {

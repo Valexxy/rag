@@ -86,16 +86,29 @@ func (l *LocationCommerceEngine) DetectAndUpdateLocation(phone, text string) Cus
 	return loc
 }
 
+func (l *LocationCommerceEngine) SetLocation(phone, city, state string, lat, lng float64) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.locations[phone] = CustomerLocation{
+		Phone:     phone,
+		City:      city,
+		State:     state,
+		Latitude:  lat,
+		Longitude: lng,
+	}
+}
+
 func (l *LocationCommerceEngine) GetLocation(phone string) CustomerLocation {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 
 	loc, exists := l.locations[phone]
 	if !exists {
-		return CustomerLocation{Phone: phone, City: "Lagos", State: "Lagos"}
+		return CustomerLocation{Phone: phone, City: "", State: ""}
 	}
 	return loc
 }
+
 
 // FEATURE 5: Neighborhood Group Buy & Co-Op Buying Generator
 func (l *LocationCommerceEngine) GenerateNeighborhoodGroupBuyNotice(phone string) string {
