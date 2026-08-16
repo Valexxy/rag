@@ -114,6 +114,7 @@ func monnifyWebhookHandler(w http.ResponseWriter, r *http.Request) {
 			Customer             struct {
 				Email string `json:"email"`
 				Name  string `json:"name"`
+				Phone string `json:"phone"`
 			} `json:"customer"`
 			DestinationAccount struct {
 				AccountNumber string `json:"accountNumber"`
@@ -137,9 +138,21 @@ func monnifyWebhookHandler(w http.ResponseWriter, r *http.Request) {
 
 		receiptMsg := fmt.Sprintf("🎉 *[INSTANT PAYMENT VERIFIED — MONNIFY]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nDear %s,\nWe received your live bank transfer payment of *₦%.2f*!\n\n🧾 *Transaction Ref:* `%s`\n✅ *Status:* PAID & VERIFIED\n📦 *Order Status:* Processing for Dispatch!\n\nThank you for shopping with Teeslux Global Store!", custName, amt, txRef)
 
-		// Send receipt to customer phone
-		globalWhatsAppEngine.SendMessage("sovereign-ai-master", ownerPhone, receiptMsg)
+		// Extract recipient phone
+		recipientPhone := ownerPhone
+		if payload.EventData.Customer.Phone != "" {
+			recipientPhone = payload.EventData.Customer.Phone
+		} else if strings.Contains(payload.EventData.Customer.Email, "@") {
+			parts := strings.Split(payload.EventData.Customer.Email, "@")
+			if len(parts[0]) >= 10 {
+				recipientPhone = parts[0]
+			}
+		}
+
+		// Send instant verified receipt to customer WhatsApp phone line
+		globalWhatsAppEngine.SendMessage("sovereign-ai-master", recipientPhone, receiptMsg)
 	}
+
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
