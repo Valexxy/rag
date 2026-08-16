@@ -60,15 +60,25 @@ func (m *MonetizationEngine) GenerateMonnifyCheckoutCard(itemName string, amount
 }
 
 // ── FINTECH THREAD-SAFE IDEMPOTENCY & ACCUMULATIVE PAYMENT LEDGER ─────
+type CustomerOrder struct {
+	ItemName   string  `json:"item_name"`
+	ItemPrice  float64 `json:"item_price"`
+	AmountPaid float64 `json:"amount_paid"`
+	BalanceDue float64 `json:"balance_due"`
+	Status     string  `json:"status"`
+}
+
 type PaymentLedger struct {
 	mu                 sync.RWMutex
 	processedTxRefs   map[string]bool
 	customerCumulative map[string]float64
+	activeOrders       map[string]*CustomerOrder
 }
 
 var globalPaymentLedger = &PaymentLedger{
 	processedTxRefs:   make(map[string]bool),
 	customerCumulative: make(map[string]float64),
+	activeOrders:       make(map[string]*CustomerOrder),
 }
 
 func (p *PaymentLedger) IsProcessed(txRef string) bool {
@@ -94,6 +104,7 @@ func (p *PaymentLedger) ClearBalance(phone string) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	delete(p.customerCumulative, phone)
+	delete(p.activeOrders, phone)
 }
 
 func (p *PaymentLedger) GetCumulative(phone string) float64 {
@@ -101,6 +112,7 @@ func (p *PaymentLedger) GetCumulative(phone string) float64 {
 	defer p.mu.RUnlock()
 	return p.customerCumulative[phone]
 }
+
 
 func (m *MonetizationEngine) CalculateZeroCostSavings(merchantsCount int) map[string]interface{} {
 	if merchantsCount <= 0 {
@@ -207,24 +219,37 @@ func monnifyWebhookHandler(w http.ResponseWriter, r *http.Request) {
 		// 3. Accumulate total payments for this customer phone line
 		totalCumulativePaid := globalPaymentLedger.AddPayment(customerPhone, amt)
 
-		// 4. Identify closest catalog item based on total accumulated paid amount
-		itemName := "Store Product Order"
+		// 4. Identify exact item paid for (Exact price match takes priority)
+		itemName := ""
 		itemPrice := 0.0
 
+		// Step A: Check for exact catalog price match first (e.g. ₦60,000 for Rice Bag, ₦120,000 for Solar Panel)
 		for _, p := range storeCatalog {
-			if totalCumulativePaid >= p.Price {
-				if p.Price > itemPrice {
-					itemName = p.Name
-					itemPrice = p.Price
+			if amt == p.Price {
+				itemName = p.Name
+				itemPrice = p.Price
+				break
+			}
+		}
+
+		// Step B: If not an exact single-item price match, check accumulated balance against closest catalog item
+		if itemPrice == 0 {
+			for _, p := range storeCatalog {
+				if totalCumulativePaid >= p.Price {
+					if p.Price > itemPrice {
+						itemName = p.Name
+						itemPrice = p.Price
+					}
 				}
 			}
 		}
 
 		if itemPrice == 0 {
-			// Default to power bank (₦18,500) for balance comparison
+			// Default fallback to 20,000 mAh Solar Power Bank (₦18,500)
 			itemName = storeCatalog[1].Name
 			itemPrice = storeCatalog[1].Price
 		}
+
 
 		// ── CASE A: UNDERPAYMENT / PARTIAL PAYMENT ACCUMULATION ────────────
 		if totalCumulativePaid < itemPrice {
