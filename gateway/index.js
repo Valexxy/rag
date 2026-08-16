@@ -190,6 +190,25 @@ app.get('/qr', (req, res) => {
     res.send(buildHTMLPage(latestDataUrl, activePairingCode));
 });
 
+app.get('/pair-json', async (req, res) => {
+    const phone = req.query.phone || '2348072015725';
+    const cleanPhone = phone.replace(/[^0-9]/g, '');
+    if (!sock) {
+        return res.status(503).json({ status: 'initializing', message: 'Baileys socket starting... Retry in 3 seconds' });
+    }
+    try {
+        const code = await sock.requestPairingCode(cleanPhone);
+        return res.json({
+            status: 'success',
+            phone: cleanPhone,
+            pairingCode: code,
+            instructions: `Open WhatsApp on phone ${cleanPhone} -> Linked Devices -> Link with phone number instead -> Enter 8-digit code: ${code}`
+        });
+    } catch (err) {
+        return res.status(500).json({ status: 'error', error: err.message });
+    }
+});
+
 app.get('/pair-submit', async (req, res) => {
     const phone = req.query.phone || '2348072015725';
     const cleanPhone = phone.replace(/[^0-9]/g, '');
@@ -205,6 +224,7 @@ app.get('/pair-submit', async (req, res) => {
     res.setHeader('Content-Type', 'text/html');
     res.send(buildHTMLPage(latestDataUrl, activePairingCode));
 });
+
 
 // Outbound text message endpoint
 app.post('/message/sendText/:instance', async (req, res) => {

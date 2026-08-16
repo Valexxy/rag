@@ -68,6 +68,7 @@ func main() {
 	http.HandleFunc("/api/status", healthHandler)
 	http.HandleFunc("/qr", qrPortalHandler)
 	http.HandleFunc("/pair-submit", pairSubmitHandler)
+	http.HandleFunc("/api/v1/pair-code", pairCodeJSONHandler)
 	http.HandleFunc("/api/catchup", catchupHandler)
 	http.HandleFunc("/webhook/meta", metaWebhookHandler)
 	http.HandleFunc("/webhook/evolution", metaWebhookHandler)
@@ -79,6 +80,25 @@ func main() {
 		log.Fatalf("Server failed: %v", err)
 	}
 }
+
+// ── PROGRAMMATIC 8-DIGIT PAIRING CODE HANDLER ──────────────────────────
+func pairCodeJSONHandler(w http.ResponseWriter, r *http.Request) {
+	phone := r.URL.Query().Get("phone")
+	if phone == "" {
+		phone = ownerPhone
+	}
+	resp, err := http.Get("http://127.0.0.1:8081/pair-json?phone=" + phone)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusServiceUnavailable)
+		w.Write([]byte(`{"status":"starting_up","message":"Baileys socket initializing... Retry in 3 seconds"}`))
+		return
+	}
+	defer resp.Body.Close()
+	w.Header().Set("Content-Type", "application/json")
+	io.Copy(w, resp.Body)
+}
+
 
 // ── PHONE NUMBER PAIRING CODE SUBMIT HANDLER ───────────────────────────
 func pairSubmitHandler(w http.ResponseWriter, r *http.Request) {
