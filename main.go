@@ -338,8 +338,8 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 	}
 
 
-	// Auto-unmute bot if customer asks a product/picture/reminder question
-	if strings.Contains(lower, "photo") || strings.Contains(lower, "picture") || strings.Contains(lower, "image") || strings.Contains(lower, "show me") || strings.Contains(lower, "buy") || strings.Contains(lower, "how much") || strings.Contains(lower, "price") || strings.Contains(lower, "panel") || strings.Contains(lower, "inverter") || strings.Contains(lower, "generator") || strings.Contains(lower, "remind") || strings.Contains(lower, "drugs") {
+	// Auto-unmute bot if customer asks a product/picture/reminder/payment question
+	if strings.Contains(lower, "photo") || strings.Contains(lower, "picture") || strings.Contains(lower, "image") || strings.Contains(lower, "show me") || strings.Contains(lower, "buy") || strings.Contains(lower, "how much") || strings.Contains(lower, "price") || strings.Contains(lower, "panel") || strings.Contains(lower, "inverter") || strings.Contains(lower, "generator") || strings.Contains(lower, "remind") || strings.Contains(lower, "drugs") || strings.Contains(lower, "pay") {
 		globalDialogueEngine.SetState(senderPhone, "IDLE")
 	}
 
@@ -351,12 +351,13 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 	}
 
 	// Monnify & Paystack Online Payment Intercept
-	if strings.Contains(lower, "pay online") || strings.Contains(lower, "how to pay") || strings.Contains(lower, "account details") || strings.Contains(lower, "transfer") || strings.Contains(lower, "account number") || strings.Contains(lower, "monnify") || strings.Contains(lower, "can't i pay") || strings.Contains(lower, "can i pay") || strings.Contains(lower, "payment online") {
+	if strings.Contains(lower, "pay") || strings.Contains(lower, "payment") || strings.Contains(lower, "how to pay") || strings.Contains(lower, "account details") || strings.Contains(lower, "transfer") || strings.Contains(lower, "account number") || strings.Contains(lower, "monnify") || strings.Contains(lower, "can't i pay") || strings.Contains(lower, "can i pay") || strings.Contains(lower, "how can i pay") {
 		p := storeCatalog[0]
 		payCard := globalMonetizationEngine.GenerateMonnifyCheckoutCard(p.Name, p.Price, senderPhone)
 		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, payCard)
 		return
 	}
+
 
 	// Smart Co-Pilot State Machine: Auto-unmutes after 15 minutes of manager inactivity
 	if globalDialogueEngine.GetState(senderPhone) == "HUMAN_ESCALATED" {
