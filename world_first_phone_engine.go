@@ -96,37 +96,43 @@ func (e *WorldFirstPhoneEngine) GetTimeOfDayGreeting() (string, string) {
 	}
 }
 
-// 🌦️ HYPER-LOCAL WEATHER INTELLIGENCE (100% DYNAMIC FOR DETECTED CITIES ONLY)
-func (e *WorldFirstPhoneEngine) GetLocalWeatherNotice(city string) string {
+// 🌦️ LIVE REAL-TIME WEATHER PLUGIN (OPEN-METEO REST API — ZERO HARDCODING)
+func (e *WorldFirstPhoneEngine) GetLocalWeatherNotice(city, phone string) string {
+	var lat, lng float64 = 6.5244, 3.3792
+	targetName := city
+
 	if city == "" {
-		return ""
+		region, rLat, rLng := ResolveRegionFromPhonePrefix(phone)
+		lat, lng = rLat, rLng
+		targetName = region
+	} else {
+		cityUpper := strings.ToUpper(city)
+		switch {
+		case strings.Contains(cityUpper, "ABUJA") || strings.Contains(cityUpper, "FCT"):
+			lat, lng = 9.0765, 7.3986
+		case strings.Contains(cityUpper, "PORT HARCOURT") || strings.Contains(cityUpper, "RIVERS"):
+			lat, lng = 4.8156, 7.0498
+		case strings.Contains(cityUpper, "KANO"):
+			lat, lng = 12.0022, 8.5920
+		case strings.Contains(cityUpper, "ENUGU") || strings.Contains(cityUpper, "ONITSHA"):
+			lat, lng = 6.4584, 7.5464
+		}
 	}
-	cityUpper := strings.ToUpper(city)
-	switch {
-	case strings.Contains(cityUpper, "LAGOS") || strings.Contains(cityUpper, "IKEJA") || strings.Contains(cityUpper, "LEKKI"):
-		return "It's a sunny 31°C day in Lagos today!"
-	case strings.Contains(cityUpper, "ABUJA") || strings.Contains(cityUpper, "FCT"):
-		return "Clear blue skies and 30°C temperature in Abuja today!"
-	case strings.Contains(cityUpper, "PORT HARCOURT") || strings.Contains(cityUpper, "RIVERS"):
-		return "Mild 28°C weather in Port Harcourt today!"
-	case strings.Contains(cityUpper, "KANO") || strings.Contains(cityUpper, "KADUNA"):
-		return "Sunny 33°C weather in Kano today!"
-	case strings.Contains(cityUpper, "BENIN") || strings.Contains(cityUpper, "WARRI") || strings.Contains(cityUpper, "SAPELE"):
-		return "Tropical 29°C weather in Delta/Edo today!"
-	case strings.Contains(cityUpper, "ONITSHA") || strings.Contains(cityUpper, "AWKA") || strings.Contains(cityUpper, "ENUGU"):
-		return "Pleasant 29°C weather in Eastern Nigeria today!"
-	default:
-		return fmt.Sprintf("Great weather in %s today!", city)
+
+	weather, err := FetchLiveWeather(lat, lng)
+	if err == nil && weather != "" {
+		return fmt.Sprintf("It's %s in %s today!", weather, targetName)
 	}
+	return ""
 }
 
-// 📱 GENERATE 100% DYNAMIC PERSONALIZED GREETING (WAT TIME + CITY WEATHER IF DETECTED)
+// 📱 GENERATE 100% DYNAMIC PERSONALIZED GREETING (WAT TIME + LIVE OPEN-METEO WEATHER)
 func (e *WorldFirstPhoneEngine) GeneratePersonalizedOpening(phone, profileName, text string) string {
 	prof := e.UpdateCustomerProfile(phone, profileName, text)
 	custLoc := globalLocationEngine.GetLocation(phone)
 	greetingText, emoji := e.GetTimeOfDayGreeting()
 
-	weatherInfo := e.GetLocalWeatherNotice(custLoc.City)
+	weatherInfo := e.GetLocalWeatherNotice(custLoc.City, phone)
 	weatherPrefix := ""
 	if weatherInfo != "" {
 		weatherPrefix = fmt.Sprintf(" %s", weatherInfo)
@@ -138,6 +144,7 @@ func (e *WorldFirstPhoneEngine) GeneratePersonalizedOpening(phone, profileName, 
 	}
 	return fmt.Sprintf("%s %s! %s%s Welcome to Teeslux Electronics & Solar.", greetingText, displayName, emoji, weatherPrefix)
 }
+
 
 
 
