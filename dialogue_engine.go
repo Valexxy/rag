@@ -1,7 +1,11 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
+	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -60,12 +64,14 @@ type DialogueEngine struct {
 	states        map[string]string
 	memoryThreads map[string][]ChatTurn
 	lastActivity  map[string]time.Time
+	pendingTimers map[string]*time.Timer
 }
 
 var globalDialogueEngine = &DialogueEngine{
 	states:        make(map[string]string),
 	memoryThreads: make(map[string][]ChatTurn),
 	lastActivity:  make(map[string]time.Time),
+	pendingTimers: make(map[string]*time.Timer),
 }
 
 func (d *DialogueEngine) GetLastActivityTime(phone string) time.Time {
@@ -104,8 +110,61 @@ func (d *DialogueEngine) IsHumanHandoff(phone string) bool {
 }
 
 func (d *DialogueEngine) ResetHumanHandoff(phone string) {
+	d.CancelManagerCallAlarm(phone)
 	d.SetState(phone, "IDLE")
 }
+
+// 📞 60-SECOND AUTONOMOUS MANAGER DIRECT PHONE CALL ALARM
+func (d *DialogueEngine) Start60SecondManagerCallAlarm(customerPhone, profileName string) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	if t, exists := d.pendingTimers[customerPhone]; exists && t != nil {
+		t.Stop()
+	}
+
+	d.pendingTimers[customerPhone] = time.AfterFunc(60*time.Second, func() {
+		d.mu.RLock()
+		isStillWaiting := d.states[customerPhone] == "HUMAN_AGENT_ACTIVE"
+		d.mu.RUnlock()
+
+		if isStillWaiting {
+			log.Printf("[1-MINUTE CALL ALARM] 60s expired! Ringing Store Manager phone +%s directly!", managerPhone)
+			TriggerDirectPhoneCallAlarm(managerPhone, customerPhone, profileName)
+
+			ringAlert := fmt.Sprintf("🚨🚨 *[URGENT PHONE CALL ALARM — 1 MINUTE EXPIRED]* 🚨🚨\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📞 *RINGING STORE MANAGER PHONE:* +%s\n👤 *Waiting Customer:* %s (`%s`)\n⏳ *Wait Time:* 60 seconds without response!\n\n👉 *Reply IMMEDIATELY using:* `#reply %s | your message`", managerPhone, profileName, customerPhone, customerPhone)
+			globalWhatsAppEngine.SendMessage("sovereign-ai-master", managerPhone, ringAlert)
+		}
+	})
+}
+
+func (d *DialogueEngine) CancelManagerCallAlarm(customerPhone string) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if t, exists := d.pendingTimers[customerPhone]; exists && t != nil {
+		t.Stop()
+		delete(d.pendingTimers, customerPhone)
+	}
+}
+
+// 📞 TELECOM DIRECT PHONE CALLING ENGINE (REAL GSM PHONE RINGING)
+func TriggerDirectPhoneCallAlarm(mgrPhone, custPhone, custName string) {
+	log.Printf("[Direct Phone Call API] Dialing +%s... Ringing Manager's GSM line directly for customer %s!", mgrPhone, custName)
+	termiiKey := os.Getenv("TERMII_API_KEY")
+	if termiiKey != "" {
+		url := "https://api.ng.termii.com/api/chat/apply"
+		payload := map[string]string{
+			"to":      mgrPhone,
+			"from":    "TeesluxStore",
+			"type":    "voice_call",
+			"message": fmt.Sprintf("Urgent store alert! Customer %s is waiting for your reply on WhatsApp.", custName),
+			"api_key": termiiKey,
+		}
+		data, _ := json.Marshal(payload)
+		http.Post(url, "application/json", strings.NewReader(string(data)))
+	}
+}
+
 
 
 
@@ -212,9 +271,10 @@ Type any hashtag command above to trigger instantly!`
 
 	case "#manager", "#human":
 		d.SetHumanHandoff(senderPhone)
-		managerNotice := fmt.Sprintf("👔 *[EXECUTIVE HANDOFF ALERT]*\nCustomer `%s` requested human manager support via #manager command!", senderPhone)
+		d.Start60SecondManagerCallAlarm(senderPhone, senderPhone)
+		managerNotice := fmt.Sprintf("👔 *[EXECUTIVE HANDOFF ALERT]*\nCustomer `%s` requested human manager support via #manager command! (60-second Call Alarm Armed)", senderPhone)
 		globalWhatsAppEngine.SendMessage("sovereign-ai-master", managerPhone, managerNotice)
-		return true, "👔 *[Connected to Human Manager]*\nThe AI Bot has disengaged. Our Store Manager (2348072015725) has been notified to connect with you directly!"
+		return true, "👔 *[Connected to Human Manager]*\nThe AI Bot has disengaged. Our Store Manager (2348072015725) has been notified! If unanswered in 60s, the Manager's phone will ring directly!"
 
 	case "#bot", "#reengage", "#resolve", "#unmute":
 		targetPhone := senderPhone
@@ -247,7 +307,6 @@ Type any hashtag command above to trigger instantly!`
 		}
 		return true, fmt.Sprintf("📰 *[LOCAL COMMERCE & TRANSIT NEWS]*\nLocation: %s\nUpdate: %s", locName, news)
 
-
 	case "#reply":
 		if len(parts) < 2 {
 			return true, "ERROR: Usage `#reply <customer_phone> | <message>`"
@@ -259,9 +318,11 @@ Type any hashtag command above to trigger instantly!`
 		targetPhone := strings.TrimSpace(sub[0])
 		msgText := strings.TrimSpace(sub[1])
 
+		d.CancelManagerCallAlarm(targetPhone)
 		replyPayload := fmt.Sprintf("💬 *[Store Manager]:* %s\n\n📞 *Call Manager:* tel:+%s\n💬 *Chat Manager:* https://wa.me/%s", msgText, senderPhone, senderPhone)
 		globalWhatsAppEngine.SendMessage("sovereign-ai-master", targetPhone, replyPayload)
-		return true, fmt.Sprintf("✅ Message delivered to customer `%s`.", targetPhone)
+		return true, fmt.Sprintf("✅ Message delivered to customer `%s` (Call Alarm Disarmed).", targetPhone)
+
 
 	case "#mute":
 		if len(parts) >= 2 {

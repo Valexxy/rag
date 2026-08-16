@@ -335,8 +335,10 @@ func monnifyWebhookHandler(w http.ResponseWriter, r *http.Request) {
 		// 1. Send receipt & handoff note to Customer
 		globalWhatsAppEngine.SendMessage("sovereign-ai-master", customerPhone, receiptMsg)
 
-		// 2. DISENGAGE BOT FOR THIS CUSTOMER (HUMAN AGENT TAKES OVER)
+		// 2. DISENGAGE BOT FOR THIS CUSTOMER & START 60-SECOND MANAGER PHONE CALL ALARM
 		globalDialogueEngine.SetHumanHandoff(customerPhone)
+		globalDialogueEngine.Start60SecondManagerCallAlarm(customerPhone, custName)
+
 
 		// 3. Send Executive Alert to Store Manager (2348072015725)
 		refundNotice := ""
