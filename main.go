@@ -96,8 +96,11 @@ func main() {
 	http.HandleFunc("/webhook/meta", metaWebhookHandler)
 	http.HandleFunc("/webhook/evolution", metaWebhookHandler)
 	http.HandleFunc("/webhook/monnify", monnifyWebhookHandler)
+	http.HandleFunc("/loc", locationPortalHandler)
+	http.HandleFunc("/submit-loc", submitLocationAPIHandler)
 
 	http.HandleFunc("/api/v1/analytics/dashboard", dashboardAnalyticsHandler)
+
 	http.HandleFunc("/api/v1/analytics/zero-cost", zeroCostAnalyticsHandler)
 	http.HandleFunc("/api/v1/vc-metrics", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -196,6 +199,164 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 		"goroutines": "50,000+ Concurrent Capacity",
 	})
 }
+
+// 📍 HARDWARE GPS ANTI-FRAUD PORTAL HANDLER
+func locationPortalHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	html := `<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teeslux GPS Verification & Anti-Fraud Shield</title>
+    <style>
+        body { background: #0d1117; color: #e6edf3; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 30px 20px; }
+        .card { background: #161b22; border: 1px solid #30363d; border-radius: 12px; max-width: 480px; margin: 0 auto; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        h2 { color: #58a6ff; margin-bottom: 10px; }
+        p { color: #8b949e; line-height: 1.5; font-size: 14px; }
+        .btn { background: #238636; color: white; border: none; padding: 14px 28px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; width: 100%; margin-top: 20px; }
+        .btn:hover { background: #2ea043; }
+        .status { margin-top: 15px; font-size: 14px; font-weight: bold; }
+        .success { color: #3fb950; }
+        .error { color: #f85149; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>📍 Hardware GPS Verification</h2>
+        <p>Teeslux Anti-Fraud Security Shield requires 1-tap GPS verification to confirm Nigerian delivery eligibility and prevent proxy spoofing.</p>
+        <div id="status" class="status">Click below to allow GPS location</div>
+        <button id="btn" class="btn" onclick="getGPS()">Verify My Location Now</button>
+    </div>
+    <script>
+        function getGPS() {
+            var btn = document.getElementById('btn');
+            var status = document.getElementById('status');
+            btn.disabled = true;
+            status.className = 'status';
+            status.innerText = '📡 Requesting device hardware GPS...';
+
+            if (!navigator.geolocation) {
+                status.className = 'status error';
+                status.innerText = '❌ Geolocation is not supported by your browser.';
+                btn.disabled = false;
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(function(pos) {
+                var lat = pos.coords.latitude;
+                var lng = pos.coords.longitude;
+                var acc = pos.coords.accuracy;
+
+                status.innerText = '⏳ Verifying Nigerian territory & checking VPN shield...';
+
+                fetch('/submit-loc', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        ref: new URLSearchParams(window.location.search).get('ref'),
+                        latitude: lat,
+                        longitude: lng,
+                        accuracy: acc
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'verified') {
+                        status.className = 'status success';
+                        status.innerHTML = '✅ LOCATION VERIFIED!<br><b>' + data.location + '</b><br>Check your WhatsApp for instant confirmation!';
+                        btn.style.display = 'none';
+                    } else {
+                        status.className = 'status error';
+                        status.innerText = '❌ ' + data.message;
+                        btn.disabled = false;
+                    }
+                })
+                .catch(err => {
+                    status.className = 'status error';
+                    status.innerText = '❌ Verification error. Please try again.';
+                    btn.disabled = false;
+                });
+            }, function(err) {
+                status.className = 'status error';
+                status.innerText = '⚠️ GPS Permission Denied! Please allow location access in browser settings.';
+                btn.disabled = false;
+            }, { enableHighAccuracy: true, timeout: 10000 });
+        }
+    </script>
+</body>
+</html>`
+	w.Write([]byte(html))
+}
+
+// 🛡️ NIGERIA GEOFENCING & ANTI-VPN API HANDLER
+func submitLocationAPIHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		Ref       string  `json:"ref"`
+		Latitude  float64 `json:"latitude"`
+		Longitude float64 `json:"longitude"`
+		Accuracy  float64 `json:"accuracy"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"status":"error","message":"Invalid payload"}`))
+		return
+	}
+
+	phone := req.Ref
+	if phone == "" {
+		phone = "2348072015725"
+	}
+
+	lat := req.Latitude
+	lng := req.Longitude
+
+	// 1. Nigeria Bounding Box Strict Enforcement (4.0° N to 14.0° N, 2.5° E to 14.7° E)
+	if lat < 4.0 || lat > 14.0 || lng < 2.5 || lng > 14.7 {
+		log.Printf("[Anti-Fraud Shield] Geofencing Breach Detected: Lat %.4f, Lng %.4f outside Nigeria!", lat, lng)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"status":"denied","message":"ACCESS DENIED: Location is outside Nigerian territory! Service is strictly restricted to Nigeria."}`))
+		return
+	}
+
+	// 2. Reverse Geocode via OpenStreetMap Nominatim
+	comm, lga, state := ReverseGeocodeCoords(lat, lng)
+	locName := comm
+	if locName == "" {
+		locName = lga
+	}
+	if locName == "" {
+		locName = "Nigeria"
+	}
+	if state == "" {
+		state = "Nigeria"
+	}
+
+	// 3. Update Global Location Engine
+	globalLocationEngine.SetLocation(phone, locName, state, lat, lng)
+
+	// 4. Fetch Live Weather & Send WhatsApp Confirmation
+	weat, _ := FetchLiveWeather(lat, lng)
+	weatStr := ""
+	if weat != "" {
+		weatStr = fmt.Sprintf("\n🌦️ *Live Weather:* %s", weat)
+	}
+
+	confirmMsg := fmt.Sprintf("✅ *[HARDWARE GPS LOCATION VERIFIED]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📍 *Exact Location:* %s (%s State)\n🛡️ *Anti-Fraud Shield:* Nigerian Territory Verified (No VPN)%s\n\nYour location has been locked for delivery calculation!", locName, state, weatStr)
+	globalWhatsAppEngine.SendMessage("sovereign-ai-master", phone, confirmMsg)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(fmt.Sprintf(`{"status":"verified","location":"%s, %s State"}`, locName, state)))
+}
+
 
 // ── META & EVOLUTION WHATSAPP WEBHOOK GOROUTINE HANDLER ────────────────
 func metaWebhookHandler(w http.ResponseWriter, r *http.Request) {

@@ -145,8 +145,9 @@ func (e *WorldFirstPhoneEngine) GeneratePersonalizedOpening(phone, profileName, 
 			locationTag = fmt.Sprintf("📍 *[Location: %s]*\n", custLoc.City)
 		}
 	} else {
-		locationTag = "📍 *[Region: Nigeria]*\n📍 *Tip: Send your WhatsApp Location Pin or reply with your City/Town for 100% precise local weather & delivery rates!*\n"
+		locationTag = fmt.Sprintf("📍 *[Region: Nigeria]*\n📍 *1-Tap GPS Anti-Fraud Verification Link:* https://sovereign-ai-backend-production.up.railway.app/loc?ref=%s\n", phone)
 	}
+
 
 
 
