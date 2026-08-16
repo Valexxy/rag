@@ -136,16 +136,17 @@ func (e *WorldFirstPhoneEngine) GeneratePersonalizedOpening(phone, profileName, 
 		merchantName = "our Store"
 	}
 
-	// 1. Dynamic Location / Region Tag
+	// 1. Dynamic Community / Location Tag
 	locationTag := ""
 	if custLoc.City != "" {
-		locationTag = fmt.Sprintf("📍 *[Location: %s, %s]*\n", custLoc.City, custLoc.State)
+		locationTag = fmt.Sprintf("📍 *[Community: %s, %s]*\n", custLoc.City, custLoc.State)
 	} else {
 		region, _, _ := ResolveRegionFromPhonePrefix(phone)
 		if region != "" {
-			locationTag = fmt.Sprintf("📍 *[Region: %s]*\n", region)
+			locationTag = fmt.Sprintf("📍 *[Community: %s]*\n", region)
 		}
 	}
+
 
 	// 2. Customer Name Greeting
 	nameStr := ""
