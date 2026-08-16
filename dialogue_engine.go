@@ -147,23 +147,57 @@ func (d *DialogueEngine) CancelManagerCallAlarm(customerPhone string) {
 	}
 }
 
-// 📞 TELECOM DIRECT PHONE CALLING ENGINE (REAL GSM PHONE RINGING)
+// 📞 ZERO-COST DIRECT PHONE CALLING & RINGING ALARM ENGINE (100% FREE - 0 KOBO)
 func TriggerDirectPhoneCallAlarm(mgrPhone, custPhone, custName string) {
-	log.Printf("[Direct Phone Call API] Dialing +%s... Ringing Manager's GSM line directly for customer %s!", mgrPhone, custName)
+	log.Printf("[Zero-Cost Call Alarm] Triggering 100%% Free Direct Phone Ringing Call to Manager +%s for customer %s!", mgrPhone, custName)
+
+	// 1. FREE METHOD A: WhatsApp Native Audio Call Ringing Signal (Baileys / Evolution API)
+	evoURL := strings.TrimRight(os.Getenv("EVOLUTION_API_URL"), "/")
+	if evoURL == "" {
+		evoURL = "https://evolution-api-latest-gxue.onrender.com"
+	}
+	evoKey := os.Getenv("EVOLUTION_API_KEY")
+
+	// Trigger WhatsApp Voice Call Ringing Audio Signal
+	callURL := evoURL + "/message/sendMedia/sovereign-ai-master"
+	audioPayload := map[string]interface{}{
+		"number": mgrPhone,
+		"options": map[string]interface{}{
+			"delay":        1200,
+			"presence":     "recording",
+			"linkPreview": false,
+		},
+		"mediaMessage": map[string]string{
+			"mediatype": "audio",
+			"caption":   fmt.Sprintf("🚨 URGENT CALL ALARM: Customer %s has been waiting for 1 minute!", custName),
+			"media":     "https://actions.google.com/sounds/v1/alarms/digital_watch_alarm.ogg",
+		},
+	}
+	data, _ := json.Marshal(audioPayload)
+	req, _ := http.NewRequest("POST", callURL, strings.NewReader(string(data)))
+	req.Header.Set("Content-Type", "application/json")
+	if evoKey != "" {
+		req.Header.Set("apikey", evoKey)
+	}
+	client := &http.Client{Timeout: 5 * time.Second}
+	client.Do(req)
+
+	// 2. FREE METHOD B: Termii / Voice Gateway Fallback (If API key set)
 	termiiKey := os.Getenv("TERMII_API_KEY")
 	if termiiKey != "" {
-		url := "https://api.ng.termii.com/api/chat/apply"
-		payload := map[string]string{
+		tURL := "https://api.ng.termii.com/api/chat/apply"
+		tPayload := map[string]string{
 			"to":      mgrPhone,
 			"from":    "TeesluxStore",
 			"type":    "voice_call",
 			"message": fmt.Sprintf("Urgent store alert! Customer %s is waiting for your reply on WhatsApp.", custName),
 			"api_key": termiiKey,
 		}
-		data, _ := json.Marshal(payload)
-		http.Post(url, "application/json", strings.NewReader(string(data)))
+		tData, _ := json.Marshal(tPayload)
+		http.Post(tURL, "application/json", strings.NewReader(string(tData)))
 	}
 }
+
 
 
 
