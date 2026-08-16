@@ -31,8 +31,9 @@ func (l *LocationCommerceEngine) DetectAndUpdateLocation(phone, text string) Cus
 
 	loc, exists := l.locations[phone]
 	if !exists {
-		loc = CustomerLocation{Phone: phone, City: "Lagos", State: "Lagos"} // Default initial fallback
+		loc = CustomerLocation{Phone: phone, City: "", State: ""}
 	}
+
 
 	lower := strings.ToLower(text)
 

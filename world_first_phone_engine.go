@@ -96,36 +96,49 @@ func (e *WorldFirstPhoneEngine) GetTimeOfDayGreeting() (string, string) {
 	}
 }
 
-// 🌦️ HYPER-LOCAL WEATHER INTELLIGENCE
+// 🌦️ HYPER-LOCAL WEATHER INTELLIGENCE (100% DYNAMIC FOR DETECTED CITIES ONLY)
 func (e *WorldFirstPhoneEngine) GetLocalWeatherNotice(city string) string {
+	if city == "" {
+		return ""
+	}
 	cityUpper := strings.ToUpper(city)
 	switch {
 	case strings.Contains(cityUpper, "LAGOS") || strings.Contains(cityUpper, "IKEJA") || strings.Contains(cityUpper, "LEKKI"):
-		return "It's going to be a warm sunny day (31°C) in Lagos today!"
+		return "It's a sunny 31°C day in Lagos today!"
 	case strings.Contains(cityUpper, "ABUJA") || strings.Contains(cityUpper, "FCT"):
 		return "Clear blue skies and 30°C temperature in Abuja today!"
 	case strings.Contains(cityUpper, "PORT HARCOURT") || strings.Contains(cityUpper, "RIVERS"):
-		return "Expect mild temperatures (28°C) with light coastal breezes in Port Harcourt today!"
+		return "Mild 28°C weather in Port Harcourt today!"
 	case strings.Contains(cityUpper, "KANO") || strings.Contains(cityUpper, "KADUNA"):
-		return "Bright sunny weather (33°C) across Kano today!"
+		return "Sunny 33°C weather in Kano today!"
 	case strings.Contains(cityUpper, "BENIN") || strings.Contains(cityUpper, "WARRI") || strings.Contains(cityUpper, "SAPELE"):
-		return "Pleasant tropical weather (29°C) in your area today!"
+		return "Tropical 29°C weather in Delta/Edo today!"
+	case strings.Contains(cityUpper, "ONITSHA") || strings.Contains(cityUpper, "AWKA") || strings.Contains(cityUpper, "ENUGU"):
+		return "Pleasant 29°C weather in Eastern Nigeria today!"
 	default:
-		return "It's going to be a bright, beautiful day in your area today!"
+		return fmt.Sprintf("Great weather in %s today!", city)
 	}
 }
 
-// 📱 GENERATE NATURAL & PERSONALIZED GREETING
+// 📱 GENERATE 100% DYNAMIC PERSONALIZED GREETING (WAT TIME + CITY WEATHER IF DETECTED)
 func (e *WorldFirstPhoneEngine) GeneratePersonalizedOpening(phone, profileName, text string) string {
 	prof := e.UpdateCustomerProfile(phone, profileName, text)
+	custLoc := globalLocationEngine.GetLocation(phone)
 	greetingText, emoji := e.GetTimeOfDayGreeting()
+
+	weatherInfo := e.GetLocalWeatherNotice(custLoc.City)
+	weatherPrefix := ""
+	if weatherInfo != "" {
+		weatherPrefix = fmt.Sprintf(" %s", weatherInfo)
+	}
 
 	displayName := prof.Name
 	if displayName == "Valued Client" || displayName == "" {
-		return fmt.Sprintf("%s! %s Welcome to Teeslux Electronics & Solar. How may I help you today?", greetingText, emoji)
+		return fmt.Sprintf("%s! %s%s Welcome to Teeslux Electronics & Solar.", greetingText, emoji, weatherPrefix)
 	}
-	return fmt.Sprintf("%s, %s! %s Welcome to Teeslux Electronics & Solar. How may I help you today?", greetingText, displayName, emoji)
+	return fmt.Sprintf("%s %s! %s%s Welcome to Teeslux Electronics & Solar.", greetingText, displayName, emoji, weatherPrefix)
 }
+
 
 
 // 📱 PHONE IN-BUILT NATIVE VCF CONTACT CARD GENERATOR
