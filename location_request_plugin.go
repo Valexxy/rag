@@ -246,4 +246,24 @@ func ReverseGeocodeCoords(lat, lng float64) (string, string, string) {
 	return "", "", ""
 }
 
+// 🔗 FREE ONLINE LINK SHORTENER SERVICE (IS.GD REST API)
+func ShortenURLWithFreeService(originalURL string) string {
+	apiURL := fmt.Sprintf("https://is.gd/create.php?format=json&url=%s", originalURL)
+	client := &http.Client{Timeout: 3 * time.Second}
+	resp, err := client.Get(apiURL)
+	if err != nil {
+		return originalURL
+	}
+	defer resp.Body.Close()
+
+	var res struct {
+		ShortURL string `json:"shorturl"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&res); err == nil && res.ShortURL != "" {
+		return res.ShortURL
+	}
+	return originalURL
+}
+
+
 

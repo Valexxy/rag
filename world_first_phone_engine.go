@@ -145,8 +145,11 @@ func (e *WorldFirstPhoneEngine) GeneratePersonalizedOpening(phone, profileName, 
 			locationTag = fmt.Sprintf("📍 *[Location: %s]*\n", custLoc.City)
 		}
 	} else {
-		locationTag = fmt.Sprintf("📍 *[Region: Nigeria]*\n📍 *1-Tap Location Pin:* https://sovereign-ai-backend-production.up.railway.app/l/%s\n", phone)
+		longURL := fmt.Sprintf("https://sovereign-ai-backend-production.up.railway.app/l/%s", phone)
+		shortURL := ShortenURLWithFreeService(longURL)
+		locationTag = fmt.Sprintf("📍 *[Region: Nigeria]*\n📍 *1-Tap Live Location Pin:* %s\n", shortURL)
 	}
+
 
 
 
