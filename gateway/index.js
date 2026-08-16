@@ -2,6 +2,8 @@ const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = requi
 const express = require('express');
 const http = require('http');
 const QRCode = require('qrcode');
+const fs = require('fs');
+const pino = require('pino');
 
 const app = express();
 app.use(express.json());
@@ -9,26 +11,52 @@ app.use(express.json());
 const PORT = 8081;
 const GOLANG_BACKEND = 'http://127.0.0.1:8080';
 
+const logger = pino({ level: 'silent' });
 
 let sock = null;
-let currentQRCodeHTML = `<html style="background:#0d1117;color:white;font-family:sans-serif;text-align:center;padding:50px;">
-  <h2>📱 WhatsApp Web Engine Initializing...</h2>
-  <p>Please refresh this page in 3 seconds to scan the QR code.</p>
-  <script>setTimeout(() => location.reload(), 3000);</script>
+let currentQRCodeHTML = `<!DOCTYPE html>
+<html>
+<head>
+    <title>WhatsApp 24/7 QR Pair Portal</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="3">
+    <style>
+        body { background: #0d1117; color: #c9d1d9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; text-align: center; }
+        .card { background: #161b22; border: 1px solid #30363d; border-radius: 16px; padding: 30px; max-width: 400px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        h1 { color: #58a6ff; font-size: 22px; margin-bottom: 8px; }
+        p { color: #8b949e; font-size: 14px; margin-top: 0; }
+        .spinner { border: 4px solid rgba(255,255,255,0.1); width: 40px; height: 40px; border-radius: 50%; border-left-color: #58a6ff; animation: spin 1s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>📱 Initializing WhatsApp Web Socket...</h1>
+        <div class="spinner"></div>
+        <p>Connecting to WhatsApp servers... Auto-refreshing in 3 seconds to load QR code.</p>
+    </div>
+</body>
 </html>`;
 
 async function connectToWhatsApp() {
     try {
+        if (!fs.existsSync('baileys_auth')) {
+            fs.mkdirSync('baileys_auth', { recursive: true });
+        }
+
         const { state, saveCreds } = await useMultiFileAuthState('baileys_auth');
         sock = makeWASocket({
             auth: state,
+            logger: logger,
             printQRInTerminal: true,
+            browser: ['Sovereign AI Commerce', 'Chrome', '1.0.0']
         });
 
         sock.ev.on('creds.update', saveCreds);
 
         sock.ev.on('connection.update', async (update) => {
             const { connection, lastDisconnect, qr } = update;
+            console.log('[Baileys Update] Connection:', connection, qr ? '| QR Code Generated!' : '');
             
             if (qr) {
                 try {
@@ -38,7 +66,7 @@ async function connectToWhatsApp() {
 <head>
     <title>WhatsApp 24/7 QR Pair Portal</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="refresh" content="15">
+    <meta http-equiv="refresh" content="10">
     <style>
         body { background: #0d1117; color: #c9d1d9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; text-align: center; }
         .card { background: #161b22; border: 1px solid #30363d; border-radius: 16px; padding: 30px; max-width: 400px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
@@ -67,13 +95,14 @@ async function connectToWhatsApp() {
 </body>
 </html>`;
                 } catch (e) {
-                    console.error('[QR Error]', e);
+                    console.error('[QR Error]', e.message);
                 }
             }
 
             if (connection === 'close') {
-                const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
-                console.log('[Baileys Gateway] Connection closed, reconnecting:', shouldReconnect);
+                const statusCode = lastDisconnect?.error?.output?.statusCode;
+                const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
+                console.log('[Baileys Closed] Status Code:', statusCode, 'Reconnect:', shouldReconnect);
                 if (shouldReconnect) {
                     setTimeout(connectToWhatsApp, 3000);
                 }
