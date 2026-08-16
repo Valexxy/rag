@@ -2,10 +2,52 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 )
+
+func GeneratePaginatedCatalog(page int) string {
+	if page < 1 {
+		page = 1
+	}
+	itemsPerPage := 3
+	totalItems := len(storeCatalog)
+	totalPages := (totalItems + itemsPerPage - 1) / itemsPerPage
+	if page > totalPages {
+		page = totalPages
+	}
+
+	startIdx := (page - 1) * itemsPerPage
+	endIdx := startIdx + itemsPerPage
+	if endIdx > totalItems {
+		endIdx = totalItems
+	}
+
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("📦 *[TEESLUX PRODUCT CATALOG — PAGE %d/%d]*\n", page, totalPages))
+	sb.WriteString("━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
+	sb.WriteString("All items are live in stock with instant Monnify Bank Transfer & USSD payment!\n\n")
+
+	for i := startIdx; i < endIdx; i++ {
+		item := storeCatalog[i]
+		itemNum := i + 1
+		sb.WriteString(fmt.Sprintf("%d. ⚡ *%s*\n   • 💵 *Price:* ₦%.2f\n   • 🛒 *Code to Buy:* `#buy %d`\n   • 🖼️ *High-Res Image:* %s\n\n", itemNum, item.Name, item.Price, itemNum, item.ImageURL))
+	}
+
+	sb.WriteString("━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
+	if page < totalPages {
+		sb.WriteString(fmt.Sprintf("▶️ Reply `#next` or `#catalog %d` for Page %d\n", page+1, page+1))
+	}
+	if page > 1 {
+		sb.WriteString(fmt.Sprintf("◀️ Reply `#back` or `#catalog %d` for Page %d\n", page-1, page-1))
+	}
+	sb.WriteString("📲 Reply `#buy <code_number>` (e.g. `#buy 1`) to order any item instantly!")
+
+	return sb.String()
+}
+
 
 
 type ChatTurn struct {
@@ -123,21 +165,36 @@ Type any hashtag command above to trigger instantly!`
 		return true, helpMenu
 
 	case "#catalog", "#products":
-		catalogCard := `📦 *[LIVE TEESLUX PRODUCT CATALOG]*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-1. ⚡ *550W Monocrystalline Solar Panel* — ₦120,000.00
-2. 🔋 *20,000 mAh Solar Power Bank* — ₦18,500.00
-3. ⚡ *1.5kVA Dual Solar Generator* — ₦185,000.00
-4. 🍚 *50kg Premium White Rice Bag* — ₦60,000.00
-5. 🪙 *24K Gold Bar Bullion (1-Gram)* — ₦68,500.00
-6. ⚡ *3.5kVA Hybrid Solar Inverter System* — ₦340,000.00
+		pageNum := 1
+		if len(parts) >= 2 {
+			if n, err := strconv.Atoi(strings.TrimSpace(parts[1])); err == nil && n > 0 {
+				pageNum = n
+			}
+		}
+		return true, GeneratePaginatedCatalog(pageNum)
 
-Reply with an item name or type #pay to receive transfer details!`
-		return true, catalogCard
+	case "#next":
+		return true, GeneratePaginatedCatalog(2)
+
+	case "#back":
+		return true, GeneratePaginatedCatalog(1)
+
+	case "#buy":
+		itemIdx := 0
+		if len(parts) >= 2 {
+			if code, err := strconv.Atoi(strings.TrimSpace(parts[1])); err == nil && code > 0 && code <= len(storeCatalog) {
+				itemIdx = code - 1
+			}
+		}
+		p := storeCatalog[itemIdx]
+		payCard := globalMonetizationEngine.GenerateMonnifyCheckoutCard(p.Name, p.Price, senderPhone)
+		return true, payCard
 
 	case "#pay", "#checkout":
-		payCard := globalMonetizationEngine.GenerateMonnifyCheckoutCard("Selected Catalog Order", 18500.0, senderPhone)
+		p := storeCatalog[0]
+		payCard := globalMonetizationEngine.GenerateMonnifyCheckoutCard(p.Name, p.Price, senderPhone)
 		return true, payCard
+
 
 	case "#ledger", "#balance", "#status":
 		targetPhone := senderPhone

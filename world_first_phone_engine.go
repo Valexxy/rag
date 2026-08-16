@@ -179,8 +179,11 @@ func (e *WorldFirstPhoneEngine) GeneratePersonalizedOpening(phone, profileName, 
 	}
 
 
-	return fmt.Sprintf("%s%s%s! %s Welcome to %s!%s%s\n\nHow may I assist you today?", locationTag, greetingText, nameStr, emoji, merchantName, weatherStr, newsStr)
+	categorySummary := "\n\n🛍️ *OUR LIVE PRODUCT CATEGORIES:*\n• ⚡ *Solar Systems:* 550W Monocrystalline Panels, 1.5kVA Generators, 3.5kVA Hybrid Inverters\n• 🔋 *Power Banks:* 20,000 mAh Solar Outdoor Fast-Charging Power Banks\n• 🍚 *Food Staples:* 50kg Premium White Rice Bags\n• 🪙 *Gold Investments:* 24K Gold Bar Bullion (1-Gram)\n\n📲 Reply *#catalog* to view full item list & buy codes (`#buy 1`, `#buy 2`), or reply *#help* for instant commands!"
+
+	return fmt.Sprintf("%s%s%s! %s Welcome to %s!%s%s%s", locationTag, greetingText, nameStr, emoji, merchantName, weatherStr, newsStr, categorySummary)
 }
+
 
 
 

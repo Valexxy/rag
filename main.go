@@ -449,8 +449,16 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 		}
 	}
 
-	// 24/7 Autonomous Visual Canvas & Photo Card Delivery Plugin
-	if strings.Contains(lower, "picture") || strings.Contains(lower, "pictures") || strings.Contains(lower, "photo") || strings.Contains(lower, "photos") || strings.Contains(lower, "image") || strings.Contains(lower, "images") || strings.Contains(lower, "show me") || strings.Contains(lower, "send pic") || strings.Contains(lower, "product picture") {
+	// Autonomous Interactive Paginated Catalog Router
+	if strings.Contains(lower, "catalogue") || strings.Contains(lower, "catalog") || strings.Contains(lower, "products") || strings.Contains(lower, "all items") || strings.Contains(lower, "show catalogue") || strings.Contains(lower, "full list") {
+		catCard := GeneratePaginatedCatalog(1)
+		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, catCard)
+		return
+	}
+
+	// 24/7 Autonomous Visual Canvas & Photo Card Delivery Plugin (For specific item picture requests)
+	if (strings.Contains(lower, "picture") || strings.Contains(lower, "pictures") || strings.Contains(lower, "photo") || strings.Contains(lower, "photos") || strings.Contains(lower, "image") || strings.Contains(lower, "images") || strings.Contains(lower, "send pic") || strings.Contains(lower, "product picture")) && !strings.Contains(lower, "catalog") && !strings.Contains(lower, "catalogue") {
+
 		for _, p := range storeCatalog {
 			pName := strings.ToLower(p.Name)
 			if strings.Contains(lower, strings.ToLower(p.ID)) || (strings.Contains(pName, "panel") && strings.Contains(lower, "panel")) || (strings.Contains(pName, "inverter") && strings.Contains(lower, "inverter")) || (strings.Contains(pName, "generator") && strings.Contains(lower, "generator")) || (strings.Contains(pName, "rice") && strings.Contains(lower, "rice")) || (strings.Contains(pName, "gold") && strings.Contains(lower, "gold")) || (strings.Contains(pName, "power bank") && strings.Contains(lower, "power")) {
