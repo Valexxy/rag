@@ -53,6 +53,19 @@ func (d *DialogueEngine) SetState(phone, state string) {
 	d.lastActivity[phone] = time.Now()
 }
 
+func (d *DialogueEngine) SetHumanHandoff(phone string) {
+	d.SetState(phone, "HUMAN_AGENT_ACTIVE")
+}
+
+func (d *DialogueEngine) IsHumanHandoff(phone string) bool {
+	return d.GetState(phone) == "HUMAN_AGENT_ACTIVE"
+}
+
+func (d *DialogueEngine) ResetHumanHandoff(phone string) {
+	d.SetState(phone, "IDLE")
+}
+
+
 
 func (d *DialogueEngine) AddTurn(phone, role, content string) {
 	d.mu.Lock()

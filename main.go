@@ -327,11 +327,21 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 
 
 
-	// Check for manager commands (#reply, #resolve, #mute)
+	// Check for manager commands (#reply, #reengage, #resolve)
 	if isCmd, resultMsg := globalDialogueEngine.HandleManagerCommand(messageText, senderPhone); isCmd {
 		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, resultMsg)
 		return
 	}
+
+	// Check if Bot is DISENGAGED (Human Agent Handoff Active for this customer line)
+	if globalDialogueEngine.IsHumanHandoff(senderPhone) {
+		// Forward customer message to Store Manager (2348072015725)
+		managerNotice := fmt.Sprintf("💬 *[HUMAN CHAT — CUSTOMER MESSAGE]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Customer:* %s (`%s`)\n💬 *Message:* \"%s\"\n\n(Reply using `#reply %s | your response`)", profileName, senderPhone, messageText, senderPhone)
+		globalWhatsAppEngine.SendMessage("sovereign-ai-master", managerPhone, managerNotice)
+		log.Printf("[Bot Disengaged - Human Handoff Active] Forwarded message from %s to Store Manager %s.", senderPhone, managerPhone)
+		return
+	}
+
 
 	lower := strings.ToLower(messageText)
 

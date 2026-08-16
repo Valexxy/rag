@@ -136,10 +136,9 @@ func monnifyWebhookHandler(w http.ResponseWriter, r *http.Request) {
 			custName = "Valued Customer"
 		}
 
-		// Match item paid for from live catalog matching amount paid
-		itemName := "Store Order & Products"
+		// 1. Identify closest catalog item or active item
+		itemName := "Store Product Order"
 		itemPrice := 0.0
-		var overpaid float64 = 0.0
 
 		for _, p := range storeCatalog {
 			if amt >= p.Price {
@@ -150,21 +149,14 @@ func monnifyWebhookHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		if itemPrice > 0 && amt > itemPrice {
-			overpaid = amt - itemPrice
+		if itemPrice == 0 {
+			// Default to power bank (₦18,500) for partial payment comparison
+			itemName = storeCatalog[1].Name
+			itemPrice = storeCatalog[1].Price
 		}
-
-		overpaidNotice := ""
-		if overpaid > 0 {
-			overpaidNotice = fmt.Sprintf("\n\n💡 *Overpayment / Change Note:* You paid *₦%.2f* extra above the catalog price (₦%.2f). *₦%.2f* has been credited to your Store Balance for future orders!", overpaid, itemPrice, overpaid)
-		} else if itemPrice == 0 {
-			itemPrice = amt
-		}
-
-		receiptMsg := fmt.Sprintf("🎉 *[INSTANT PAYMENT VERIFIED — MONNIFY]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nDear %s,\nWe received your live bank transfer payment!\n\n📦 *Item Paid For:* %s\n💵 *Amount Paid:* ₦%.2f\n🏷️ *Catalog Price:* ₦%.2f\n🧾 *Transaction Ref:* `%s`\n✅ *Status:* PAID & VERIFIED%s\n\nThank you for shopping with Teeslux Global Store!", custName, itemName, amt, itemPrice, txRef, overpaidNotice)
 
 		// Extract recipient customer phone (dynamic from payment metadata)
-		customerPhone := ""
+		customerPhone := "2348072015725"
 		if payload.EventData.Customer.Phone != "" {
 			customerPhone = payload.EventData.Customer.Phone
 		} else if strings.Contains(payload.EventData.Customer.Email, "@") {
@@ -174,18 +166,47 @@ func monnifyWebhookHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		// If customer phone extracted, send receipt to customer line
-		if customerPhone != "" && customerPhone != managerPhone {
-			globalWhatsAppEngine.SendMessage("sovereign-ai-master", customerPhone, receiptMsg)
-		} else {
-			// In sandbox self-test mode, send receipt to customer chat
-			globalWhatsAppEngine.SendMessage("sovereign-ai-master", "2348072015725", receiptMsg)
+		// ── CASE A: UNDERPAYMENT / PARTIAL PAYMENT BALANCE RECOGNITION ─────
+		if amt < itemPrice {
+			balanceDue := itemPrice - amt
+			custReceipt := fmt.Sprintf("🟡 *[PARTIAL PAYMENT RECEIVED — MONNIFY]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nDear %s,\nWe received your partial bank transfer payment!\n\n📦 *Item:* %s\n🏷️ *Catalog Price:* ₦%.2f\n💵 *Amount Paid Today:* ₦%.2f\n⚠️ *OUTSTANDING BALANCE DUE:* ₦%.2f\n🧾 *Transaction Ref:* `%s`\n\nPlease transfer the remaining balance of *₦%.2f* to complete your order!", custName, itemName, itemPrice, amt, balanceDue, txRef, balanceDue)
+
+			globalWhatsAppEngine.SendMessage("sovereign-ai-master", customerPhone, custReceipt)
+
+			managerAlert := fmt.Sprintf("🟡 *[MANAGER ALERT — PARTIAL PAYMENT RECEIVED]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Customer:* %s (`%s`)\n📦 *Item:* %s\n💵 *Amount Paid:* ₦%.2f (Catalog Price: ₦%.2f)\n⚠️ *OUTSTANDING BALANCE:* ₦%.2f\n🧾 *Tx Ref:* `%s`", custName, customerPhone, itemName, amt, itemPrice, balanceDue, txRef)
+			globalWhatsAppEngine.SendMessage("sovereign-ai-master", managerPhone, managerAlert)
+			return
 		}
 
-		// 2. Send Executive Alert to Store Manager WhatsApp line (2348072015725)
-		managerNotice := fmt.Sprintf("👔 *[STORE MANAGER ALERT — LIVE PAYMENT RECEIVED]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n👤 *Customer Name:* %s\n📱 *Customer Phone:* %s\n📦 *Item Purchased:* %s\n💵 *Amount Paid:* ₦%.2f\n🧾 *Transaction Ref:* `%s`\n✅ *Status:* PAID & VERIFIED\n\nPlease prepare waybill and order dispatch!", custName, customerPhone, itemName, amt, txRef)
+		// ── CASE B: FULL PAYMENT OR OVERPAYMENT (BOT DISENGAGES TO HUMAN AGENT)
+		var overpaid float64 = 0.0
+		if amt > itemPrice {
+			overpaid = amt - itemPrice
+		}
+
+		overpaidNote := ""
+		if overpaid > 0 {
+			overpaidNote = fmt.Sprintf("\n\n⚠️ *OVERPAYMENT DETECTED:* You paid *₦%.2f* extra above the catalog price (₦%.2f). Our Store Manager has been notified to issue your manual bank refund of *₦%.2f*!", overpaid, itemPrice, overpaid)
+		}
+
+		receiptMsg := fmt.Sprintf("🎉 *[PAYMENT CONFIRMED — CONNECTED TO HUMAN AGENT]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nDear %s,\nThank you for your patronage! We received your live bank transfer payment!\n\n📦 *Item Paid For:* %s\n💵 *Amount Paid:* ₦%.2f\n🏷️ *Catalog Price:* ₦%.2f\n🧾 *Transaction Ref:* `%s`\n✅ *Status:* PAID & VERIFIED%s\n\n👔 *Human Agent Handoff:* The AI Bot has disengaged. You are now connected directly with our Store Manager for further discussion and order finalization!", custName, itemName, amt, itemPrice, txRef, overpaidNote)
+
+		// 1. Send receipt & handoff note to Customer
+		globalWhatsAppEngine.SendMessage("sovereign-ai-master", customerPhone, receiptMsg)
+
+		// 2. DISENGAGE BOT FOR THIS CUSTOMER (HUMAN AGENT TAKES OVER)
+		globalDialogueEngine.SetHumanHandoff(customerPhone)
+
+		// 3. Send Executive Alert to Store Manager (2348072015725)
+		refundNotice := ""
+		if overpaid > 0 {
+			refundNotice = fmt.Sprintf("\n\n🚨 *ACTION REQUIRED (MANUAL REFUND DUE):* Customer overpaid ₦%.2f extra! Please request customer bank details to transfer manual refund of ₦%.2f.", overpaid, overpaid)
+		}
+
+		managerNotice := fmt.Sprintf("👔 *[STORE MANAGER ALERT — NEW PAID CUSTOMER HANDOFF]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n👤 *Customer Name:* %s\n📱 *Customer Phone:* `%s`\n📦 *Item Purchased:* %s\n💵 *Amount Paid:* ₦%.2f\n🧾 *Transaction Ref:* `%s`\n✅ *Status:* PAID & VERIFIED (BOT DISENGAGED)%s\n\n💬 *Action Required:* The AI bot is now disengaged. Please chat directly with the customer to finalize dispatch or manual refund!", custName, customerPhone, itemName, amt, txRef, refundNotice)
 		globalWhatsAppEngine.SendMessage("sovereign-ai-master", managerPhone, managerNotice)
 	}
+
 
 
 
