@@ -7,30 +7,43 @@ import (
 	"time"
 )
 
-// ── 1. AUTONOMOUS PRICE & VOLUME BARGAINER PLUGIN ───────────────────────
+// ── 1. MERCHANT-CONFIGURED PRICE & VOLUME BARGAINER PLUGIN ──────────────
+type MerchantDiscountConfig struct {
+	AllowAIBargaining bool    `json:"allow_ai_bargaining"`
+	MinQtyForDiscount int     `json:"min_qty_for_discount"`
+	MaxDiscountPct    float64 `json:"max_discount_pct"`
+}
+
+var globalMerchantDiscountConfig = MerchantDiscountConfig{
+	AllowAIBargaining: true, // Configurable by merchant (true/false)
+	MinQtyForDiscount: 3,    // Set by merchant rule
+	MaxDiscountPct:    0.10, // Max 10% discount set by merchant rule
+}
+
 type BargainerPlugin struct{}
 
 func (b *BargainerPlugin) EvaluateBulkOffer(item string, unitPrice float64, quantity int) (bool, float64, string) {
-	if quantity < 2 {
-		return false, unitPrice, fmt.Sprintf("Our price for 1 unit of %s is ₦%.2f.", item, unitPrice)
+	// If merchant disabled AI bargaining or quantity is below merchant rule
+	if !globalMerchantDiscountConfig.AllowAIBargaining || quantity < globalMerchantDiscountConfig.MinQtyForDiscount {
+		reply := fmt.Sprintf("Our catalog price for %s is ₦%.2f per unit as set by store management. For special volume requests, I can notify our Store Manager to review a custom quote for you!", item, unitPrice)
+		return false, unitPrice, reply
 	}
 
-	// Dynamic margin calculation (e.g. 5% discount for 3+ units, 10% for 5+ units, 15% max for 10+ units)
-	discountPct := 0.05
-	if quantity >= 10 {
-		discountPct = 0.15
-	} else if quantity >= 5 {
-		discountPct = 0.10
+	// Calculate discount within merchant's configured bounds
+	discountPct := globalMerchantDiscountConfig.MaxDiscountPct
+	if quantity < 5 && discountPct > 0.05 {
+		discountPct = 0.05
 	}
 
 	discountedPrice := math.Round(unitPrice * (1.0 - discountPct))
 	totalAmount := discountedPrice * float64(quantity)
 	savings := (unitPrice - discountedPrice) * float64(quantity)
 
-	reply := fmt.Sprintf("🤝 *[AUTONOMOUS WHOLESALE DISCOUNT APPROVED]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n📦 *Item:* %s\n🔢 *Quantity:* %d units\n🏷️ *Catalog Price:* ₦%.2f / unit\n⚡ *Wholesale Discount Price:* ₦%.2f / unit (%.0f%% OFF)\n💰 *Total Savings:* ₦%.2f\n💳 *Grand Total:* ₦%.2f\n\nWould you like me to generate your 1-tap Monnify payment checkout link now?", item, quantity, unitPrice, discountedPrice, discountPct*100, savings, totalAmount)
+	reply := fmt.Sprintf("🤝 *[MERCHANT DISCOUNT APPROVED]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n📦 *Item:* %s\n🔢 *Quantity:* %d units\n🏷️ *Catalog Price:* ₦%.2f / unit\n⚡ *Discounted Price:* ₦%.2f / unit (%.0f%% OFF)\n💰 *Total Savings:* ₦%.2f\n💳 *Grand Total:* ₦%.2f\n\nWould you like me to generate your 1-tap Monnify payment checkout link now?", item, quantity, unitPrice, discountedPrice, discountPct*100, savings, totalAmount)
 
 	return true, discountedPrice, reply
 }
+
 
 // ── 2. DYNAMIC VISUAL CANVAS & PHOTO COMPOSITION PLUGIN ─────────────────
 type VisualCanvasPlugin struct{}
