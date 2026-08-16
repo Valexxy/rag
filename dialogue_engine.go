@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"time"
 )
+
 
 type ChatTurn struct {
 	Role    string
