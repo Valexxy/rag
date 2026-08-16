@@ -92,6 +92,8 @@ func main() {
 	http.HandleFunc("/api/catchup", catchupHandler)
 	http.HandleFunc("/webhook/meta", metaWebhookHandler)
 	http.HandleFunc("/webhook/evolution", metaWebhookHandler)
+	http.HandleFunc("/webhook/monnify", monnifyWebhookHandler)
+
 	http.HandleFunc("/api/v1/analytics/dashboard", dashboardAnalyticsHandler)
 	http.HandleFunc("/api/v1/analytics/zero-cost", zeroCostAnalyticsHandler)
 	http.HandleFunc("/api/v1/vc-metrics", func(w http.ResponseWriter, r *http.Request) {

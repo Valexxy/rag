@@ -4,10 +4,14 @@ import (
 	"crypto/hmac"
 	"crypto/sha512"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"strings"
 	"time"
 )
+
 
 
 type MonetizationEngine struct{}
@@ -85,3 +89,60 @@ func (m *MonetizationEngine) CalculateZeroCostSavings(merchantsCount int) map[st
 		"status":                        "100% ZERO-KOBO GUARANTEED (SLA 99.99%)",
 	}
 }
+
+// 🏦 MONNIFY LIVE PAYMENT WEBHOOK HANDLER
+func monnifyWebhookHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "GET" {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Monnify Webhook Endpoint Active"))
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+
+	var payload struct {
+		EventType string `json:"eventType"`
+		EventData struct {
+			TransactionReference string  `json:"transactionReference"`
+			PaymentReference     string  `json:"paymentReference"`
+			AmountPaid           float64 `json:"amountPaid"`
+			PaymentStatus        string  `json:"paymentStatus"`
+			Customer             struct {
+				Email string `json:"email"`
+				Name  string `json:"name"`
+			} `json:"customer"`
+			DestinationAccount struct {
+				AccountNumber string `json:"accountNumber"`
+			} `json:"destinationAccountInformation"`
+		} `json:"eventData"`
+	}
+
+	if err := json.Unmarshal(body, &payload); err != nil {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"status":"received"}`))
+		return
+	}
+
+	if payload.EventType == "SUCCESSFUL_TRANSACTION" || payload.EventData.PaymentStatus == "PAID" {
+		amt := payload.EventData.AmountPaid
+		txRef := payload.EventData.TransactionReference
+		custName := payload.EventData.Customer.Name
+		if custName == "" {
+			custName = "Valued Customer"
+		}
+
+		receiptMsg := fmt.Sprintf("🎉 *[INSTANT PAYMENT VERIFIED — MONNIFY]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nDear %s,\nWe received your live bank transfer payment of *₦%.2f*!\n\n🧾 *Transaction Ref:* `%s`\n✅ *Status:* PAID & VERIFIED\n📦 *Order Status:* Processing for Dispatch!\n\nThank you for shopping with Teeslux Global Store!", custName, amt, txRef)
+
+		// Send receipt to customer phone
+		globalWhatsAppEngine.SendMessage("sovereign-ai-master", ownerPhone, receiptMsg)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"status":"success","message":"Monnify Payment Webhook Processed"}`))
+}
+
