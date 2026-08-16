@@ -1,3 +1,11 @@
+process.on('uncaughtException', (err) => {
+    console.error('[Baileys Uncaught Exception]', err.stack || err.message);
+});
+
+process.on('unhandledRejection', (reason) => {
+    console.error('[Baileys Unhandled Rejection]', reason);
+});
+
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
 const express = require('express');
 const http = require('http');
@@ -10,6 +18,7 @@ app.use(express.json());
 
 const PORT = 8081;
 const GOLANG_BACKEND = 'http://127.0.0.1:8080';
+
 
 const logger = pino({ level: 'silent' });
 
@@ -229,7 +238,8 @@ app.post('/message/sendMedia/:instance', async (req, res) => {
 
 app.get('/health', (req, res) => res.json({ status: 'online', gateway: 'Baileys 24/7 Embedded Gateway' }));
 
-app.listen(PORT, () => {
-    console.log(`[Baileys Gateway] Express server listening on port ${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`[Baileys Gateway] Express server listening on 0.0.0.0:${PORT}`);
     connectToWhatsApp();
 });
+
