@@ -91,3 +91,33 @@ func (d *DialogueEngine) HandleManagerCommand(command, senderPhone string) (bool
 
 	return false, ""
 }
+
+// 📲 GENERATE EXECUTIVE CHAT SUMMARY FOR STORE MANAGER HANDOFF
+func (d *DialogueEngine) GenerateChatSummary(phone string) string {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+
+	turns := d.memoryThreads[phone]
+	if len(turns) == 0 {
+		return fmt.Sprintf("📲 *[NEW CUSTOMER INQUIRY]*\n👤 Customer: `%s`\n💬 Customer just started a chat.\n\n⚡ *TO REPLY:* `#reply %s | Your message`", phone, phone)
+	}
+
+	var summaryLines []string
+	startIdx := 0
+	if len(turns) > 6 {
+		startIdx = len(turns) - 6
+	}
+
+	for _, t := range turns[startIdx:] {
+		tag := "👤 Customer"
+		if t.Role == "assistant" || t.Role == "bot" {
+			tag = "🤖 Bot"
+		} else if t.Role == "manager" {
+			tag = "👔 Store Manager"
+		}
+		summaryLines = append(summaryLines, fmt.Sprintf("• *%s:* %s", tag, t.Content))
+	}
+
+	return fmt.Sprintf("📲 *[MANAGER HANDOFF & CHAT SUMMARY]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Customer:* `%s`\n\n📝 *RECENT CHAT HISTORY:*\n%s\n\n⚡ *TO REPLY:* Send:\n`#reply %s | Your message`", phone, strings.Join(summaryLines, "\n"), phone)
+}
+

@@ -360,11 +360,18 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 
 
 	// Check for explicit human takeover request (VIP Concierge Agent)
-	if strings.Contains(lower, "human manager") || strings.Contains(lower, "speak to human") || strings.Contains(lower, "transfer to manager") {
-		vipAgent := &VIPConciergeAgent{}
-		vipAgent.HandleVIPEscalation(senderPhone, messageText)
+	if strings.Contains(lower, "human manager") || strings.Contains(lower, "speak to human") || strings.Contains(lower, "transfer to manager") || strings.Contains(lower, "talk to manager") {
+		// Send executive chat summary to manager's WhatsApp line
+		summaryNotice := globalDialogueEngine.GenerateChatSummary(senderPhone)
+		globalWhatsAppEngine.SendMessage("sovereign-ai-master", ownerPhone, summaryNotice)
+
+		// Send non-blocking notification to customer with Bot Assistant tag
+		custMsg := "🤖 *[Bot Assistant]:* I have notified our Store Manager with a full summary of your chat! While waiting, feel free to ask me any further product, pricing, or stock questions!"
+		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, custMsg)
+		globalDialogueEngine.AddTurn(senderPhone, "assistant", custMsg)
 		return
 	}
+
 
 	// FEATURE 5: Autonomous Neighborhood Group Buy & Co-Op Buying Intercept
 	if strings.Contains(lower, "group buy") || strings.Contains(lower, "neighborhood") || strings.Contains(lower, "co-op") || strings.Contains(lower, "pool") {
@@ -423,11 +430,12 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 	// Call Multi-LLM AI Engine (Cerebras + Groq + OpenRouter)
 	aiReply := globalAIEngine.GenerateReply(messageText, senderPhone, "Teeslux Global Electronics & Solar", "Onitsha Main Market", "Electronics & Solar", catalogStr)
 	if aiReply != "" {
-		// FEATURE 6: Apply Hyper-Local Dialect & Pidgin Tone Adapter
 		personalizedReply := globalLocationEngine.ApplyDialectTone(senderPhone, aiReply)
-		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, personalizedReply)
+		taggedReply := fmt.Sprintf("🤖 *[Bot Assistant]:*\n%s", personalizedReply)
+		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, taggedReply)
 		globalDialogueEngine.AddTurn(senderPhone, "assistant", personalizedReply)
 	}
+
 
 }
 
