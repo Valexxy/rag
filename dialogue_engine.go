@@ -129,14 +129,22 @@ func (d *DialogueEngine) Start60SecondManagerCallAlarm(customerPhone, profileNam
 		d.mu.RUnlock()
 
 		if isStillWaiting {
-			log.Printf("[1-MINUTE CALL ALARM] 60s expired! Ringing Store Manager phone +%s directly!", managerPhone)
+			log.Printf("[1-MINUTE CALL ALARM] 60s expired! Ringing Store Manager phone +%s directly & dispatching customer delay reassurance!", managerPhone)
+			
+			// 1. Trigger Zero-Cost Direct Phone Ringing Call to Manager's GSM line
 			TriggerDirectPhoneCallAlarm(managerPhone, customerPhone, profileName)
 
+			// 2. Alert Manager on WhatsApp
 			ringAlert := fmt.Sprintf("🚨🚨 *[URGENT PHONE CALL ALARM — 1 MINUTE EXPIRED]* 🚨🚨\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📞 *RINGING STORE MANAGER PHONE:* +%s\n👤 *Waiting Customer:* %s (`%s`)\n⏳ *Wait Time:* 60 seconds without response!\n\n👉 *Reply IMMEDIATELY using:* `#reply %s | your message`", managerPhone, profileName, customerPhone, customerPhone)
 			globalWhatsAppEngine.SendMessage("sovereign-ai-master", managerPhone, ringAlert)
+
+			// 3. Dispatch Reassurance Message to Customer to bear with the delay
+			reassuranceMsg := fmt.Sprintf("⏳ *[STORE MANAGER UPDATE]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nDear %s,\nOur Store Manager has been alerted with an urgent priority call alarm regarding your inquiry!\n\nPlease bear with us for just a brief moment while our manager connects. Your conversation is our highest priority!\n\n🛍️ *Tip:* Reply `#catalog` anytime to explore more items in our live store!", profileName)
+			globalWhatsAppEngine.SendMessage("sovereign-ai-master", customerPhone, reassuranceMsg)
 		}
 	})
 }
+
 
 func (d *DialogueEngine) CancelManagerCallAlarm(customerPhone string) {
 	d.mu.Lock()
