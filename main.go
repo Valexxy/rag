@@ -613,11 +613,52 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 		}
 	}
 
+	// 💳 AUTONOMOUS PAYMENT RECEIPT & MONNIFY SANDBOX TEXT INTERCEPTOR
+	if strings.Contains(lower, "monnify") || strings.Contains(lower, "mon-") || strings.Contains(lower, "web|") || strings.Contains(lower, "payment5000") || strings.Contains(lower, "payment18500") || (strings.Contains(lower, "paid") && (strings.Contains(lower, "5000") || strings.Contains(lower, "18500") || strings.Contains(lower, "60000") || strings.Contains(lower, "120000"))) {
+		amt := 18500.0
+		if strings.Contains(lower, "5000") {
+			amt = 5000.0
+		} else if strings.Contains(lower, "60000") {
+			amt = 60000.0
+		} else if strings.Contains(lower, "120000") {
+			amt = 120000.0
+		}
 
+		txRef := fmt.Sprintf("MON-SANDBOX-%d", time.Now().UnixNano()%1000000)
 
+		// Accumulate payment in global ledger
+		amtKobo := NgnToKobo(amt)
+		totalCumulativeKobo := globalPaymentLedger.AddPaymentKobo(senderPhone, amtKobo)
+		totalCumulativeNgn := KoboToNgn(totalCumulativeKobo)
+
+		item := storeCatalog[1] // 20,000 mAh Solar Power Bank (₦18,500.00)
+		itemPriceKobo := NgnToKobo(item.Price)
+		itemPriceNgn := item.Price
+
+		if totalCumulativeKobo < itemPriceKobo {
+			balanceKobo := itemPriceKobo - totalCumulativeKobo
+			balanceNgn := KoboToNgn(balanceKobo)
+			custReceipt := fmt.Sprintf("🟡 *[PARTIAL PAYMENT VERIFIED — MONNIFY SANDBOX]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nDear %s,\nWe verified your partial bank transfer payment of *₦%.2f*!\n\n📦 *Item:* %s\n🏷️ *Catalog Price:* ₦%.2f\n💵 *Total Paid So Far:* ₦%.2f\n⚠️ *OUTSTANDING BALANCE DUE:* ₦%.2f\nReceipt Reference: `%s`\n\nPlease transfer the remaining balance of *₦%.2f* to complete your order!", profileName, amt, item.Name, itemPriceNgn, totalCumulativeNgn, balanceNgn, txRef, balanceNgn)
+
+			globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, custReceipt)
+
+			managerAlert := fmt.Sprintf("🟡 *[MANAGER ALERT — PARTIAL PAYMENT RECEIVED]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Customer:* %s (`%s`)\n📦 *Item:* %s\n💵 *Latest Payment:* ₦%.2f\n💵 *Total Paid So Far:* ₦%.2f (Catalog Price: ₦%.2f)\n⚠️ *OUTSTANDING BALANCE:* ₦%.2f\n🧾 *Tx Ref:* `%s`", profileName, senderPhone, item.Name, amt, totalCumulativeNgn, itemPriceNgn, balanceNgn, txRef)
+			globalWhatsAppEngine.SendMessage("sovereign-ai-master", managerPhone, managerAlert)
+			return
+		} else {
+			globalPaymentLedger.ClearBalance(senderPhone)
+			receiptMsg := fmt.Sprintf("🎉 *[PAYMENT CONFIRMED — CONNECTED TO HUMAN AGENT]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nDear %s,\nThank you for your patronage! We received your live bank transfer payment!\n\n📦 *Item Paid For:* %s\n💵 *Total Amount Paid:* ₦%.2f\n🏷️ *Catalog Price:* ₦%.2f\n🧾 *Transaction Ref:* `%s`\n✅ *Status:* PAID & VERIFIED\n\n👔 *Human Agent Handoff:* The AI Bot has disengaged. You are now connected directly with our Store Manager for further discussion and order finalization!", profileName, item.Name, totalCumulativeNgn, itemPriceNgn, txRef)
+
+			globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, receiptMsg)
+			globalDialogueEngine.SetHumanHandoff(senderPhone)
+			globalDialogueEngine.Start60SecondManagerCallAlarm(senderPhone, profileName)
+			return
+		}
+	}
 
 	// Check for explicit human takeover request (VIP Concierge Agent)
 	if strings.Contains(lower, "human manager") || strings.Contains(lower, "speak to human") || strings.Contains(lower, "transfer to manager") || strings.Contains(lower, "talk to manager") {
+
 		// Send executive chat summary to manager's WhatsApp line
 		summaryNotice := globalDialogueEngine.GenerateChatSummary(senderPhone)
 		globalWhatsAppEngine.SendMessage("sovereign-ai-master", ownerPhone, summaryNotice)

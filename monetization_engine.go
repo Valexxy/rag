@@ -41,12 +41,12 @@ func (m *MonetizationEngine) GenerateBankUSSDCode(bankName, accountNumber, amoun
 	}
 }
 
-func (m *MonetizationEngine) GenerateMonnifyCheckoutCard(itemName string, amount float64, customerPhone string) string {
-	txRef := fmt.Sprintf("MON-%d", time.Now().Unix())
-	
-	// Real Live Dynamic Monnify Dedicated Accounts (Wema Bank + Sterling Bank)
-	wemaAcc := "4112328816"
-	sterlingAcc := "2210094665"
+func (m *MonetizationEngine) GenerateMonnifyCheckoutCard(itemName string, amount float64, senderPhone string) string {
+	txRef := fmt.Sprintf("MON-%d", time.Now().UnixNano()%10000000000)
+	globalPaymentLedger.RecordCheckoutSession(txRef, senderPhone)
+
+	wemaAcc := m.GenerateDedicatedVirtualAccount("WEMA", senderPhone)
+	sterlingAcc := m.GenerateDedicatedVirtualAccount("STERLING", senderPhone)
 
 	ussdGTB := m.GenerateBankUSSDCode("GTB", wemaAcc, fmt.Sprintf("%.0f", amount))
 	ussdZenith := m.GenerateBankUSSDCode("ZENITH", wemaAcc, fmt.Sprintf("%.0f", amount))
@@ -86,15 +86,29 @@ type CustomerOrder struct {
 
 type PaymentLedger struct {
 	mu                  sync.RWMutex
-	processedTxRefs    map[string]bool
-	customerCumulative map[string]int64 // phone -> Kobo integer accumulated
+	processedTxRefs     map[string]bool
+	customerCumulative  map[string]int64 // phone -> Kobo integer accumulated
 	activeOrders        map[string]*CustomerOrder
+	checkoutSessions    map[string]string // txRef -> phone
 }
 
 var globalPaymentLedger = &PaymentLedger{
-	processedTxRefs:   make(map[string]bool),
-	customerCumulative: make(map[string]int64),
-	activeOrders:       make(map[string]*CustomerOrder),
+	processedTxRefs:    make(map[string]bool),
+	customerCumulative:  make(map[string]int64),
+	activeOrders:        make(map[string]*CustomerOrder),
+	checkoutSessions:    make(map[string]string),
+}
+
+func (p *PaymentLedger) RecordCheckoutSession(txRef, phone string) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.checkoutSessions[txRef] = phone
+}
+
+func (p *PaymentLedger) GetPhoneByTxRef(txRef string) string {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	return p.checkoutSessions[txRef]
 }
 
 func (p *PaymentLedger) IsProcessed(txRef string) bool {
@@ -108,6 +122,7 @@ func (p *PaymentLedger) RecordTransaction(txRef string) {
 	defer p.mu.Unlock()
 	p.processedTxRefs[txRef] = true
 }
+
 
 func (p *PaymentLedger) AddPaymentKobo(phone string, kobo int64) int64 {
 	p.mu.Lock()
@@ -240,16 +255,24 @@ func monnifyWebhookHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		globalPaymentLedger.RecordTransaction(txRef)
 
-		// Extract recipient customer phone (dynamic from payment metadata)
-		customerPhone := "2348072015725"
-		if payload.EventData.Customer.Phone != "" {
+		// Extract recipient customer phone (dynamic from payment metadata or active checkout session)
+		customerPhone := globalPaymentLedger.GetPhoneByTxRef(txRef)
+		if customerPhone == "" {
+			customerPhone = globalPaymentLedger.GetPhoneByTxRef(payload.EventData.PaymentReference)
+		}
+		if customerPhone == "" && payload.EventData.Customer.Phone != "" {
 			customerPhone = payload.EventData.Customer.Phone
-		} else if strings.Contains(payload.EventData.Customer.Email, "@") {
+		}
+		if customerPhone == "" && strings.Contains(payload.EventData.Customer.Email, "@") {
 			parts := strings.Split(payload.EventData.Customer.Email, "@")
 			if len(parts[0]) >= 10 {
 				customerPhone = parts[0]
 			}
 		}
+		if customerPhone == "" {
+			customerPhone = "2348072015725"
+		}
+
 
 		// 3. Accumulate total payments for this customer phone line (Cent-Precision Kobo Integer)
 		amtKobo := NgnToKobo(amt)
