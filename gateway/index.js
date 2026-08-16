@@ -6,8 +6,9 @@ const QRCode = require('qrcode');
 const app = express();
 app.use(express.json());
 
-const PORT = process.env.GATEWAY_PORT || 8081;
-const GOLANG_BACKEND = process.env.GOLANG_BACKEND || 'http://127.0.0.1:8080';
+const PORT = 8081;
+const GOLANG_BACKEND = 'http://127.0.0.1:8080';
+
 
 let sock = null;
 let currentQRCodeHTML = `<html style="background:#0d1117;color:white;font-family:sans-serif;text-align:center;padding:50px;">

@@ -100,17 +100,21 @@ func catchupHandler(w http.ResponseWriter, r *http.Request) {
 
 // ── QR CODE VISUAL PAIRING PORTAL HANDLER ──────────────────────────────
 func qrPortalHandler(w http.ResponseWriter, r *http.Request) {
-
-	resp, err := http.Get("http://127.0.0.1:8081/qr")
-	if err != nil {
-		w.Header().Set("Content-Type", "text/html")
-		w.Write([]byte(`<h2>📱 WhatsApp Gateway starting up... Refresh in 3 seconds</h2><script>setTimeout(() => location.reload(), 3000);</script>`))
-		return
+	for attempt := 0; attempt < 3; attempt++ {
+		resp, err := http.Get("http://127.0.0.1:8081/qr")
+		if err == nil {
+			defer resp.Body.Close()
+			w.Header().Set("Content-Type", "text/html")
+			io.Copy(w, resp.Body)
+			return
+		}
+		time.Sleep(500 * time.Millisecond)
 	}
-	defer resp.Body.Close()
+
 	w.Header().Set("Content-Type", "text/html")
-	io.Copy(w, resp.Body)
+	w.Write([]byte(`<!DOCTYPE html><html><head><meta http-equiv="refresh" content="3"><style>body{background:#0d1117;color:white;font-family:sans-serif;text-align:center;padding:50px;}</style></head><body><h2>📱 WhatsApp Gateway Initializing...</h2><p>Auto-refreshing in 3 seconds to load QR code</p></body></html>`))
 }
+
 
 // ── HEALTH HANDLER ─────────────────────────────────────────────────────
 func healthHandler(w http.ResponseWriter, r *http.Request) {
