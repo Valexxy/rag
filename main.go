@@ -341,16 +341,21 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 		return
 	}
 
-	// Check if bot is MUTED for this customer (Auto-resets on explicit product inquiry)
+	// Smart Co-Pilot State Machine: Auto-unmutes after 15 minutes of manager inactivity
 	if globalDialogueEngine.GetState(senderPhone) == "HUMAN_ESCALATED" {
-		if strings.Contains(lower, "product") || strings.Contains(lower, "solar") || strings.Contains(lower, "panel") || strings.Contains(lower, "inverter") || strings.Contains(lower, "price") || strings.Contains(lower, "hello") || strings.Contains(lower, "hi") || strings.Contains(lower, "available") {
+		lastActivity := globalDialogueEngine.GetLastActivityTime(senderPhone)
+		if time.Since(lastActivity) > 15*time.Minute {
 			globalDialogueEngine.SetState(senderPhone, "IDLE")
-			log.Printf("[Golang State Machine] Auto-unmuted bot for customer %s on product inquiry", senderPhone)
+			log.Printf("[Smart Co-Pilot Engine] 15-minute manager inactivity timer expired. Auto-unmuted AI bot for customer %s", senderPhone)
+		} else if strings.Contains(lower, "product") || strings.Contains(lower, "solar") || strings.Contains(lower, "panel") || strings.Contains(lower, "inverter") || strings.Contains(lower, "price") || strings.Contains(lower, "hello") || strings.Contains(lower, "hi") || strings.Contains(lower, "available") || strings.Contains(lower, "how much") || strings.Contains(lower, "buy") {
+			globalDialogueEngine.SetState(senderPhone, "IDLE")
+			log.Printf("[Smart Co-Pilot Engine] Auto-unmuted AI bot for customer %s on product inquiry", senderPhone)
 		} else {
-			log.Printf("[Golang State Machine] Bot is MUTED for customer %s", senderPhone)
+			log.Printf("[Smart Co-Pilot Engine] Bot is temporarily paused for human manager on customer %s", senderPhone)
 			return
 		}
 	}
+
 
 
 
