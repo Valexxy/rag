@@ -67,6 +67,33 @@ func main() {
 
 	// Start 24/7 background keep-alive goroutine
 	go keepEvolutionAwake()
+}
+
+type SessionTracker struct {
+	mu           sync.RWMutex
+	greetedUsers map[string]time.Time
+}
+
+var globalSessionTracker = &SessionTracker{
+	greetedUsers: make(map[string]time.Time),
+}
+
+func (s *SessionTracker) HasBeenGreeted(phone string) bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	t, exists := s.greetedUsers[phone]
+	if !exists {
+		return false
+	}
+	return time.Since(t) < 12*time.Hour
+}
+
+func (s *SessionTracker) MarkGreeted(phone string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.greetedUsers[phone] = time.Now()
+}
+
 
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -664,20 +691,22 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 		personalizedReply := globalLocationEngine.ApplyDialectTone(senderPhone, aiReply)
 		
 		finalReply := personalizedReply
-		if len(globalDialogueEngine.GetTurns(senderPhone)) <= 2 {
+		if !globalSessionTracker.HasBeenGreeted(senderPhone) {
 			opening := globalWorldFirstEngine.GeneratePersonalizedOpening(senderPhone, profileName, messageText, merchantName)
 			lowerMsg := strings.ToLower(strings.TrimSpace(messageText))
-			if lowerMsg == "hello" || lowerMsg == "hi" || lowerMsg == "hey" || lowerMsg == "good morning" || lowerMsg == "good afternoon" || lowerMsg == "good evening" || lowerMsg == "haiii" {
+			if lowerMsg == "hello" || lowerMsg == "hi" || lowerMsg == "hey" || lowerMsg == "good morning" || lowerMsg == "good afternoon" || lowerMsg == "good evening" {
 				finalReply = opening
 			} else {
 				finalReply = fmt.Sprintf("%s\n\n%s", opening, personalizedReply)
 			}
+			globalSessionTracker.MarkGreeted(senderPhone)
 		}
 
 		taggedReply := fmt.Sprintf("🤖 *[Bot Assistant]:*\n%s", finalReply)
 		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, taggedReply)
 		globalDialogueEngine.AddTurn(senderPhone, "assistant", finalReply)
 	}
+
 
 
 

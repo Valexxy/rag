@@ -141,10 +141,10 @@ func DetectCityFromText(text string) (string, float64, float64) {
 }
 
 
-// 🌐 REVERSE GEOCODE GPS COORDINATES DOWN TO EXACT COMMUNITY, STREET & LGA
+// 🌐 REVERSE GEOCODE GPS COORDINATES DOWN TO EXACT HOUSE, STREET, COMMUNITY & LGA
 func ReverseGeocodeCoords(lat, lng float64) (string, string, string) {
-	url := fmt.Sprintf("https://nominatim.openstreetmap.org/reverse?lat=%.6f&lon=%.6f&format=json", lat, lng)
-	client := &http.Client{Timeout: 3 * time.Second}
+	url := fmt.Sprintf("https://nominatim.openstreetmap.org/reverse?lat=%.6f&lon=%.6f&format=json&addressdetails=1", lat, lng)
+	client := &http.Client{Timeout: 4 * time.Second}
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0 (SovereignAI/2026)")
 
@@ -156,36 +156,94 @@ func ReverseGeocodeCoords(lat, lng float64) (string, string, string) {
 
 	var result struct {
 		Address struct {
-			Suburb     string `json:"suburb"`
+			Building      string `json:"building"`
+			Amenity       string `json:"amenity"`
+			HouseNumber   string `json:"house_number"`
+			Road          string `json:"road"`
+			Pedestrian    string `json:"pedestrian"`
+			Footway       string `json:"footway"`
+			Subdivision   string `json:"subdivision"`
+			Suburb        string `json:"suburb"`
 			Neighbourhood string `json:"neighbourhood"`
-			CityDistrict string `json:"city_district"`
-			Town       string `json:"town"`
-			City       string `json:"city"`
-			County     string `json:"county"`
-			State      string `json:"state"`
+			Quarter       string `json:"quarter"`
+			Village       string `json:"village"`
+			Hamlet        string `json:"hamlet"`
+			CityDistrict  string `json:"city_district"`
+			Town          string `json:"town"`
+			City          string `json:"city"`
+			County        string `json:"county"`
+			StateDistrict string `json:"state_district"`
+			State         string `json:"state"`
 		} `json:"address"`
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&result); err == nil {
+		// 1. Extract Street/House
+		street := result.Address.Road
+		if street == "" {
+			street = result.Address.Pedestrian
+		}
+		if street == "" {
+			street = result.Address.Footway
+		}
+		if street == "" {
+			street = result.Address.Amenity
+		}
+		if street == "" {
+			street = result.Address.Building
+		}
+
+		// 2. Extract Neighborhood / Community
 		comm := result.Address.Suburb
 		if comm == "" {
 			comm = result.Address.Neighbourhood
 		}
 		if comm == "" {
-			comm = result.Address.CityDistrict
+			comm = result.Address.Quarter
 		}
 		if comm == "" {
-			comm = result.Address.City
+			comm = result.Address.Village
+		}
+		if comm == "" {
+			comm = result.Address.CityDistrict
 		}
 
-		lga := result.Address.County
+		// 3. Extract City / LGA
+		city := result.Address.City
+		if city == "" {
+			city = result.Address.Town
+		}
+		if city == "" {
+			city = result.Address.County
+		}
+		if city == "" {
+			city = result.Address.StateDistrict
+		}
+
 		state := result.Address.State
 
-		if comm != "" {
-			return comm, lga, state
+		// Format precise multi-tier address string
+		var parts []string
+		if result.Address.HouseNumber != "" {
+			parts = append(parts, "No. "+result.Address.HouseNumber)
+		}
+		if street != "" {
+			parts = append(parts, street)
+		}
+		if comm != "" && comm != street {
+			parts = append(parts, comm)
+		}
+		if city != "" && city != comm {
+			parts = append(parts, city)
+		}
+
+		exactAddress := strings.Join(parts, ", ")
+		if exactAddress != "" {
+			return exactAddress, city, state
 		}
 	}
 
 	return "", "", ""
 }
+
 
