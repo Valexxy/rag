@@ -136,7 +136,33 @@ func monnifyWebhookHandler(w http.ResponseWriter, r *http.Request) {
 			custName = "Valued Customer"
 		}
 
-		receiptMsg := fmt.Sprintf("🎉 *[INSTANT PAYMENT VERIFIED — MONNIFY]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nDear %s,\nWe received your live bank transfer payment of *₦%.2f*!\n\n🧾 *Transaction Ref:* `%s`\n✅ *Status:* PAID & VERIFIED\n📦 *Order Status:* Processing for Dispatch!\n\nThank you for shopping with Teeslux Global Store!", custName, amt, txRef)
+		// Match item paid for from live catalog matching amount paid
+		itemName := "Store Order & Products"
+		itemPrice := 0.0
+		var overpaid float64 = 0.0
+
+		for _, p := range storeCatalog {
+			if amt >= p.Price {
+				if p.Price > itemPrice {
+					itemName = p.Name
+					itemPrice = p.Price
+				}
+			}
+		}
+
+		if itemPrice > 0 && amt > itemPrice {
+			overpaid = amt - itemPrice
+		}
+
+		overpaidNotice := ""
+		if overpaid > 0 {
+			overpaidNotice = fmt.Sprintf("\n\n💡 *Overpayment / Change Note:* You paid *₦%.2f* extra above the catalog price (₦%.2f). *₦%.2f* has been credited to your Store Balance for future orders!", overpaid, itemPrice, overpaid)
+		} else if itemPrice == 0 {
+			itemPrice = amt
+		}
+
+		receiptMsg := fmt.Sprintf("🎉 *[INSTANT PAYMENT VERIFIED — MONNIFY]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nDear %s,\nWe received your live bank transfer payment!\n\n📦 *Item Paid For:* %s\n💵 *Amount Paid:* ₦%.2f\n🏷️ *Catalog Price:* ₦%.2f\n🧾 *Transaction Ref:* `%s`\n✅ *Status:* PAID & VERIFIED%s\n\nThank you for shopping with Teeslux Global Store!", custName, itemName, amt, itemPrice, txRef, overpaidNotice)
+
 
 		// Extract recipient phone
 		recipientPhone := ownerPhone
