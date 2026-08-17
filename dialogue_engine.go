@@ -19,6 +19,7 @@ const (
 	IntentMarketSourcing IntentCategory = "MARKET_SOURCING"
 	IntentRetailSales    IntentCategory = "RETAIL_SALES"
 	IntentServiceBooking IntentCategory = "SERVICE_BOOKING"
+	IntentSessionEnd     IntentCategory = "SESSION_END"
 	IntentGeneralQuery   IntentCategory = "GENERAL_QUERY"
 )
 
@@ -41,7 +42,18 @@ func ClassifyCustomerIntent(msg string) IntentCategory {
 		}
 	}
 
-	// 2. MARKET SOURCING / WHOLESALE SUPPLIER / B2B INQUIRY DETECTOR
+	// 2. SESSION END / GOODBYE DETECTOR
+	endTriggers := []string{
+		"goodbye", "bye", "that's all", "that is all", "all for now", "im done", "i'm done",
+		"no more questions", "thanks bye", "thank you bye", "have a nice day", "talk later",
+	}
+	for _, st := range endTriggers {
+		if strings.Contains(lower, st) {
+			return IntentSessionEnd
+		}
+	}
+
+	// 3. MARKET SOURCING / WHOLESALE SUPPLIER / B2B INQUIRY DETECTOR
 	sourcingTriggers := []string{
 		"supplier", "sourcing", "manufacturer", "factory", "container", "importing",
 		"wholesale price", "distributor", "raw materials", "partnership", "b2b",
@@ -53,7 +65,7 @@ func ClassifyCustomerIntent(msg string) IntentCategory {
 		}
 	}
 
-	// 3. SERVICE BUSINESS INQUIRY DETECTOR (INSTALLATION, REPAIR, MAINTENANCE, BOOKING)
+	// 4. SERVICE BUSINESS INQUIRY DETECTOR (INSTALLATION, REPAIR, MAINTENANCE, BOOKING)
 	serviceTriggers := []string{
 		"install", "installation", "repair", "fix", "maintenance", "servicing",
 		"technician", "engineer", "inspection", "consultation", "booking", "book service",
@@ -65,7 +77,7 @@ func ClassifyCustomerIntent(msg string) IntentCategory {
 		}
 	}
 
-	// 4. RETAIL PRODUCT SALES DETECTOR
+	// 5. RETAIL PRODUCT SALES DETECTOR
 	salesTriggers := []string{
 		"buy", "price", "how much", "cost", "catalog", "catalogue", "panel", "inverter",
 		"generator", "power bank", "rice", "gold", "stock", "order", "purchase", "pay",
@@ -83,9 +95,18 @@ func GeneratePoliteDeflectionResponse() string {
 	return "🤖 *[Teeslux Business Assistant]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nHello! I am programmed strictly to assist with product orders, service bookings, and wholesale business inquiries.\n\n👉 If you would like to view our product catalog, reply *#catalog*.\n👉 If you need a service booking or installation, reply *#service*.\n👉 For wholesale market sourcing, reply *#manager*."
 }
 
+func GenerateSessionEndReceipt(phone, profileName string) string {
+	longChatURL := fmt.Sprintf("https://sovereign-ai-backend-production.up.railway.app/c/%s", phone)
+	shortChatURL := ShortenURLWithFreeService(longChatURL)
+	ledgerSummary := globalPaymentLedger.GetCustomerLedgerSummary(phone)
+
+	return fmt.Sprintf("🏁 *[SESSION COMPLETED — TEESLUX GLOBAL STORE]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nDear %s,\nThank you for chatting with us today! Your session has been safely archived.\n\n📋 *Session Summary Record:*\n• 👤 *Client:* %s (`%s`)\n• 💳 *Ledger Record:* %s\n• 🔗 *1-Tap Verified Transcript:* %s\n\nWe appreciate your business! Feel free to text us anytime 24/7 if you need further assistance! Have a fantastic day!", profileName, profileName, phone, ledgerSummary, shortChatURL)
+}
+
 func GenerateServiceBookingCard() string {
 	return "🛠️ *[TEESLUX PROFESSIONAL SERVICES & INSTALLATIONS]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nWe provide professional engineering & installation services:\n\n1. ⚡ *Solar System Installation & Sizing* (Residential & Commercial)\n2. 🔧 *Inverter & Battery Bank Maintenance*\n3. 🔌 *Electrical Wiring & Load Balancing Audit*\n4. 📍 *On-Site Technical Inspection*\n\n📲 Reply *#manager* or specify your location & service requirement to book an engineer!"
 }
+
 
 func GeneratePaginatedCatalog(page int) string {
 	if page < 1 {

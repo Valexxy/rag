@@ -383,6 +383,7 @@ func executiveChatPortalHandler(w http.ResponseWriter, r *http.Request) {
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="3">
     <title>Executive Chat Summary — %s</title>
     <style>
         body { background: #0d1117; color: #c9d1d9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px 15px; max-width: 550px; margin: 0 auto; }
@@ -663,10 +664,15 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 		custMsg := "🏭 *[B2B Wholesale & Market Sourcing]*\nThank you for reaching out! We have fast-tracked your supplier inquiry directly to our Managing Director & Procurement Manager. Our manager has been notified with high priority!"
 		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, custMsg)
 		return
+	} else if intent == IntentSessionEnd {
+		log.Printf("[Session End Agent] Customer %s indicated session end. Sending Session Receipt.", senderPhone)
+		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, GenerateSessionEndReceipt(senderPhone, profileName))
+		return
 	} else if intent == IntentServiceBooking && (strings.Contains(lower, "service") || strings.Contains(lower, "book") || strings.Contains(lower, "install")) {
 		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, GenerateServiceBookingCard())
 		return
 	}
+
 
 
 	// In-Built Native Phone Feature: Downloadable VCard Contact Card
