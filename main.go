@@ -100,7 +100,10 @@ func main() {
 	http.HandleFunc("/l", locationShortlinkHandler)
 	http.HandleFunc("/c/", executiveChatPortalHandler)
 	http.HandleFunc("/c", executiveChatPortalHandler)
+	http.HandleFunc("/c-reply", executiveChatReplyHandler)
+	http.HandleFunc("/c/reply", executiveChatReplyHandler)
 	http.HandleFunc("/submit-loc", submitLocationAPIHandler)
+
 
 
 	http.HandleFunc("/api/v1/analytics/dashboard", dashboardAnalyticsHandler)
@@ -394,6 +397,10 @@ func executiveChatPortalHandler(w http.ResponseWriter, r *http.Request) {
         .user { background: #1f242c; color: #79c0ff; border-left: 4px solid #1f6feb; }
         .assistant { background: #161b22; color: #e6edf3; border-left: 4px solid #238636; }
         .btn { display: block; background: #238636; color: white; text-decoration: none; text-align: center; padding: 12px; border-radius: 8px; font-weight: bold; margin-top: 15px; }
+        .reply-box { margin-top: 25px; background: #161b22; padding: 18px; border-radius: 12px; border: 1px solid #238636; }
+        textarea { width: 93%%; height: 75px; background: #0d1117; color: white; border: 1px solid #30363d; border-radius: 8px; padding: 10px; font-family: inherit; font-size: 14px; }
+        .send-btn { width: 100%%; background: #238636; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: bold; font-size: 16px; margin-top: 10px; cursor: pointer; }
+        .send-btn:hover { background: #2ea043; }
     </style>
 </head>
 <body>
@@ -402,15 +409,45 @@ func executiveChatPortalHandler(w http.ResponseWriter, r *http.Request) {
         <div>👤 <b>Customer Phone:</b> %s</div>
         <div>📍 <b>Location:</b> %s</div>
         <div class="ledger">💳 <b>Payment Ledger:</b><br>%s</div>
-        <a class="btn" href="https://wa.me/%s">💬 Open Chat in WhatsApp</a>
+        <a class="btn" href="https://wa.me/%s">💬 Open Chat in WhatsApp App</a>
     </div>
     <h3>💬 Live Conversation History</h3>
     %s
+    
+    <div class="reply-box">
+        <h4 style="color: #7ee787; margin-top: 0; margin-bottom: 10px;">👔 1-Tap Manager Web Reply Console</h4>
+        <form action="/c/reply" method="POST">
+            <input type="hidden" name="phone" value="%s">
+            <textarea name="message" placeholder="Type your reply to customer here..." required></textarea>
+            <button type="submit" class="send-btn">Send Message to Customer WhatsApp ⚡</button>
+        </form>
+    </div>
 </body>
-</html>`, phone, phone, locStr, ledgerStr, phone, turnsHTML)
+</html>`, phone, phone, locStr, ledgerStr, phone, turnsHTML, phone)
 
 	w.Write([]byte(html))
 }
+
+func executiveChatReplyHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		r.ParseForm()
+		phone := r.FormValue("phone")
+		message := r.FormValue("message")
+
+		if phone != "" && message != "" {
+			custMsg := fmt.Sprintf("👔 *[Store Manager]:*\n%s", message)
+			globalWhatsAppEngine.SendMessage("sovereign-ai-master", phone, custMsg)
+			globalDialogueEngine.AddTurn(phone, "assistant", custMsg)
+			globalDialogueEngine.CancelManagerCallAlarm(phone)
+			log.Printf("[Executive Web Reply] Store Manager sent web reply to customer %s: %s", phone, message)
+
+			http.Redirect(w, r, fmt.Sprintf("/c/%s", phone), http.StatusSeeOther)
+			return
+		}
+	}
+	http.Error(w, "Invalid reply request", http.StatusBadRequest)
+}
+
 
 
 // 🛡️ NIGERIA GEOFENCING & ANTI-VPN API HANDLER
