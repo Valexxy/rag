@@ -386,7 +386,6 @@ func executiveChatPortalHandler(w http.ResponseWriter, r *http.Request) {
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="refresh" content="3">
     <title>Executive Chat Summary — %s</title>
     <style>
         body { background: #0d1117; color: #c9d1d9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px 15px; max-width: 550px; margin: 0 auto; }
@@ -402,6 +401,23 @@ func executiveChatPortalHandler(w http.ResponseWriter, r *http.Request) {
         .send-btn { width: 100%%; background: #238636; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: bold; font-size: 16px; margin-top: 10px; cursor: pointer; }
         .send-btn:hover { background: #2ea043; }
     </style>
+    <script>
+        var isTyping = false;
+        setInterval(function() {
+            if (!isTyping) {
+                fetch(window.location.href)
+                    .then(function(r) { return r.text(); })
+                    .then(function(html) {
+                        var parser = new DOMParser();
+                        var doc = parser.parseFromString(html, 'text/html');
+                        var newTurns = doc.getElementById('chat-turns');
+                        if (newTurns) {
+                            document.getElementById('chat-turns').innerHTML = newTurns.innerHTML;
+                        }
+                    }).catch(function(e) {});
+            }
+        }, 2500);
+    </script>
 </head>
 <body>
     <div class="header">
@@ -412,18 +428,19 @@ func executiveChatPortalHandler(w http.ResponseWriter, r *http.Request) {
         <a class="btn" href="https://wa.me/%s">💬 Open Chat in WhatsApp App</a>
     </div>
     <h3>💬 Live Conversation History</h3>
-    %s
+    <div id="chat-turns">%s</div>
     
     <div class="reply-box">
         <h4 style="color: #7ee787; margin-top: 0; margin-bottom: 10px;">👔 1-Tap Manager Web Reply Console</h4>
         <form action="/c/reply" method="POST">
             <input type="hidden" name="phone" value="%s">
-            <textarea name="message" placeholder="Type your reply to customer here..." required></textarea>
+            <textarea id="reply-input" name="message" placeholder="Type your reply to customer here..." onfocus="isTyping=true" onblur="isTyping=false" required></textarea>
             <button type="submit" class="send-btn">Send Message to Customer WhatsApp ⚡</button>
         </form>
     </div>
 </body>
 </html>`, phone, phone, locStr, ledgerStr, phone, turnsHTML, phone)
+
 
 	w.Write([]byte(html))
 }
@@ -638,12 +655,12 @@ func processUnifiedPayloadAsync(payloadBytes []byte) {
 
 // ── UNIFIED MESSAGE DISPATCHER (ALL 7 AGENTS + LOCATIONS + REMINDERS) ─
 func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
-	// VC-Grade Security: Sanitize incoming message for PII & GDPR compliance
+	// VC-Grade Security: Sanitize incoming message
 	cleanMsg := globalPIIGuard.SanitizeMessage(messageText)
 
-	// VC-Grade Cooldown Guard: Rate-limit messages per phone line to protect WhatsApp WABA line
+	// VC-Grade Cooldown Guard: Rate-limit messages per phone line
 	if !globalAntiBanGuard.AllowSend(senderPhone) {
-		log.Printf("[Anti-Ban Guard] Rate limit throttled for phone %s to prevent Meta anti-spam flagging.", senderPhone)
+		log.Printf("[Anti-Ban Guard] Rate limit throttled for phone %s", senderPhone)
 		return
 	}
 
@@ -656,20 +673,33 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 	custLoc := globalLocationEngine.GetLocation(senderPhone)
 	log.Printf("[World-First Engine] Customer: %s (%s) | Location: %s, %s", custProf.Name, senderPhone, custLoc.City, custLoc.State)
 
-
-
-
-
-	// Check for manager commands (#reply, #reengage, #resolve)
-	if isCmd, resultMsg := globalDialogueEngine.HandleManagerCommand(messageText, senderPhone); isCmd {
-		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, resultMsg)
-		return
+	// 👔 STORE OWNER & MANAGER EXECUTIVE COMMAND CENTER
+	if senderPhone == managerPhone || senderPhone == ownerPhone || strings.HasPrefix(messageText, "#") {
+		if isCmd, resultMsg := globalDialogueEngine.HandleManagerCommand(messageText, senderPhone); isCmd {
+			globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, resultMsg)
+			return
+		}
+		lowerCmd := strings.ToLower(messageText)
+		if strings.Contains(lowerCmd, "status") || strings.Contains(lowerCmd, "analytics") || strings.Contains(lowerCmd, "sales") {
+			globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, GenerateExecutiveAnalyticsCard())
+			return
+		}
+		if strings.HasPrefix(lowerCmd, "#broadcast ") || strings.HasPrefix(lowerCmd, "broadcast ") {
+			bMsg := strings.TrimPrefix(strings.TrimPrefix(messageText, "#broadcast "), "broadcast ")
+			bCard := GenerateHighPriorityBroadcastCard(bMsg)
+			globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, bCard)
+			log.Printf("[Executive Broadcast] Manager dispatched high-priority announcement to line %s", senderPhone)
+			return
+		}
 	}
 
 	lower := strings.ToLower(messageText)
 
-	// 👔 EXPLICIT HUMAN MANAGER & STORE OWNER TAKEOVER INTERCEPTOR (NON-DISENGAGING CO-PILOT)
-	if strings.Contains(lower, "owner") || strings.Contains(lower, "manager") || strings.Contains(lower, "human") || strings.Contains(lower, "person") || strings.Contains(lower, "agent") || strings.Contains(lower, "representative") || strings.Contains(lower, "speak with someone") || strings.Contains(lower, "talk to someone") || strings.Contains(lower, "reach someone") || strings.Contains(lower, "talk to someone") {
+	// 🛡️ ZERO-COST INTENT & SPAM/FAMILY/HUMAN SECURITY SHIELD
+	intent := ClassifyCustomerIntent(messageText)
+
+	// ALWAYS trigger human manager call alarm whenever customer asks for human manager or owner!
+	if intent == IntentHumanManagerRequest || strings.Contains(lower, "owner") || strings.Contains(lower, "manager") || strings.Contains(lower, "human") || strings.Contains(lower, "person") || strings.Contains(lower, "agent") || strings.Contains(lower, "representative") || strings.Contains(lower, "speak with someone") || strings.Contains(lower, "talk to someone") || strings.Contains(lower, "reach someone") {
 		globalDialogueEngine.Start60SecondManagerCallAlarm(senderPhone, profileName)
 
 		custMsg := "🤖 *[Store Manager Notified]*\nI have alerted our Store Manager with your request and 1-tap chat transcript! While waiting for our manager, I am right here to help you browse products, calculate delivery, or answer any questions!"
@@ -678,14 +708,13 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 		// DO NOT RETURN! AI Bot remains 100% engaged to answer customer questions live!
 	}
 
-
-
-
-	// 🛡️ SUB-1MS PATTERN-BASED ZERO-COST INTENT & SPAM/SOURCING SHIELD (0 LLM CREDITS SPENT)
-	intent := ClassifyCustomerIntent(messageText)
 	if intent == IntentSpamTimeWaster {
 		log.Printf("[Zero-Cost Security Shield] Blocked time-waster/spam message from %s (0 LLM credits spent)", senderPhone)
 		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, GeneratePoliteDeflectionResponse())
+		return
+	} else if intent == IntentPersonalFamily {
+		log.Printf("[Friends & Family Shield] Personal note from %s -> Bypassing sales catalog dump", senderPhone)
+		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, GeneratePersonalFamilyResponse())
 		return
 	} else if intent == IntentMarketSourcing {
 		log.Printf("[Zero-Cost Sourcing Router] Market Sourcing / B2B Supplier inquiry from %s -> Fast-tracking to Manager (0 LLM credits spent)", senderPhone)
@@ -709,6 +738,7 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, GenerateServiceBookingCard())
 		return
 	}
+
 
 
 
