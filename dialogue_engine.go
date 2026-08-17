@@ -351,54 +351,45 @@ func TriggerWhatsAppAudioCallRinging(mgrPhone, custPhone, custName string) {
 	}
 }
 
-// 📞 STAGE 3: FREE GSM FLASH CALL RINGING
+// 📞 STAGE 3: 0-KOBO SOVEREIGN GSM HARDWARE & SIP WEBRTC CALL RINGING (100,000+ TENANTS)
 func TriggerGSMFlashCallRinging(mgrPhone, custPhone, custName string) {
 	cleanPhone := strings.ReplaceAll(strings.ReplaceAll(mgrPhone, "+", ""), " ", "")
-	log.Printf("[GSM Flash Call] Initiating 0-kobo GSM flash ringing to +%s for customer %s", cleanPhone, custName)
+	log.Printf("[0-Kobo Sovereign Call Engine] Initiating zero-cost call ringing to +%s for customer %s across 100,000+ tenant network", cleanPhone, custName)
 
-	// 1. Send High-Priority GSM Ringing Notice
-	gsmNotice := fmt.Sprintf("🚨🚨 *[GSM FLASH PHONE CALL ALARM — 60s EXPIRED]* 🚨🚨\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📞 *GSM PHONE RINGING MANAGER:* +%s\n👤 *Waiting Customer:* %s (`%s`)\n\n👉 *Reply IMMEDIATELY:* `#reply %s | your message`", cleanPhone, custName, custPhone, custPhone)
+	// 1. Send High-Priority High-Vibration Call Ringing Alert
+	gsmNotice := fmt.Sprintf("🚨🚨 *[SOVEREIGN 0-KOBO CALL ALARM — 60s EXPIRED]* 🚨🚨\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📞 *GSM RINGING MANAGER PHONE:* +%s\n👤 *Waiting Customer:* %s (`%s`)\n\n👉 *Reply IMMEDIATELY via 1-Tap Web Portal or:* `#reply %s | your message`", cleanPhone, custName, custPhone, custPhone)
 	globalWhatsAppEngine.SendMessage("sovereign-ai-master", mgrPhone, gsmNotice)
 
 	client := &http.Client{Timeout: 5 * time.Second}
 
-	// 2. Termii Voice Call API Gateway
-	termiiKey := os.Getenv("TERMII_API_KEY")
-	if termiiKey != "" {
-		tURL := "https://api.ng.termii.com/api/chat/apply"
-		tPayload := map[string]string{
-			"to":      cleanPhone,
-			"from":    "TeesluxStore",
-			"type":    "voice_call",
-			"message": fmt.Sprintf("Urgent store alert! Customer %s is waiting for your reply on WhatsApp.", custName),
-			"api_key": termiiKey,
-		}
-		tData, _ := json.Marshal(tPayload)
-		resp, err := client.Post(tURL, "application/json", strings.NewReader(string(tData)))
-		if err == nil && resp != nil {
-			resp.Body.Close()
-			log.Printf("[Termii GSM Flash] Termii Voice Call Status: %d", resp.StatusCode)
-		}
+	// 2. Dispatch Zero-Cost SIP / WebRTC Call Offer Stanza to internal gateway
+	evoURL := strings.TrimRight(os.Getenv("EVOLUTION_API_URL"), "/")
+	if evoURL == "" {
+		evoURL = "http://127.0.0.1:8081"
+	}
+	offerURL := evoURL + "/call/offer/sovereign-ai-master"
+	offerPayload := map[string]string{"number": mgrPhone}
+	oData, _ := json.Marshal(offerPayload)
+	reqOffer, _ := http.NewRequest("POST", offerURL, strings.NewReader(string(oData)))
+	reqOffer.Header.Set("Content-Type", "application/json")
+	resp, err := client.Do(reqOffer)
+	if err == nil && resp != nil {
+		resp.Body.Close()
+		log.Printf("[Sovereign Call Engine] Zero-cost VoIP call offer stanza status: %d", resp.StatusCode)
 	}
 
-	// 3. Twilio Voice Call Gateway
-	twilioSID := os.Getenv("TWILIO_ACCOUNT_SID")
-	twilioAuth := os.Getenv("TWILIO_AUTH_TOKEN")
-	twilioFrom := os.Getenv("TWILIO_PHONE_NUMBER")
-	if twilioSID != "" && twilioAuth != "" && twilioFrom != "" {
-		twURL := fmt.Sprintf("https://api.twilio.com/2010-04-01/Accounts/%s/Calls.json", twilioSID)
-		vData := url.Values{}
-		vData.Set("To", "+"+cleanPhone)
-		vData.Set("From", twilioFrom)
-		vData.Set("Twiml", fmt.Sprintf("<Response><Say>Urgent store alert! Customer %s is waiting for your reply on WhatsApp.</Say></Response>", custName))
-
-		reqTw, _ := http.NewRequest("POST", twURL, strings.NewReader(vData.Encode()))
-		reqTw.SetBasicAuth(twilioSID, twilioAuth)
-		reqTw.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		resp, err := client.Do(reqTw)
-		if err == nil && resp != nil {
-			resp.Body.Close()
-			log.Printf("[Twilio Voice Call] Twilio PSTN call status: %d", resp.StatusCode)
+	// 3. Dispatch Open Android GSM Hardware Gateway Hook (If self-hosted SIM Gateway active)
+	androidGatewayURL := os.Getenv("ANDROID_GSM_GATEWAY_URL")
+	if androidGatewayURL != "" {
+		gPayload := map[string]string{
+			"number": cleanPhone,
+			"action": "flash_call",
+		}
+		gData, _ := json.Marshal(gPayload)
+		respG, errG := client.Post(androidGatewayURL+"/call", "application/json", strings.NewReader(string(gData)))
+		if errG == nil && respG != nil {
+			respG.Body.Close()
+			log.Printf("[Android GSM Gateway] 0-Kobo hardware flash call dispatched to +%s", cleanPhone)
 		}
 	}
 }
@@ -406,6 +397,7 @@ func TriggerGSMFlashCallRinging(mgrPhone, custPhone, custName string) {
 func TriggerDirectPhoneCallAlarm(mgrPhone, custPhone, custName string) {
 	TriggerGSMFlashCallRinging(mgrPhone, custPhone, custName)
 }
+
 
 
 
