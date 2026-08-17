@@ -137,16 +137,19 @@ type DialogueEngine struct {
 	mu            sync.RWMutex
 	states        map[string]string
 	memoryThreads map[string][]ChatTurn
-	lastActivity  map[string]time.Time
-	pendingTimers map[string]*time.Timer
+	lastActivity   map[string]time.Time
+	pendingTimers  map[string]*time.Timer
+	managerReplied map[string]bool
 }
 
 var globalDialogueEngine = &DialogueEngine{
-	states:        make(map[string]string),
-	memoryThreads: make(map[string][]ChatTurn),
-	lastActivity:  make(map[string]time.Time),
-	pendingTimers: make(map[string]*time.Timer),
+	states:         make(map[string]string),
+	memoryThreads:  make(map[string][]ChatTurn),
+	lastActivity:   make(map[string]time.Time),
+	pendingTimers:  make(map[string]*time.Timer),
+	managerReplied: make(map[string]bool),
 }
+
 
 func (d *DialogueEngine) GetLastActivityTime(phone string) time.Time {
 	d.mu.RLock()
@@ -192,11 +195,11 @@ func (d *DialogueEngine) ResetHumanHandoff(phone string) {
 func (d *DialogueEngine) Start60SecondManagerCallAlarm(customerPhone, profileName string) {
 
 	d.mu.Lock()
-	defer d.mu.Unlock()
-
+	d.managerReplied[customerPhone] = false
 	if t, exists := d.pendingTimers[customerPhone]; exists && t != nil {
 		t.Stop()
 	}
+	d.mu.Unlock()
 
 	// Generate Short Executive Chat Link (via is.gd API)
 	longChatURL := fmt.Sprintf("https://sovereign-ai-backend-production.up.railway.app/c/%s", customerPhone)
@@ -209,10 +212,10 @@ func (d *DialogueEngine) Start60SecondManagerCallAlarm(customerPhone, profileNam
 	// STAGE 2 (T=30s): WhatsApp Native Audio Call Ringing Signal
 	time.AfterFunc(30*time.Second, func() {
 		d.mu.RLock()
-		isStillWaiting := d.states[customerPhone] == "HUMAN_AGENT_ACTIVE"
+		hasReplied := d.managerReplied[customerPhone]
 		d.mu.RUnlock()
 
-		if isStillWaiting {
+		if !hasReplied {
 			log.Printf("[CASCADING STAGE 2] 30s expired! Triggering WhatsApp Audio Call Ringing to Manager +%s!", managerPhone)
 			TriggerWhatsAppAudioCallRinging(managerPhone, customerPhone, profileName)
 		}
@@ -221,10 +224,10 @@ func (d *DialogueEngine) Start60SecondManagerCallAlarm(customerPhone, profileNam
 	// STAGE 3 (T=60s): Free GSM Phone Call Ringing / Flash Call Alert
 	d.pendingTimers[customerPhone] = time.AfterFunc(60*time.Second, func() {
 		d.mu.RLock()
-		isStillWaiting := d.states[customerPhone] == "HUMAN_AGENT_ACTIVE"
+		hasReplied := d.managerReplied[customerPhone]
 		d.mu.RUnlock()
 
-		if isStillWaiting {
+		if !hasReplied {
 			log.Printf("[CASCADING STAGE 3] 60s expired! Flashing GSM Phone Line +%s!", managerPhone)
 			TriggerGSMFlashCallRinging(managerPhone, customerPhone, profileName)
 
@@ -236,10 +239,10 @@ func (d *DialogueEngine) Start60SecondManagerCallAlarm(customerPhone, profileNam
 	// STAGE 4 (T=90s): Empathetic Customer Delay Reassurance
 	time.AfterFunc(90*time.Second, func() {
 		d.mu.RLock()
-		isStillWaiting := d.states[customerPhone] == "HUMAN_AGENT_ACTIVE"
+		hasReplied := d.managerReplied[customerPhone]
 		d.mu.RUnlock()
 
-		if isStillWaiting {
+		if !hasReplied {
 			log.Printf("[CASCADING STAGE 4] 90s expired! Dispatching customer delay reassurance to %s", customerPhone)
 			reassuranceMsg := fmt.Sprintf("⏳ *[STORE MANAGER UPDATE]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nDear %s,\nOur Store Manager's phone has been alerted with an urgent priority call alarm and flash alert regarding your inquiry!\n\nPlease bear with us for just a brief moment while our manager connects. Your conversation is our highest priority!\n\n🛍️ *Tip:* Reply `#catalog` anytime to explore more items in our live store!", profileName)
 			globalWhatsAppEngine.SendMessage("sovereign-ai-master", customerPhone, reassuranceMsg)
@@ -250,11 +253,13 @@ func (d *DialogueEngine) Start60SecondManagerCallAlarm(customerPhone, profileNam
 func (d *DialogueEngine) CancelManagerCallAlarm(customerPhone string) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
+	d.managerReplied[customerPhone] = true
 	if t, exists := d.pendingTimers[customerPhone]; exists && t != nil {
 		t.Stop()
 		delete(d.pendingTimers, customerPhone)
 	}
 }
+
 
 // 📞 STAGE 2: WHATSAPP AUDIO CALL RINGING SIGNAL
 func TriggerWhatsAppAudioCallRinging(mgrPhone, custPhone, custName string) {

@@ -628,28 +628,13 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 		return
 	}
 
-	// Check if Bot is DISENGAGED (Human Agent Handoff Active for this customer line)
+	// Smart Co-Pilot Listener: Forward copy of customer message to Store Manager while AI continues assisting
 	if globalDialogueEngine.IsHumanHandoff(senderPhone) {
-		lower := strings.ToLower(messageText)
-
-		// Smart Listener A: If customer wants to buy more or explore new catalog items, auto-reengage AI bot!
-		if strings.Contains(lower, "buy another") || strings.Contains(lower, "new order") || strings.Contains(lower, "buy more") || strings.Contains(lower, "explore") {
-			globalDialogueEngine.ResetHumanHandoff(senderPhone)
-			log.Printf("[Smart Listener] Re-engaged AI Bot for customer %s to explore new purchase.", senderPhone)
-		} else if strings.Contains(lower, "how long") || strings.Contains(lower, "waiting") || strings.Contains(lower, "manager") || strings.Contains(lower, "anyone") || strings.Contains(lower, "hello") {
-			// Smart Listener B: Re-ping Store Manager and encourage customer to hold on or browse
-			globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, "⏳ *[Store Manager Re-alerted]*\nOur Store Manager has been notified and will connect with you shortly! In the meantime, feel free to ask me about any other items in our catalog.")
-			managerNotice := fmt.Sprintf("⏰ *[RE-ALERT — WAITING CUSTOMER]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Customer:* %s (`%s`)\n💬 *Message:* \"%s\"\n\nPlease connect with customer!", profileName, senderPhone, messageText)
-			globalWhatsAppEngine.SendMessage("sovereign-ai-master", managerPhone, managerNotice)
-			return
-		} else {
-			// Forward customer message to Store Manager (2348072015725)
-			managerNotice := fmt.Sprintf("💬 *[HUMAN CHAT — CUSTOMER MESSAGE]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Customer:* %s (`%s`)\n💬 *Message:* \"%s\"\n\n(Reply using `#reply %s | your response`)", profileName, senderPhone, messageText, senderPhone)
-			globalWhatsAppEngine.SendMessage("sovereign-ai-master", managerPhone, managerNotice)
-			log.Printf("[Bot Disengaged - Human Handoff Active] Forwarded message from %s to Store Manager %s.", senderPhone, managerPhone)
-			return
-		}
+		managerNotice := fmt.Sprintf("💬 *[HUMAN CHAT — CUSTOMER MESSAGE]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Customer:* %s (`%s`)\n💬 *Message:* \"%s\"\n\n(Reply using `#reply %s | your response`)", profileName, senderPhone, messageText, senderPhone)
+		globalWhatsAppEngine.SendMessage("sovereign-ai-master", managerPhone, managerNotice)
+		log.Printf("[Smart Co-Pilot] Forwarded copy of customer message from %s to Store Manager %s.", senderPhone, managerPhone)
 	}
+
 
 
 
@@ -667,16 +652,16 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 	}
 
 
-	// 👔 EXPLICIT HUMAN MANAGER & STORE OWNER TAKEOVER INTERCEPTOR
+	// 👔 EXPLICIT HUMAN MANAGER & STORE OWNER TAKEOVER INTERCEPTOR (NON-DISENGAGING CO-PILOT)
 	if strings.Contains(lower, "owner") || strings.Contains(lower, "manager") || strings.Contains(lower, "human") || strings.Contains(lower, "person") || strings.Contains(lower, "agent") || strings.Contains(lower, "representative") || strings.Contains(lower, "speak with someone") || strings.Contains(lower, "talk to someone") {
-		globalDialogueEngine.SetHumanHandoff(senderPhone)
 		globalDialogueEngine.Start60SecondManagerCallAlarm(senderPhone, profileName)
 
-		custMsg := "👔 *[Connected to Human Manager]*\nThe AI Bot has disengaged. Our Store Manager (2348072015725) has been notified! If unanswered, our cascading alarm pipeline will ring the Manager's phone directly!"
+		custMsg := "🤖 *[Store Manager Notified]*\nI have notified our Store Manager with your inquiry and 1-tap chat transcript! While waiting, I am right here to help you browse products, check prices, or answer any questions!"
 		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, custMsg)
 		globalDialogueEngine.AddTurn(senderPhone, "assistant", custMsg)
-		return
+		// DO NOT RETURN! Allow AI bot to continue answering customer questions in real time!
 	}
+
 
 
 	// 🛡️ SUB-1MS PATTERN-BASED ZERO-COST INTENT & SPAM/SOURCING SHIELD (0 LLM CREDITS SPENT)
