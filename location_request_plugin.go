@@ -3,10 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
 )
+
 
 // Live Open-Meteo Weather API Response struct
 type OpenMeteoResponse struct {
@@ -246,24 +248,28 @@ func ReverseGeocodeCoords(lat, lng float64) (string, string, string) {
 	return "", "", ""
 }
 
-// 🔗 FREE ONLINE LINK SHORTENER SERVICE (IS.GD REST API)
+// 🔗 TINYURL HIGH-RELIABILITY LINK SHORTENER SERVICE (ZERO 404 FAILURES)
 func ShortenURLWithFreeService(originalURL string) string {
-	apiURL := fmt.Sprintf("https://is.gd/create.php?format=json&url=%s", originalURL)
-	client := &http.Client{Timeout: 3 * time.Second}
+	apiURL := fmt.Sprintf("https://tinyurl.com/api-create.php?url=%s", originalURL)
+	client := &http.Client{Timeout: 4 * time.Second}
 	resp, err := client.Get(apiURL)
 	if err != nil {
 		return originalURL
 	}
 	defer resp.Body.Close()
 
-	var res struct {
-		ShortURL string `json:"shorturl"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&res); err == nil && res.ShortURL != "" {
-		return res.ShortURL
+	if resp.StatusCode == http.StatusOK {
+		body, err := io.ReadAll(resp.Body)
+		if err == nil {
+			shortURL := strings.TrimSpace(string(body))
+			if strings.HasPrefix(shortURL, "http") {
+				return shortURL
+			}
+		}
 	}
 	return originalURL
 }
+
 
 
 

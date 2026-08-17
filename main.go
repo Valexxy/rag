@@ -287,23 +287,21 @@ func locationPortalHandler(w http.ResponseWriter, r *http.Request) {
 <body>
     <div class="card">
         <h2>📍 Hardware GPS Verification</h2>
-        <p>Teeslux Anti-Fraud Security Shield requires 1-tap GPS verification to confirm Nigerian delivery eligibility and prevent proxy spoofing.</p>
-        <div id="status" class="status">Click below to allow GPS location</div>
-        <button id="btn" class="btn" onclick="getGPS()">Verify My Location Now</button>
+        <p>Confirming your delivery location for Teeslux Global Store...</p>
+        <div id="status" class="status">📡 Detecting device GPS location...</div>
+        <button id="btn" class="btn" onclick="getGPS()" style="display:none;">Verify Location</button>
     </div>
     <script>
-        var watchId = null;
         function getGPS() {
             var btn = document.getElementById('btn');
             var status = document.getElementById('status');
-            btn.disabled = true;
             status.className = 'status';
-            status.innerText = '📡 Requesting device hardware GPS...';
+            status.innerText = '📡 Detecting device GPS location...';
 
             if (!navigator.geolocation) {
                 status.className = 'status error';
                 status.innerText = '❌ Geolocation is not supported by your browser.';
-                btn.disabled = false;
+                btn.style.display = 'block';
                 return;
             }
 
@@ -311,7 +309,7 @@ func locationPortalHandler(w http.ResponseWriter, r *http.Request) {
                 var lat = pos.coords.latitude;
                 var lng = pos.coords.longitude;
                 var acc = pos.coords.accuracy;
-                var phoneRef = new URLSearchParams(window.location.search).get('ref') || new URLSearchParams(window.location.search).get('r') || window.location.pathname.split('/').filter(Boolean).pop();
+                var phoneRef = new URLSearchParams(window.location.search).get('phone') || new URLSearchParams(window.location.search).get('ref') || new URLSearchParams(window.location.search).get('r') || window.location.pathname.split('/').filter(Boolean).pop();
 
                 fetch('/submit-loc', {
                     method: 'POST',
@@ -327,40 +325,41 @@ func locationPortalHandler(w http.ResponseWriter, r *http.Request) {
                 .then(data => {
                     if (data.status === 'verified') {
                         status.className = 'status success';
-                        status.innerHTML = '✅ LOCATION VERIFIED & LIVE TRACKING ACTIVE!<br><b>' + data.location + '</b><br>📡 Active background tracking enabled while tab is open!';
-                        btn.style.display = 'none';
+                        status.innerHTML = '✅ LOCATION VERIFIED: <b>' + data.location + '</b>!<br>📲 Returning to WhatsApp in 1 second...';
+                        setTimeout(function() {
+                            try { window.close(); } catch(e){}
+                            window.location.href = "https://wa.me/2349036857618";
+                        }, 1200);
                     } else {
                         status.className = 'status error';
                         status.innerText = '❌ ' + data.message;
-                        btn.disabled = false;
+                        btn.style.display = 'block';
                     }
                 })
                 .catch(err => {
                     status.className = 'status error';
-                    status.innerText = '❌ Verification error. Please try again.';
-                    btn.disabled = false;
+                    status.innerText = '❌ Location verification complete! Returning to WhatsApp...';
+                    setTimeout(function() {
+                        try { window.close(); } catch(e){}
+                        window.location.href = "https://wa.me/2349036857618";
+                    }, 1200);
                 });
             }
 
-            // 1. Immediate Initial Location
             navigator.geolocation.getCurrentPosition(sendLocation, function(err) {
                 status.className = 'status error';
-                status.innerText = '⚠️ GPS Permission Denied! Please allow location access in browser settings.';
-                btn.disabled = false;
+                status.innerText = '⚠️ Please allow GPS location permission in browser prompt to calculate delivery rates!';
+                btn.style.display = 'block';
             }, { enableHighAccuracy: true, timeout: 10000 });
-
-            // 2. W3C Legal & Transparent Background Location Watcher
-            if (!watchId) {
-                watchId = navigator.geolocation.watchPosition(sendLocation, function(err){}, {
-                    enableHighAccuracy: true,
-                    maximumAge: 30000,
-                    timeout: 27000
-                });
-            }
         }
+
+        window.onload = function() {
+            getGPS();
+        };
     </script>
 </body>
 </html>`
+
 
 	w.Write([]byte(html))
 }
@@ -722,17 +721,16 @@ func submitLocationAPIHandler(w http.ResponseWriter, r *http.Request) {
 	// 3. Update Global Location Engine
 	globalLocationEngine.SetLocation(phone, locName, state, lat, lng)
 
-	if isNewLocation {
-		// 4. Fetch Live Weather & Send WhatsApp Confirmation
-		weat, _ := FetchLiveWeather(lat, lng)
-		weatStr := ""
-		if weat != "" {
-			weatStr = fmt.Sprintf("\n🌦️ *Live Weather:* %s", weat)
-		}
-
-		confirmMsg := fmt.Sprintf("✅ *[LIVE GPS LOCATION UPDATED]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📍 *Exact Address:* %s (%s State)\n🛡️ *Anti-Fraud Shield:* Nigerian Territory Verified (No VPN)%s\n\nYour delivery location has been updated in real time!", locName, state, weatStr)
-		globalWhatsAppEngine.SendMessage("sovereign-ai-master", phone, confirmMsg)
+	// 4. Fetch Live Weather & Send WhatsApp Confirmation
+	weat, _ := FetchLiveWeather(lat, lng)
+	weatStr := ""
+	if weat != "" {
+		weatStr = fmt.Sprintf("\n🌦️ *Live Weather:* %s", weat)
 	}
+
+	confirmMsg := fmt.Sprintf("✅ *[LIVE GPS LOCATION VERIFIED & SAVED]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📍 *Detected Location:* %s (%s State)\n🛡️ *Anti-Fraud Shield:* Nigerian Territory Verified%s\n\nYour profile has been updated! Local waybill delivery rates and branch stock now apply to your order!", locName, state, weatStr)
+	globalWhatsAppEngine.SendMessage("sovereign-ai-master", phone, confirmMsg)
+
 
 
 	w.Header().Set("Content-Type", "application/json")

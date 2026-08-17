@@ -250,8 +250,13 @@ func (d *DialogueEngine) Start60SecondManagerCallAlarm(customerPhone, profileNam
 	}
 	d.mu.Unlock()
 
-	// Pristine Direct Executive Chat Link (Zero 3rd-party 404 shortener failure)
-	cleanChatURL := fmt.Sprintf("https://sovereign-ai-backend-production.up.railway.app/c/%s", customerPhone)
+	// High-Reliability TinyURL Executive Chat Link
+	longChatURL := fmt.Sprintf("https://sovereign-ai-backend-production.up.railway.app/c/%s", customerPhone)
+	cleanChatURL := ShortenURLWithFreeService(longChatURL)
+	if cleanChatURL == "" || !strings.HasPrefix(cleanChatURL, "http") {
+		cleanChatURL = longChatURL
+	}
+
 
 
 
