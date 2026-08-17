@@ -108,6 +108,8 @@ func main() {
 	http.HandleFunc("/ar/", arViewerHandler)
 	http.HandleFunc("/test/simulation/call", testSimulationCallHandler)
 	http.HandleFunc("/c/alarm-status", executiveChatAlarmStatusHandler)
+	http.HandleFunc("/reset-all-chats", resetAllChatsHandler)
+
 
 
 
@@ -153,6 +155,23 @@ func (s *SessionTracker) MarkGreeted(phone string) {
 	defer s.mu.Unlock()
 	s.greetedUsers[phone] = time.Now()
 }
+
+func (s *SessionTracker) ResetAllGreetings() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.greetedUsers = make(map[string]time.Time)
+}
+
+func resetAllChatsHandler(w http.ResponseWriter, r *http.Request) {
+	globalDialogueEngine.ResetAllConversations()
+	globalSessionTracker.ResetAllGreetings()
+	log.Printf("[SYSTEM MASTER RESET] All chat histories, session greeted states, timers, and manager flags have been reset to clean slate!")
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"status":"success","message":"ALL CHATS & SESSIONS RESET TO CLEAN SLATE! You can test all features freshly from scratch."}`))
+}
+
 
 
 // ── PROGRAMMATIC 8-DIGIT PAIRING CODE HANDLER ──────────────────────────

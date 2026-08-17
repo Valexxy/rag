@@ -214,6 +214,22 @@ func (d *DialogueEngine) ResetHumanHandoff(phone string) {
 	d.SetState(phone, "IDLE")
 }
 
+func (d *DialogueEngine) ResetAllConversations() {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.turns = make(map[string][]Turn)
+	d.states = make(map[string]string)
+	d.lastActivity = make(map[string]time.Time)
+	d.managerReplied = make(map[string]bool)
+	for phone, t := range d.pendingTimers {
+		if t != nil {
+			t.Stop()
+		}
+		delete(d.pendingTimers, phone)
+	}
+}
+
+
 // 📞 4-STAGE CASCADING ESCALATION PIPELINE (0s Message -> 30s WA Call -> 60s GSM Flash -> 90s Reassurance)
 func (d *DialogueEngine) Start60SecondManagerCallAlarm(customerPhone, profileName string) {
 
