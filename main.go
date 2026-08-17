@@ -104,6 +104,9 @@ func main() {
 	http.HandleFunc("/c/reply", executiveChatReplyHandler)
 	http.HandleFunc("/submit-loc", submitLocationAPIHandler)
 	http.HandleFunc("/broadcasts", webBroadcastHubHandler)
+	http.HandleFunc("/ar", arViewerHandler)
+	http.HandleFunc("/ar/", arViewerHandler)
+
 
 
 
@@ -495,6 +498,43 @@ func webBroadcastHubHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(html))
 }
 
+func arViewerHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+	html := `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D AR Space Estimator Canvas — Teeslux Global Store</title>
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+    <style>
+        body { margin: 0; background: #0d1117; color: white; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        .ar-container { width: 100vw; height: 82vh; position: relative; background: radial-gradient(circle, #161b22 0%, #0d1117 100%); }
+        model-viewer { width: 100%; height: 100%; }
+        .badge { position: absolute; top: 16px; left: 16px; background: rgba(35,134,54,0.9); padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: bold; }
+        .action-bar { padding: 15px; background: #161b22; text-align: center; border-top: 1px solid #30363d; }
+        .btn { display: inline-block; background: #238636; color: white; padding: 14px 24px; border-radius: 10px; font-weight: bold; text-decoration: none; font-size: 16px; box-shadow: 0 4px 14px rgba(35,134,54,0.4); }
+    </style>
+</head>
+<body>
+    <div class="ar-container">
+        <div class="badge">📏 Dimensions: 65cm (H) x 48cm (W) x 22cm (D)</div>
+        <model-viewer 
+            src="https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/SolarSystem/glTF-Binary/SolarSystem.glb"
+            alt="3D Solar Power System Visualizer"
+            ar ar-modes="webxr scene-viewer quick-look"
+            camera-controls auto-rotate shadow-intensity="1">
+        </model-viewer>
+    </div>
+    <div class="action-bar">
+        <a class="btn" href="https://wa.me/2349036857618?text=%23buy%20solar">🛍️ Order 5kVA Solar System on WhatsApp ⚡</a>
+    </div>
+</body>
+</html>`
+	w.Write([]byte(html))
+}
+
+
 
 
 
@@ -621,6 +661,7 @@ func processUnifiedPayloadAsync(payloadBytes []byte) {
 				senderPhone := strings.Split(remoteJid, "@")[0]
 				var messageText string
 				var imageURL string
+				var audioURL string
 				if msgObj, ok := data["message"].(map[string]interface{}); ok {
 					if conv, ok := msgObj["conversation"].(string); ok {
 						messageText = conv
@@ -635,6 +676,24 @@ func processUnifiedPayloadAsync(payloadBytes []byte) {
 							messageText = captionStr
 						}
 					}
+					if audMsg, ok := msgObj["audioMessage"].(map[string]interface{}); ok {
+						if urlStr, ok := audMsg["url"].(string); ok {
+							audioURL = urlStr
+						}
+					}
+				}
+
+				if audioURL != "" {
+					var profileName string
+					if pushName, ok := data["pushName"].(string); ok {
+						profileName = pushName
+					}
+					log.Printf("[Webhook Gateway] Audio Voice Note detected from customer %s (%s): %s", profileName, senderPhone, audioURL)
+					voiceReply := globalVoiceEngine.ProcessCustomerVoiceNote(audioURL, senderPhone, profileName)
+					globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, voiceReply)
+					globalDialogueEngine.AddTurn(senderPhone, "user", "[VOICE NOTE]")
+					globalDialogueEngine.AddTurn(senderPhone, "assistant", voiceReply)
+					return
 				}
 
 				if imageURL != "" {
@@ -645,6 +704,7 @@ func processUnifiedPayloadAsync(payloadBytes []byte) {
 					globalDialogueEngine.AddTurn(senderPhone, "assistant", visionReply)
 					return
 				}
+
 
 				if messageText != "" {
 					var profileName string

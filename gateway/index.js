@@ -165,20 +165,24 @@ async function connectToWhatsApp() {
                         const text = msg.message?.conversation || msg.message?.extendedTextMessage?.text || msg.message?.imageMessage?.caption || '';
                         const isImage = !!msg.message?.imageMessage;
                         const imageUrl = msg.message?.imageMessage?.url || '';
+                        const isAudio = !!msg.message?.audioMessage;
+                        const audioUrl = msg.message?.audioMessage?.url || '';
 
-                        if (text || isImage) {
-                            console.log(`[Baileys Gateway] Message from ${sender}: ${text || '[IMAGE UPLOAD]'}`);
+                        if (text || isImage || isAudio) {
+                            console.log(`[Baileys Gateway] Message from ${sender}: ${text || (isImage ? '[IMAGE UPLOAD]' : '[VOICE NOTE]')}`);
                             try {
                                 const payload = JSON.stringify({
                                     data: {
                                         key: { remoteJid: msg.key.remoteJid, fromMe: false },
                                         message: { 
                                             conversation: text,
-                                            imageMessage: isImage ? { caption: text, url: imageUrl } : null
+                                            imageMessage: isImage ? { caption: text, url: imageUrl } : null,
+                                            audioMessage: isAudio ? { url: audioUrl } : null
                                         },
                                         pushName: msg.pushName || ''
                                     }
                                 });
+
                                 const req = http.request(`${GOLANG_BACKEND}/webhook/evolution`, {
                                     method: 'POST',
                                     headers: {
