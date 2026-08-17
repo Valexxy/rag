@@ -405,21 +405,26 @@ func executiveChatPortalHandler(w http.ResponseWriter, r *http.Request) {
         textarea { width: 93%%; height: 75px; background: #0d1117; color: white; border: 1px solid #30363d; border-radius: 8px; padding: 10px; font-family: inherit; font-size: 14px; }
         .send-btn { width: 100%%; background: #238636; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: bold; font-size: 16px; margin-top: 10px; cursor: pointer; }
         .send-btn:hover { background: #2ea043; }
+        .refresh-btn { background: #1f6feb; color: white; border: none; padding: 9px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; gap: 5px; }
+        .refresh-btn:hover { background: #388bfd; }
     </style>
     <script>
         var isTyping = false;
+        function manualRefresh() {
+            fetch(window.location.href)
+                .then(function(r) { return r.text(); })
+                .then(function(html) {
+                    var parser = new DOMParser();
+                    var doc = parser.parseFromString(html, 'text/html');
+                    var newTurns = doc.getElementById('chat-turns');
+                    if (newTurns) {
+                        document.getElementById('chat-turns').innerHTML = newTurns.innerHTML;
+                    }
+                }).catch(function(e) {});
+        }
         setInterval(function() {
             if (!isTyping) {
-                fetch(window.location.href)
-                    .then(function(r) { return r.text(); })
-                    .then(function(html) {
-                        var parser = new DOMParser();
-                        var doc = parser.parseFromString(html, 'text/html');
-                        var newTurns = doc.getElementById('chat-turns');
-                        if (newTurns) {
-                            document.getElementById('chat-turns').innerHTML = newTurns.innerHTML;
-                        }
-                    }).catch(function(e) {});
+                manualRefresh();
             }
         }, 2500);
     </script>
@@ -432,7 +437,10 @@ func executiveChatPortalHandler(w http.ResponseWriter, r *http.Request) {
         <div class="ledger">💳 <b>Payment Ledger:</b><br>%s</div>
         <a class="btn" href="https://wa.me/%s">💬 Open Chat in WhatsApp App</a>
     </div>
-    <h3>💬 Live Conversation History</h3>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; margin-bottom: 10px;">
+        <h3 style="margin: 0;">💬 Live Conversation History</h3>
+        <button class="refresh-btn" onclick="manualRefresh()">🔄 Refresh Chat</button>
+    </div>
     <div id="chat-turns">%s</div>
     
     <div class="reply-box">
@@ -445,6 +453,7 @@ func executiveChatPortalHandler(w http.ResponseWriter, r *http.Request) {
     </div>
 </body>
 </html>`, phone, phone, locStr, ledgerStr, phone, turnsHTML, phone)
+
 
 
 	w.Write([]byte(html))
