@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -11,6 +12,7 @@ import (
 	"sync"
 	"time"
 )
+
 
 type IntentCategory string
 
@@ -27,7 +29,7 @@ const (
 )
 
 // 🧠 PURE AI CONTEXTUAL SEMANTIC INTENT REASONER (0 HARDCODED PHRASES)
-func ClassifyCustomerIntentWithPureAI(msg string, history []Turn) IntentCategory {
+func ClassifyCustomerIntentWithPureAI(msg string, history []ChatTurn) IntentCategory {
 	if strings.TrimSpace(msg) == "" {
 		return IntentGeneralQuery
 	}
@@ -44,6 +46,7 @@ func ClassifyCustomerIntentWithPureAI(msg string, history []Turn) IntentCategory
 		histLines = append(histLines, fmt.Sprintf("%s: %s", t.Role, t.Content))
 	}
 	historyStr := strings.Join(histLines, "\n")
+
 
 	intentStr := globalAIEngine.ClassifyIntentPureAI(msg, historyStr)
 	switch strings.TrimSpace(strings.ToUpper(intentStr)) {
@@ -217,10 +220,11 @@ func (d *DialogueEngine) ResetHumanHandoff(phone string) {
 func (d *DialogueEngine) ResetAllConversations() {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	d.turns = make(map[string][]Turn)
+	d.memoryThreads = make(map[string][]ChatTurn)
 	d.states = make(map[string]string)
 	d.lastActivity = make(map[string]time.Time)
 	d.managerReplied = make(map[string]bool)
+
 	for phone, t := range d.pendingTimers {
 		if t != nil {
 			t.Stop()

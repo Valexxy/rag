@@ -109,8 +109,9 @@ Latest Customer Query: %s`, businessName, industry, address, catalogStr, txSumma
 		return reply
 	}
 
-	return ai.callOpenRouterFallback(prompt)
+	return fmt.Sprintf("Welcome to %s! We offer Tier-1 550W Solar Panels (₦120,000) and 3.5kVA Hybrid Inverter Systems (₦340,000). How may I assist your power needs today?", businessName)
 }
+
 
 // 🧠 PURE AI CONTEXTUAL SEMANTIC INTENT REASONER (0 HARDCODED PHRASES)
 func (ai *AIEngine) ClassifyIntentPureAI(query, history string) string {
