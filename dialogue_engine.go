@@ -188,17 +188,9 @@ func (d *DialogueEngine) ResetHumanHandoff(phone string) {
 	d.SetState(phone, "IDLE")
 }
 
-// 📞 60-SECOND AUTONOMOUS MANAGER DIRECT PHONE CALL ALARM
-func (d *DialogueEngine) Start60SecondManagerCallAlarm(customerPhone, profileName string) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	if t, exists := d.pendingTimers[customerPhone]; exists && t != nil {
-		t.Stop()
-	}
-
 // 📞 4-STAGE CASCADING ESCALATION PIPELINE (0s Message -> 30s WA Call -> 60s GSM Flash -> 90s Reassurance)
 func (d *DialogueEngine) Start60SecondManagerCallAlarm(customerPhone, profileName string) {
+
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
