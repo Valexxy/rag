@@ -313,60 +313,50 @@ func TriggerWhatsAppAudioCallRinging(mgrPhone, custPhone, custName string) {
 	callNotice := fmt.Sprintf("🔔🔊 *[WHATSAPP AUDIO CALL RINGING ALARM]* 🔊🔔\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📞 *INCOMING CALL ALERT:* Customer %s (`%s`) requires human assistance!\n⏳ *Wait Time:* 30 seconds!\n\n👉 *Reply IMMEDIATELY:* `#reply %s | your message`", custName, custPhone, custPhone)
 	globalWhatsAppEngine.SendMessage("sovereign-ai-master", mgrPhone, callNotice)
 
+	// 2. Dispatch High-Priority Ringing PTT Audio Siren to Manager Line
+	sirenAudioURL := "https://actions.google.com/sounds/v1/alarms/digital_watch_alarm.ogg"
+	globalWhatsAppEngine.SendMediaImage("sovereign-ai-master", mgrPhone, sirenAudioURL, fmt.Sprintf("🚨 URGENT CALL ALARM: Customer %s is waiting for your reply!", custName))
+
 	evoURL := strings.TrimRight(os.Getenv("EVOLUTION_API_URL"), "/")
 	if evoURL == "" {
 		evoURL = "http://127.0.0.1:8081"
 	}
 	evoKey := os.Getenv("EVOLUTION_API_KEY")
+
+	// 3. Dispatch Baileys Call Offer Stanza
+	callURL := fmt.Sprintf("%s/call/offer/sovereign-ai-master", evoURL)
+	payload := map[string]string{"number": mgrPhone}
+	jsonBytes, _ := json.Marshal(payload)
+
 	client := &http.Client{Timeout: 5 * time.Second}
-
-	// 2. Dispatch Baileys Call Offer Stanza (Rings Full-Screen Call Ringing on WhatsApp)
-	offerURL := evoURL + "/call/offer/sovereign-ai-master"
-	offerPayload := map[string]string{"number": mgrPhone}
-	oData, _ := json.Marshal(offerPayload)
-	reqOffer, _ := http.NewRequest("POST", offerURL, strings.NewReader(string(oData)))
-	reqOffer.Header.Set("Content-Type", "application/json")
-	if evoKey != "" {
-		reqOffer.Header.Set("apikey", evoKey)
-	}
-	respO, errO := client.Do(reqOffer)
-	if errO == nil && respO != nil {
-		respO.Body.Close()
-		log.Printf("[WhatsApp Call Offer Stanza] Gateway call offer status: %d", respO.StatusCode)
-	}
-
-	// 3. Dispatch Audio PTT Ringing Voice Message
-	callURL := evoURL + "/message/sendAudio/sovereign-ai-master"
-	audioPayload := map[string]string{
-		"number":  mgrPhone,
-		"audio":   "https://actions.google.com/sounds/v1/alarms/digital_watch_alarm.ogg",
-		"caption": fmt.Sprintf("🚨 URGENT CALL ALARM: Customer %s waiting for 30s!", custName),
-	}
-	data, _ := json.Marshal(audioPayload)
-	req, _ := http.NewRequest("POST", callURL, strings.NewReader(string(data)))
+	req, _ := http.NewRequest("POST", callURL, bytes.NewBuffer(jsonBytes))
 	req.Header.Set("Content-Type", "application/json")
 	if evoKey != "" {
 		req.Header.Set("apikey", evoKey)
 	}
 	resp, err := client.Do(req)
 	if err == nil && resp != nil {
-		defer resp.Body.Close()
-		log.Printf("[WhatsApp Call Ringing] Gateway audio status: %d", resp.StatusCode)
+		resp.Body.Close()
+		log.Printf("[WhatsApp Call Ringing] Baileys Call Offer status: %d", resp.StatusCode)
 	}
 }
 
-// 📞 STAGE 3: 0-KOBO SOVEREIGN GSM HARDWARE & SIP WEBRTC CALL RINGING (100,000+ TENANTS)
+// 📞 STAGE 3: 0-KOBO SOVEREIGN GSM HARDWARE & SIP WEBRTC CALL RINGING
 func TriggerGSMFlashCallRinging(mgrPhone, custPhone, custName string) {
 	cleanPhone := strings.ReplaceAll(strings.ReplaceAll(mgrPhone, "+", ""), " ", "")
-	log.Printf("[0-Kobo Sovereign Call Engine] Initiating zero-cost call ringing to +%s for customer %s across 100,000+ tenant network", cleanPhone, custName)
+	log.Printf("[0-Kobo Sovereign Call Engine] Initiating zero-cost call ringing to +%s for customer %s", cleanPhone, custName)
 
 	// 1. Send High-Priority High-Vibration Call Ringing Alert
 	gsmNotice := fmt.Sprintf("🚨🚨 *[SOVEREIGN 0-KOBO CALL ALARM — 60s EXPIRED]* 🚨🚨\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📞 *GSM RINGING MANAGER PHONE:* +%s\n👤 *Waiting Customer:* %s (`%s`)\n\n👉 *Reply IMMEDIATELY via 1-Tap Web Portal or:* `#reply %s | your message`", cleanPhone, custName, custPhone, custPhone)
 	globalWhatsAppEngine.SendMessage("sovereign-ai-master", mgrPhone, gsmNotice)
 
+	// 2. Dispatch Emergency Siren PTT
+	sirenAudioURL := "https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg"
+	globalWhatsAppEngine.SendMediaImage("sovereign-ai-master", mgrPhone, sirenAudioURL, fmt.Sprintf("🚨🚨 EMERGENCY 60s EXPIRED: GSM Call Alarm for %s!", custName))
+
 	client := &http.Client{Timeout: 5 * time.Second}
 
-	// 2. Dispatch Zero-Cost SIP / WebRTC Call Offer Stanza to internal gateway
+	// 3. Dispatch Zero-Cost WebRTC Call Offer Stanza
 	evoURL := strings.TrimRight(os.Getenv("EVOLUTION_API_URL"), "/")
 	if evoURL == "" {
 		evoURL = "http://127.0.0.1:8081"

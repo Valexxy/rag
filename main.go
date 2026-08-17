@@ -106,6 +106,8 @@ func main() {
 	http.HandleFunc("/broadcasts", webBroadcastHubHandler)
 	http.HandleFunc("/ar", arViewerHandler)
 	http.HandleFunc("/ar/", arViewerHandler)
+	http.HandleFunc("/test/simulation/call", testSimulationCallHandler)
+
 
 
 
@@ -542,6 +544,21 @@ func arViewerHandler(w http.ResponseWriter, r *http.Request) {
 </html>`
 	w.Write([]byte(html))
 }
+
+func testSimulationCallHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	log.Printf("[SIMULATION TEST] Running 60-second empirical escalation call simulation...")
+
+	custPhone := "2349036857618"
+	custName := "Simulation Tester"
+
+	// Trigger Stage 1 (0s), Stage 2 (30s PTT Siren), Stage 3 (60s GSM Siren)
+	globalDialogueEngine.Start60SecondManagerCallAlarm(custPhone, custName)
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"status":"success","message":"Simulation test triggered! Stage 1 executed, Stage 2 (30s PTT Audio Siren) & Stage 3 (60s GSM Call Siren) pending in background!"}`))
+}
+
 
 
 
