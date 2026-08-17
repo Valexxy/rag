@@ -655,6 +655,30 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 
 	lower := strings.ToLower(messageText)
 
+	// 👔 EXPLICIT HUMAN MANAGER & STORE OWNER TAKEOVER INTERCEPTOR
+	if strings.Contains(lower, "owner") || strings.Contains(lower, "manager") || strings.Contains(lower, "human") || strings.Contains(lower, "person") || strings.Contains(lower, "agent") || strings.Contains(lower, "representative") || strings.Contains(lower, "speak with someone") || strings.Contains(lower, "talk to someone") {
+		globalDialogueEngine.SetHumanHandoff(senderPhone)
+		globalDialogueEngine.Start60SecondManagerCallAlarm(senderPhone, profileName)
+
+		custMsg := "👔 *[Connected to Human Manager]*\nThe AI Bot has disengaged. Our Store Manager (2348072015725) has been notified! If unanswered, our cascading alarm pipeline will ring the Manager's phone directly!"
+		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, custMsg)
+		globalDialogueEngine.AddTurn(senderPhone, "assistant", custMsg)
+		return
+	}
+
+
+	// 👔 EXPLICIT HUMAN MANAGER & STORE OWNER TAKEOVER INTERCEPTOR
+	if strings.Contains(lower, "owner") || strings.Contains(lower, "manager") || strings.Contains(lower, "human") || strings.Contains(lower, "person") || strings.Contains(lower, "agent") || strings.Contains(lower, "representative") || strings.Contains(lower, "speak with someone") || strings.Contains(lower, "talk to someone") {
+		globalDialogueEngine.SetHumanHandoff(senderPhone)
+		globalDialogueEngine.Start60SecondManagerCallAlarm(senderPhone, profileName)
+
+		custMsg := "👔 *[Connected to Human Manager]*\nThe AI Bot has disengaged. Our Store Manager (2348072015725) has been notified! If unanswered, our cascading alarm pipeline will ring the Manager's phone directly!"
+		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, custMsg)
+		globalDialogueEngine.AddTurn(senderPhone, "assistant", custMsg)
+		return
+	}
+
+
 	// 🛡️ SUB-1MS PATTERN-BASED ZERO-COST INTENT & SPAM/SOURCING SHIELD (0 LLM CREDITS SPENT)
 	intent := ClassifyCustomerIntent(messageText)
 	if intent == IntentSpamTimeWaster {
@@ -763,16 +787,7 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 		}
 	}
 
-	// Check for explicit human takeover request (VIP Concierge Agent)
-	if strings.Contains(lower, "human manager") || strings.Contains(lower, "speak to human") || strings.Contains(lower, "transfer to manager") || strings.Contains(lower, "talk to manager") || strings.Contains(lower, "connect me to manager") || strings.Contains(lower, "connect me to your manager") || strings.Contains(lower, "connect to manager") || strings.Contains(lower, "speak with manager") {
-		globalDialogueEngine.SetHumanHandoff(senderPhone)
-		globalDialogueEngine.Start60SecondManagerCallAlarm(senderPhone, profileName)
 
-		custMsg := "👔 *[Connected to Human Manager]*\nThe AI Bot has disengaged. Our Store Manager (2348072015725) has been notified! If unanswered, our cascading alarm pipeline will ring the Manager's phone directly!"
-		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, custMsg)
-		globalDialogueEngine.AddTurn(senderPhone, "assistant", custMsg)
-		return
-	}
 
 
 
