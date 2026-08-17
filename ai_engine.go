@@ -98,14 +98,28 @@ Latest Customer Query: %s`, businessName, industry, address, catalogStr, txSumma
 
 
 
-	// Try Groq -> Cerebras -> Fallback
+	// 5-Tier AI Model Failover Rotator: Groq -> Cerebras -> Gemini 2.0 Flash -> OpenRouter
 	reply := ai.callGroq(prompt)
 	if reply != "" {
+		log.Printf("[AI Rotator] Tier 1 Groq Llama-3.3 70B responded successfully!")
 		return reply
 	}
 
 	reply = ai.callCerebras(prompt)
 	if reply != "" {
+		log.Printf("[AI Rotator] Tier 2 Cerebras Llama-3.3 70B responded successfully!")
+		return reply
+	}
+
+	reply = ai.callGemini(prompt)
+	if reply != "" {
+		log.Printf("[AI Rotator] Tier 3 Gemini 2.0 Flash responded successfully!")
+		return reply
+	}
+
+	reply = ai.callOpenRouter(prompt)
+	if reply != "" {
+		log.Printf("[AI Rotator] Tier 4 OpenRouter responded successfully!")
 		return reply
 	}
 
@@ -146,9 +160,16 @@ OUTPUT ONLY THE CATEGORY CODE (e.g. HUMAN_MANAGER_REQUEST) AND NOTHING ELSE.`, h
 	if reply == "" {
 		reply = ai.callCerebras(prompt)
 	}
+	if reply == "" {
+		reply = ai.callGemini(prompt)
+	}
+	if reply == "" {
+		reply = ai.callOpenRouter(prompt)
+	}
 
 	return strings.TrimSpace(reply)
 }
+
 
 func (ai *AIEngine) callGroq(prompt string) string {
 	apiKey := os.Getenv("GROQ_API_KEY")
@@ -238,3 +259,99 @@ func (ai *AIEngine) callCerebras(prompt string) string {
 
 	return ""
 }
+
+func (ai *AIEngine) callGemini(prompt string) string {
+	apiKey := os.Getenv("GEMINI_API_KEY")
+	if apiKey == "" {
+		return ""
+	}
+
+	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=%s", apiKey)
+	payload := map[string]interface{}{
+		"contents": []map[string]interface{}{
+			{
+				"parts": []map[string]string{
+					{"text": prompt},
+				},
+			},
+		},
+	}
+
+	jsonBytes, _ := json.Marshal(payload)
+	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonBytes))
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return ""
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return ""
+	}
+
+	body, _ := io.ReadAll(resp.Body)
+	var res map[string]interface{}
+	json.Unmarshal(body, &res)
+
+	if candidates, ok := res["candidates"].([]interface{}); ok && len(candidates) > 0 {
+		cand := candidates[0].(map[string]interface{})
+		if content, ok := cand["content"].(map[string]interface{}); ok {
+			if parts, ok := content["parts"].([]interface{}); ok && len(parts) > 0 {
+				part := parts[0].(map[string]interface{})
+				if text, ok := part["text"].(string); ok {
+					return text
+				}
+			}
+		}
+	}
+
+	return ""
+}
+
+func (ai *AIEngine) callOpenRouter(prompt string) string {
+	apiKey := os.Getenv("OPENROUTER_API_KEY")
+	if apiKey == "" {
+		return ""
+	}
+
+	url := "https://openrouter.ai/api/v1/chat/completions"
+	payload := map[string]interface{}{
+		"model": "google/gemini-2.0-flash-lite-001",
+		"messages": []map[string]string{
+			{"role": "user", "content": prompt},
+		},
+		"max_tokens": 400,
+	}
+
+	jsonBytes, _ := json.Marshal(payload)
+	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonBytes))
+	req.Header.Set("Authorization", "Bearer "+apiKey)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return ""
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return ""
+	}
+
+	body, _ := io.ReadAll(resp.Body)
+	var res map[string]interface{}
+	json.Unmarshal(body, &res)
+
+	if choices, ok := res["choices"].([]interface{}); ok && len(choices) > 0 {
+		choice := choices[0].(map[string]interface{})
+		message := choice["message"].(map[string]interface{})
+		return message["content"].(string)
+	}
+
+	return ""
+}
+
