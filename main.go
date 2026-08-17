@@ -715,11 +715,9 @@ func submitLocationAPIHandler(w http.ResponseWriter, r *http.Request) {
 		state = "Nigeria"
 	}
 
-	oldLoc := globalLocationEngine.GetLocation(phone)
-	isNewLocation := oldLoc.City != locName || oldLoc.State != state
-
 	// 3. Update Global Location Engine
 	globalLocationEngine.SetLocation(phone, locName, state, lat, lng)
+
 
 	// 4. Fetch Live Weather & Send WhatsApp Confirmation
 	weat, _ := FetchLiveWeather(lat, lng)
