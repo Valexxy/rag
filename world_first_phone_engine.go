@@ -136,24 +136,23 @@ func (e *WorldFirstPhoneEngine) GeneratePersonalizedOpening(phone, profileName, 
 		merchantName = "our Store"
 	}
 
-	// 1. Dynamic Community / Location Tag (Zero Fake Defaults)
+	// 1. Mandatory Location & Name Check
 	locationTag := ""
-	if custLoc.City != "" {
-		if custLoc.State != "" {
-			locationTag = fmt.Sprintf("📍 *[Location: %s, %s]*\n", custLoc.City, custLoc.State)
-		} else {
-			locationTag = fmt.Sprintf("📍 *[Location: %s]*\n", custLoc.City)
-		}
-	} else {
-		longURL := fmt.Sprintf("https://sovereign-ai-backend-production.up.railway.app/l/%s", phone)
-		shortURL := ShortenURLWithFreeService(longURL)
-		locationTag = fmt.Sprintf("📍 *[Region: Nigeria]*\n📍 *1-Tap Live Location Pin:* %s\n", shortURL)
+	longURL := fmt.Sprintf("https://sovereign-ai-backend-production.up.railway.app/loc?phone=%s", phone)
+	shortURL := ShortenURLWithFreeService(longURL)
+	if shortURL == "" || !strings.HasPrefix(shortURL, "http") {
+		shortURL = longURL
 	}
 
-
-
-
-
+	if custLoc.City != "" {
+		if custLoc.State != "" {
+			locationTag = fmt.Sprintf("📍 *[Verified Location: %s, %s]*\n", custLoc.City, custLoc.State)
+		} else {
+			locationTag = fmt.Sprintf("📍 *[Verified Location: %s]*\n", custLoc.City)
+		}
+	} else {
+		locationTag = fmt.Sprintf("📍 *[Mandatory Location Notice]*\nPlease reply with your **Name & Location (LGA, City, or State)** so we can quote local delivery rates and branch stock!\n📍 *Or tap 1-Click GPS Pin:* %s\n", shortURL)
+	}
 
 	// 2. Customer Name Greeting
 	nameStr := ""
@@ -168,26 +167,11 @@ func (e *WorldFirstPhoneEngine) GeneratePersonalizedOpening(phone, profileName, 
 		weatherStr = fmt.Sprintf("\n🌦️ *Live Weather:* %s", weatherInfo)
 	}
 
-	// 4. Local Commerce & Traffic Update (100% Guaranteed & Smart)
-	newsCity := custLoc.City
-	if newsCity == "" {
-		region, _, _ := ResolveRegionFromPhonePrefix(phone)
-		newsCity = region
-	}
-
-	newsStr := ""
-	if newsCity != "" {
-		newsNotice := globalLocalNewsPlugin.GetLocalCommerceNews(newsCity)
-		if newsNotice != "" {
-			newsStr = fmt.Sprintf("\n%s", newsNotice)
-		}
-	}
-
-
 	categorySummary := "\n\n🛍️ *OUR LIVE PRODUCT CATEGORIES:*\n• ⚡ *Solar Systems:* 550W Monocrystalline Panels, 1.5kVA Generators, 3.5kVA Hybrid Inverters\n• 🔋 *Power Banks:* 20,000 mAh Solar Outdoor Fast-Charging Power Banks\n• 🍚 *Food Staples:* 50kg Premium White Rice Bags\n• 🪙 *Gold Investments:* 24K Gold Bar Bullion (1-Gram)\n\n📲 Reply *#catalog* to view full item list & buy codes (`#buy 1`, `#buy 2`), or reply *#help* for instant commands!"
 
-	return fmt.Sprintf("%s%s%s! %s Welcome to %s!%s%s%s", locationTag, greetingText, nameStr, emoji, merchantName, weatherStr, newsStr, categorySummary)
+	return fmt.Sprintf("%s%s%s! %s Welcome to %s!%s%s", locationTag, greetingText, nameStr, emoji, merchantName, weatherStr, categorySummary)
 }
+
 
 
 

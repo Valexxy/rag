@@ -959,12 +959,22 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 
 
 
+	// 📰 3-TIER NIGERIAN INTELLIGENCE NEWS ENGINE (LGA / STATE / COUNTRY)
+	if strings.Contains(lower, "news") || strings.Contains(lower, "update") || strings.Contains(lower, "happenings") || strings.Contains(lower, "headline") {
+		newsCard := globalNewsEngine.GetMultiTierNigerianNews(custLoc.City, custLoc.State, "Nigeria")
+		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, newsCard)
+		globalDialogueEngine.AddTurn(senderPhone, "user", messageText)
+		globalDialogueEngine.AddTurn(senderPhone, "assistant", newsCard)
+		return
+	}
+
 	// FEATURE 5: Autonomous Neighborhood Group Buy & Co-Op Buying Intercept
 	if strings.Contains(lower, "group buy") || strings.Contains(lower, "neighborhood") || strings.Contains(lower, "co-op") || strings.Contains(lower, "pool") {
 		groupNotice := globalLocationEngine.GenerateNeighborhoodGroupBuyNotice(senderPhone)
 		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, groupNotice)
 		return
 	}
+
 
 	// Autonomous Logistics & Shipping Agent
 	if strings.Contains(lower, "waybill") || strings.Contains(lower, "shipping") || strings.Contains(lower, "delivery fee") || strings.Contains(lower, "deliver to") {

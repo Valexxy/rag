@@ -224,9 +224,13 @@ func (d *DialogueEngine) Start60SecondManagerCallAlarm(customerPhone, profileNam
 	}
 	d.mu.Unlock()
 
-	// Generate Short Executive Chat Link (via is.gd API)
+	// Generate Short Executive Chat Link (via is.gd API with direct fallback)
 	longChatURL := fmt.Sprintf("https://sovereign-ai-backend-production.up.railway.app/c/%s", customerPhone)
 	shortChatURL := ShortenURLWithFreeService(longChatURL)
+	if shortChatURL == "" || !strings.HasPrefix(shortChatURL, "http") {
+		shortChatURL = longChatURL
+	}
+
 
 	// Extract Recent Customer Questions for Immediate Glancable Context
 	turns := d.GetTurns(customerPhone)
