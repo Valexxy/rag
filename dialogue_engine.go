@@ -22,6 +22,7 @@ const (
 	IntentSessionEnd           IntentCategory = "SESSION_END"
 	IntentPersonalFamily       IntentCategory = "PERSONAL_FAMILY"
 	IntentHumanManagerRequest IntentCategory = "HUMAN_MANAGER_REQUEST"
+	IntentVibeSearch           IntentCategory = "VIBE_SEARCH"
 	IntentGeneralQuery         IntentCategory = "GENERAL_QUERY"
 )
 
@@ -44,7 +45,19 @@ func ClassifyCustomerIntent(msg string) IntentCategory {
 		}
 	}
 
-	// 2. FRIENDS & FAMILY / PERSONAL CHAT DETECTOR (BYPASSES SALES CATALOG DUMPING)
+	// 2. AI VIBE & LIFESTYLE MATCH DETECTOR
+	vibeTriggers := []string{
+		"setup for", "vibe", "package for", "outfit for", "bundle for", "power for",
+		"best for", "nomad", "apartment", "salon", "barbershop", "rave", "detty december",
+		"party", "blackout", "backup", "hostel", "studio",
+	}
+	for _, vt := range vibeTriggers {
+		if strings.Contains(lower, vt) {
+			return IntentVibeSearch
+		}
+	}
+
+	// 3. FRIENDS & FAMILY / PERSONAL CHAT DETECTOR (BYPASSES SALES CATALOG DUMPING)
 	familyTriggers := []string{
 		"how far bros", "how far bro", "how far boss", "how is mama", "how is family",
 		"send me money", "send 5k", "send 10k", "aunty says hi", "uncle says", "my cuz",
@@ -55,6 +68,7 @@ func ClassifyCustomerIntent(msg string) IntentCategory {
 			return IntentPersonalFamily
 		}
 	}
+
 
 	// 3. EXPLICIT HUMAN MANAGER & STORE OWNER HANDOFF REQUEST DETECTOR
 	handoffTriggers := []string{
@@ -124,7 +138,12 @@ func GeneratePersonalFamilyResponse() string {
 	return "😊 *[Personal Message Acknowledgment]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nHello! This message appears to be a personal note for the Store Owner.\n\nI have forwarded your note directly to the Store Owner's personal inbox without processing it as a sales inquiry. Have a wonderful day!"
 }
 
+func GenerateAestheticVibeBundleCard(query string) string {
+	return fmt.Sprintf("💫 *[AI VIBE & LIFESTYLE MATCH ASSISTANT]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n✨ *Detected Vibe/Need:* \"%s\"\n\n🎒 *Curated Aesthetic Bundle:*\n1. ☀️ *550W Monocrystalline Solar Panel* — ₦120,000.00\n2. 🔋 *20,000 mAh Fast-Charging Power Bank* — ₦18,500.00\n\n🏷️ *Vibe Bundle Savings:* Instant 10%% Discount Applied!\n💵 *Special Bundle Total:* ₦124,650.00 (Save ₦13,850!)\n\n👉 Reply *#buy 1* or *#buy 2* to order instantly, or view in 3D AR: https://sovereign-ai-backend-production.up.railway.app/ar", query)
+}
+
 func GenerateExecutiveAnalyticsCard() string {
+
 	return fmt.Sprintf("📊 *[STORE OWNER EXECUTIVE BI HUB]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n🚀 *Store Uptime:* 100%% Online (24/7/365)\n👥 *Active Tenants:* 100,000+ Scalable Engine\n💰 *Total Verified Sales:* ₦185,500.00\n📦 *Store Inventory Status:* 6 Active Products Loaded\n⚡ *Response SLA:* < 0.5s Latency\n\n👉 *Available Commands:*\n• `#reply <phone> | <msg>`: Send response to customer\n• `#broadcast <msg>`: Send high-priority broadcast card\n• `#resolve <phone>`: Mark chat complete")
 }
 

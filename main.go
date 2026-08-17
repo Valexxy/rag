@@ -827,7 +827,15 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 		log.Printf("[Friends & Family Shield] Personal note from %s -> Bypassing sales catalog dump", senderPhone)
 		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, GeneratePersonalFamilyResponse())
 		return
+	} else if intent == IntentVibeSearch {
+		log.Printf("[AI Vibe Assistant] Customer %s requested vibe match for '%s'", senderPhone, messageText)
+		vibeCard := GenerateAestheticVibeBundleCard(messageText)
+		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, vibeCard)
+		globalDialogueEngine.AddTurn(senderPhone, "user", messageText)
+		globalDialogueEngine.AddTurn(senderPhone, "assistant", vibeCard)
+		return
 	} else if intent == IntentMarketSourcing {
+
 		log.Printf("[Zero-Cost Sourcing Router] Market Sourcing / B2B Supplier inquiry from %s -> Fast-tracking to Manager (0 LLM credits spent)", senderPhone)
 		globalDialogueEngine.SetHumanHandoff(senderPhone)
 		globalDialogueEngine.Start60SecondManagerCallAlarm(senderPhone, profileName)
