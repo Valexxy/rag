@@ -98,7 +98,10 @@ func main() {
 	http.HandleFunc("/loc", locationPortalHandler)
 	http.HandleFunc("/l/", locationShortlinkHandler)
 	http.HandleFunc("/l", locationShortlinkHandler)
+	http.HandleFunc("/c/", executiveChatPortalHandler)
+	http.HandleFunc("/c", executiveChatPortalHandler)
 	http.HandleFunc("/submit-loc", submitLocationAPIHandler)
+
 
 	http.HandleFunc("/api/v1/analytics/dashboard", dashboardAnalyticsHandler)
 	http.HandleFunc("/api/v1/analytics/zero-cost", zeroCostAnalyticsHandler)
@@ -330,6 +333,84 @@ func locationPortalHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Write([]byte(html))
 }
+
+// 📋 EXECUTIVE CHAT TRANSCRIPT & LEDGER WEB PORTAL (/c/<phone>)
+func executiveChatPortalHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	parts := strings.Split(r.URL.Path, "/")
+	phone := ""
+	if len(parts) >= 3 && parts[2] != "" {
+		phone = parts[2]
+	}
+	if phone == "" {
+		phone = r.URL.Query().Get("ref")
+	}
+	if phone == "" {
+		phone = r.URL.Query().Get("phone")
+	}
+	if phone == "" {
+		phone = "2348072015725"
+	}
+
+	custLoc := globalLocationEngine.GetLocation(phone)
+	locStr := custLoc.City
+	if custLoc.State != "" {
+		locStr += ", " + custLoc.State
+	}
+	if locStr == "" {
+		locStr = "Nigeria"
+	}
+
+	ledgerStr := globalPaymentLedger.GetCustomerLedgerSummary(phone)
+	turns := globalDialogueEngine.GetTurns(phone)
+
+	var sb strings.Builder
+	for _, t := range turns {
+		roleClass := "assistant"
+		roleName := "🤖 AI Assistant"
+		if t.Role == "user" {
+			roleClass = "user"
+			roleName = "👤 Customer"
+		}
+		sb.WriteString(fmt.Sprintf(`<div class="bubble %s"><b>%s:</b><br>%s</div>`, roleClass, roleName, strings.ReplaceAll(t.Content, "\n", "<br>")))
+	}
+	turnsHTML := sb.String()
+	if turnsHTML == "" {
+		turnsHTML = `<div class="bubble assistant">No chat turns recorded yet.</div>`
+	}
+
+	html := fmt.Sprintf(`<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Executive Chat Summary — %s</title>
+    <style>
+        body { background: #0d1117; color: #c9d1d9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px 15px; max-width: 550px; margin: 0 auto; }
+        .header { background: #161b22; padding: 18px; border-radius: 12px; border: 1px solid #30363d; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+        .h-title { color: #58a6ff; font-weight: bold; font-size: 20px; margin-bottom: 8px; }
+        .ledger { background: #1c2620; border: 1px solid #238636; padding: 12px; border-radius: 8px; font-size: 13px; color: #7ee787; margin-top: 12px; line-height: 1.5; }
+        .bubble { margin: 12px 0; padding: 14px; border-radius: 10px; font-size: 14px; line-height: 1.5; }
+        .user { background: #1f242c; color: #79c0ff; border-left: 4px solid #1f6feb; }
+        .assistant { background: #161b22; color: #e6edf3; border-left: 4px solid #238636; }
+        .btn { display: block; background: #238636; color: white; text-decoration: none; text-align: center; padding: 12px; border-radius: 8px; font-weight: bold; margin-top: 15px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="h-title">📋 Executive Chat Summary</div>
+        <div>👤 <b>Customer Phone:</b> %s</div>
+        <div>📍 <b>Location:</b> %s</div>
+        <div class="ledger">💳 <b>Payment Ledger:</b><br>%s</div>
+        <a class="btn" href="https://wa.me/%s">💬 Open Chat in WhatsApp</a>
+    </div>
+    <h3>💬 Live Conversation History</h3>
+    %s
+</body>
+</html>`, phone, phone, locStr, ledgerStr, phone, turnsHTML)
+
+	w.Write([]byte(html))
+}
+
 
 // 🛡️ NIGERIA GEOFENCING & ANTI-VPN API HANDLER
 func submitLocationAPIHandler(w http.ResponseWriter, r *http.Request) {
@@ -657,18 +738,16 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 	}
 
 	// Check for explicit human takeover request (VIP Concierge Agent)
-	if strings.Contains(lower, "human manager") || strings.Contains(lower, "speak to human") || strings.Contains(lower, "transfer to manager") || strings.Contains(lower, "talk to manager") {
+	if strings.Contains(lower, "human manager") || strings.Contains(lower, "speak to human") || strings.Contains(lower, "transfer to manager") || strings.Contains(lower, "talk to manager") || strings.Contains(lower, "connect me to manager") || strings.Contains(lower, "connect me to your manager") || strings.Contains(lower, "connect to manager") || strings.Contains(lower, "speak with manager") {
+		globalDialogueEngine.SetHumanHandoff(senderPhone)
+		globalDialogueEngine.Start60SecondManagerCallAlarm(senderPhone, profileName)
 
-		// Send executive chat summary to manager's WhatsApp line
-		summaryNotice := globalDialogueEngine.GenerateChatSummary(senderPhone)
-		globalWhatsAppEngine.SendMessage("sovereign-ai-master", ownerPhone, summaryNotice)
-
-		// Send non-blocking notification to customer with Bot Assistant tag
-		custMsg := "🤖 *[Bot Assistant]:* I have notified our Store Manager with a full summary of your chat! While waiting, feel free to ask me any further product, pricing, or stock questions!"
+		custMsg := "👔 *[Connected to Human Manager]*\nThe AI Bot has disengaged. Our Store Manager (2348072015725) has been notified! If unanswered, our cascading alarm pipeline will ring the Manager's phone directly!"
 		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, custMsg)
 		globalDialogueEngine.AddTurn(senderPhone, "assistant", custMsg)
 		return
 	}
+
 
 
 	// FEATURE 5: Autonomous Neighborhood Group Buy & Co-Op Buying Intercept

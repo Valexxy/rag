@@ -123,28 +123,63 @@ func (d *DialogueEngine) Start60SecondManagerCallAlarm(customerPhone, profileNam
 		t.Stop()
 	}
 
+// 📞 4-STAGE CASCADING ESCALATION PIPELINE (0s Message -> 30s WA Call -> 60s GSM Flash -> 90s Reassurance)
+func (d *DialogueEngine) Start60SecondManagerCallAlarm(customerPhone, profileName string) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	if t, exists := d.pendingTimers[customerPhone]; exists && t != nil {
+		t.Stop()
+	}
+
+	// Generate Short Executive Chat Link (via is.gd API)
+	longChatURL := fmt.Sprintf("https://sovereign-ai-backend-production.up.railway.app/c/%s", customerPhone)
+	shortChatURL := ShortenURLWithFreeService(longChatURL)
+
+	// STAGE 1 (T=0s): Initial Executive Notification to Manager
+	mgrAlert := fmt.Sprintf("👔 *[EXECUTIVE HANDOFF ALERT]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Customer:* %s (`%s`)\n📋 *1-Tap Executive Summary & Ledger:* %s\n\n👉 *Reply:* `#reply %s | your message`", profileName, customerPhone, shortChatURL, customerPhone)
+	globalWhatsAppEngine.SendMessage("sovereign-ai-master", managerPhone, mgrAlert)
+
+	// STAGE 2 (T=30s): WhatsApp Native Audio Call Ringing Signal
+	time.AfterFunc(30*time.Second, func() {
+		d.mu.RLock()
+		isStillWaiting := d.states[customerPhone] == "HUMAN_AGENT_ACTIVE"
+		d.mu.RUnlock()
+
+		if isStillWaiting {
+			log.Printf("[CASCADING STAGE 2] 30s expired! Triggering WhatsApp Audio Call Ringing to Manager +%s!", managerPhone)
+			TriggerWhatsAppAudioCallRinging(managerPhone, customerPhone, profileName)
+		}
+	})
+
+	// STAGE 3 (T=60s): Free GSM Phone Call Ringing / Flash Call Alert
 	d.pendingTimers[customerPhone] = time.AfterFunc(60*time.Second, func() {
 		d.mu.RLock()
 		isStillWaiting := d.states[customerPhone] == "HUMAN_AGENT_ACTIVE"
 		d.mu.RUnlock()
 
 		if isStillWaiting {
-			log.Printf("[1-MINUTE CALL ALARM] 60s expired! Ringing Store Manager phone +%s directly & dispatching customer delay reassurance!", managerPhone)
-			
-			// 1. Trigger Zero-Cost Direct Phone Ringing Call to Manager's GSM line
-			TriggerDirectPhoneCallAlarm(managerPhone, customerPhone, profileName)
+			log.Printf("[CASCADING STAGE 3] 60s expired! Flashing GSM Phone Line +%s!", managerPhone)
+			TriggerGSMFlashCallRinging(managerPhone, customerPhone, profileName)
 
-			// 2. Alert Manager on WhatsApp
-			ringAlert := fmt.Sprintf("🚨🚨 *[URGENT PHONE CALL ALARM — 1 MINUTE EXPIRED]* 🚨🚨\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📞 *RINGING STORE MANAGER PHONE:* +%s\n👤 *Waiting Customer:* %s (`%s`)\n⏳ *Wait Time:* 60 seconds without response!\n\n👉 *Reply IMMEDIATELY using:* `#reply %s | your message`", managerPhone, profileName, customerPhone, customerPhone)
+			ringAlert := fmt.Sprintf("🚨🚨 *[GSM FLASH CALL ALARM — 60s EXPIRED]* 🚨🚨\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📞 *GSM RINGING MANAGER PHONE:* +%s\n👤 *Waiting Customer:* %s (`%s`)\n📋 *Transcript:* %s\n\n👉 *Reply IMMEDIATELY:* `#reply %s | your message`", managerPhone, profileName, customerPhone, shortChatURL, customerPhone)
 			globalWhatsAppEngine.SendMessage("sovereign-ai-master", managerPhone, ringAlert)
+		}
+	})
 
-			// 3. Dispatch Reassurance Message to Customer to bear with the delay
-			reassuranceMsg := fmt.Sprintf("⏳ *[STORE MANAGER UPDATE]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nDear %s,\nOur Store Manager has been alerted with an urgent priority call alarm regarding your inquiry!\n\nPlease bear with us for just a brief moment while our manager connects. Your conversation is our highest priority!\n\n🛍️ *Tip:* Reply `#catalog` anytime to explore more items in our live store!", profileName)
+	// STAGE 4 (T=90s): Empathetic Customer Delay Reassurance
+	time.AfterFunc(90*time.Second, func() {
+		d.mu.RLock()
+		isStillWaiting := d.states[customerPhone] == "HUMAN_AGENT_ACTIVE"
+		d.mu.RUnlock()
+
+		if isStillWaiting {
+			log.Printf("[CASCADING STAGE 4] 90s expired! Dispatching customer delay reassurance to %s", customerPhone)
+			reassuranceMsg := fmt.Sprintf("⏳ *[STORE MANAGER UPDATE]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nDear %s,\nOur Store Manager's phone has been alerted with an urgent priority call alarm and flash alert regarding your inquiry!\n\nPlease bear with us for just a brief moment while our manager connects. Your conversation is our highest priority!\n\n🛍️ *Tip:* Reply `#catalog` anytime to explore more items in our live store!", profileName)
 			globalWhatsAppEngine.SendMessage("sovereign-ai-master", customerPhone, reassuranceMsg)
 		}
 	})
 }
-
 
 func (d *DialogueEngine) CancelManagerCallAlarm(customerPhone string) {
 	d.mu.Lock()
@@ -155,29 +190,25 @@ func (d *DialogueEngine) CancelManagerCallAlarm(customerPhone string) {
 	}
 }
 
-// 📞 ZERO-COST DIRECT PHONE CALLING & RINGING ALARM ENGINE (100% FREE - 0 KOBO)
-func TriggerDirectPhoneCallAlarm(mgrPhone, custPhone, custName string) {
-	log.Printf("[Zero-Cost Call Alarm] Triggering 100%% Free Direct Phone Ringing Call to Manager +%s for customer %s!", mgrPhone, custName)
-
-	// 1. FREE METHOD A: WhatsApp Native Audio Call Ringing Signal (Baileys / Evolution API)
+// 📞 STAGE 2: WHATSAPP AUDIO CALL RINGING SIGNAL
+func TriggerWhatsAppAudioCallRinging(mgrPhone, custPhone, custName string) {
 	evoURL := strings.TrimRight(os.Getenv("EVOLUTION_API_URL"), "/")
 	if evoURL == "" {
 		evoURL = "https://evolution-api-latest-gxue.onrender.com"
 	}
 	evoKey := os.Getenv("EVOLUTION_API_KEY")
 
-	// Trigger WhatsApp Voice Call Ringing Audio Signal
 	callURL := evoURL + "/message/sendMedia/sovereign-ai-master"
 	audioPayload := map[string]interface{}{
 		"number": mgrPhone,
 		"options": map[string]interface{}{
-			"delay":        1200,
+			"delay":        1000,
 			"presence":     "recording",
 			"linkPreview": false,
 		},
 		"mediaMessage": map[string]string{
 			"mediatype": "audio",
-			"caption":   fmt.Sprintf("🚨 URGENT CALL ALARM: Customer %s has been waiting for 1 minute!", custName),
+			"caption":   fmt.Sprintf("🚨 URGENT CALL ALARM: Customer %s waiting for 30s!", custName),
 			"media":     "https://actions.google.com/sounds/v1/alarms/digital_watch_alarm.ogg",
 		},
 	}
@@ -187,10 +218,13 @@ func TriggerDirectPhoneCallAlarm(mgrPhone, custPhone, custName string) {
 	if evoKey != "" {
 		req.Header.Set("apikey", evoKey)
 	}
-	client := &http.Client{Timeout: 5 * time.Second}
+	client := &http.Client{Timeout: 4 * time.Second}
 	client.Do(req)
+}
 
-	// 2. FREE METHOD B: Termii / Voice Gateway Fallback (If API key set)
+// 📞 STAGE 3: FREE GSM FLASH CALL RINGING
+func TriggerGSMFlashCallRinging(mgrPhone, custPhone, custName string) {
+	log.Printf("[GSM Flash Call] Initiating 0-kobo GSM flash ringing to +%s for customer %s", mgrPhone, custName)
 	termiiKey := os.Getenv("TERMII_API_KEY")
 	if termiiKey != "" {
 		tURL := "https://api.ng.termii.com/api/chat/apply"
@@ -205,6 +239,11 @@ func TriggerDirectPhoneCallAlarm(mgrPhone, custPhone, custName string) {
 		http.Post(tURL, "application/json", strings.NewReader(string(tData)))
 	}
 }
+
+func TriggerDirectPhoneCallAlarm(mgrPhone, custPhone, custName string) {
+	TriggerGSMFlashCallRinging(mgrPhone, custPhone, custName)
+}
+
 
 
 
