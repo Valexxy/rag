@@ -14,23 +14,26 @@ import (
 )
 
 
-// AIEngine manages multi-provider AI model failover & key rotation
+// AIEngine manages multi-provider AI model failover & enterprise key pool rotation
 type AIEngine struct {
-	mu           sync.RWMutex
-	groqKeys     []string
-	cerebrasKeys []string
-	currentIdx   int
+	mu            sync.RWMutex
+	groqKeys      []string
+	cerebrasKeys  []string
+	geminiKeys    []string
+	openRouter    []string
+	groqIdx       int
+	cerebrasIdx   int
+	geminiIdx     int
+	openRouterIdx int
 }
 
 var globalAIEngine = &AIEngine{
-	groqKeys: []string{
-		"gsk_free_groq_key_1",
-		"gsk_free_groq_key_2",
-	},
-	cerebrasKeys: []string{
-		"csk_free_cerebras_key_1",
-	},
+	groqKeys:     []string{},
+	cerebrasKeys: []string{},
+	geminiKeys:   []string{},
+	openRouter:   []string{},
 }
+
 
 func (ai *AIEngine) GenerateReply(query, phone, businessName, address, industry, catalogStr string, history []ChatTurn) string {
 	var histLines []string
@@ -194,187 +197,280 @@ OUTPUT ONLY THE CATEGORY CODE (e.g. HUMAN_MANAGER_REQUEST) AND NOTHING ELSE.`, h
 }
 
 
+func (ai *AIEngine) getKeysForProvider(envVarKeys, envVarSingle string, hardcodedPool []string) []string {
+	var pool []string
+	if raw := os.Getenv(envVarKeys); raw != "" {
+		for _, k := range strings.Split(raw, ",") {
+			if k = strings.TrimSpace(k); k != "" {
+				pool = append(pool, k)
+			}
+		}
+	}
+	if raw := os.Getenv(envVarSingle); raw != "" {
+		pool = append(pool, strings.TrimSpace(raw))
+	}
+	for _, k := range hardcodedPool {
+		if k = strings.TrimSpace(k); k != "" && !strings.Contains(k, "free_key") {
+			pool = append(pool, k)
+		}
+	}
+	return pool
+}
+
 func (ai *AIEngine) callGroq(prompt string) string {
-	apiKey := os.Getenv("GROQ_API_KEY")
-	if apiKey == "" {
+	keys := ai.getKeysForProvider("GROQ_API_KEYS", "GROQ_API_KEY", ai.groqKeys)
+	if len(keys) == 0 {
 		return ""
 	}
 
-	url := "https://api.groq.com/openai/v1/chat/completions"
-	payload := map[string]interface{}{
-		"model": "llama-3.3-70b-versatile",
-		"messages": []map[string]string{
-			{"role": "user", "content": prompt},
-		},
-		"max_tokens": 400,
-	}
+	for i := 0; i < len(keys); i++ {
+		ai.mu.Lock()
+		idx := ai.groqIdx % len(keys)
+		ai.groqIdx++
+		ai.mu.Unlock()
 
-	jsonBytes, _ := json.Marshal(payload)
-	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonBytes))
-	req.Header.Set("Authorization", "Bearer "+apiKey)
-	req.Header.Set("Content-Type", "application/json")
+		apiKey := keys[idx]
+		if apiKey == "" {
+			continue
+		}
 
-	client := &http.Client{Timeout: 5 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Printf("[AI Engine Error] Groq call failed: %v", err)
-		return ""
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return ""
-	}
-
-	body, _ := io.ReadAll(resp.Body)
-	var res map[string]interface{}
-	json.Unmarshal(body, &res)
-
-	if choices, ok := res["choices"].([]interface{}); ok && len(choices) > 0 {
-		choice := choices[0].(map[string]interface{})
-		message := choice["message"].(map[string]interface{})
-		return message["content"].(string)
-	}
-
-	return ""
-}
-
-func (ai *AIEngine) callCerebras(prompt string) string {
-	apiKey := os.Getenv("CEREBRAS_API_KEY")
-	if apiKey == "" {
-		return ""
-	}
-
-	url := "https://api.cerebras.ai/v1/chat/completions"
-	payload := map[string]interface{}{
-		"model": "llama-3.3-70b",
-		"messages": []map[string]string{
-			{"role": "user", "content": prompt},
-		},
-		"max_tokens": 400,
-	}
-
-	jsonBytes, _ := json.Marshal(payload)
-	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonBytes))
-	req.Header.Set("Authorization", "Bearer "+apiKey)
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{Timeout: 4 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return ""
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return ""
-	}
-
-	body, _ := io.ReadAll(resp.Body)
-	var res map[string]interface{}
-	json.Unmarshal(body, &res)
-
-	if choices, ok := res["choices"].([]interface{}); ok && len(choices) > 0 {
-		choice := choices[0].(map[string]interface{})
-		message := choice["message"].(map[string]interface{})
-		return message["content"].(string)
-	}
-
-	return ""
-}
-
-func (ai *AIEngine) callGemini(prompt string) string {
-	apiKey := os.Getenv("GEMINI_API_KEY")
-	if apiKey == "" {
-		return ""
-	}
-
-	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=%s", apiKey)
-	payload := map[string]interface{}{
-		"contents": []map[string]interface{}{
-			{
-				"parts": []map[string]string{
-					{"text": prompt},
-				},
+		url := "https://api.groq.com/openai/v1/chat/completions"
+		payload := map[string]interface{}{
+			"model": "llama-3.3-70b-versatile",
+			"messages": []map[string]string{
+				{"role": "user", "content": prompt},
 			},
-		},
-	}
+			"max_tokens": 400,
+		}
 
-	jsonBytes, _ := json.Marshal(payload)
-	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonBytes))
-	req.Header.Set("Content-Type", "application/json")
+		jsonBytes, _ := json.Marshal(payload)
+		req, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonBytes))
+		req.Header.Set("Authorization", "Bearer "+apiKey)
+		req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{Timeout: 5 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return ""
-	}
-	defer resp.Body.Close()
+		client := &http.Client{Timeout: 5 * time.Second}
+		resp, err := client.Do(req)
+		if err != nil {
+			log.Printf("[AI Key Rotator] Groq key #%d failed (%v). Hot-swapping to next key...", idx+1, err)
+			continue
+		}
 
-	if resp.StatusCode != http.StatusOK {
-		return ""
-	}
+		if resp.StatusCode != http.StatusOK {
+			resp.Body.Close()
+			log.Printf("[AI Key Rotator] Groq key #%d returned HTTP %d. Hot-swapping to next key...", idx+1, resp.StatusCode)
+			continue
+		}
 
-	body, _ := io.ReadAll(resp.Body)
-	var res map[string]interface{}
-	json.Unmarshal(body, &res)
+		body, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
 
-	if candidates, ok := res["candidates"].([]interface{}); ok && len(candidates) > 0 {
-		cand := candidates[0].(map[string]interface{})
-		if content, ok := cand["content"].(map[string]interface{}); ok {
-			if parts, ok := content["parts"].([]interface{}); ok && len(parts) > 0 {
-				part := parts[0].(map[string]interface{})
-				if text, ok := part["text"].(string); ok {
-					return text
+		var res map[string]interface{}
+		if err := json.Unmarshal(body, &res); err == nil {
+			if choices, ok := res["choices"].([]interface{}); ok && len(choices) > 0 {
+				choice := choices[0].(map[string]interface{})
+				if message, ok := choice["message"].(map[string]interface{}); ok {
+					if content, ok := message["content"].(string); ok && strings.TrimSpace(content) != "" {
+						log.Printf("[AI Key Rotator] Groq Key #%d responded successfully!", idx+1)
+						return strings.TrimSpace(content)
+					}
 				}
 			}
 		}
 	}
+	return ""
+}
 
+func (ai *AIEngine) callCerebras(prompt string) string {
+	keys := ai.getKeysForProvider("CEREBRAS_API_KEYS", "CEREBRAS_API_KEY", ai.cerebrasKeys)
+	if len(keys) == 0 {
+		return ""
+	}
+
+	for i := 0; i < len(keys); i++ {
+		ai.mu.Lock()
+		idx := ai.cerebrasIdx % len(keys)
+		ai.cerebrasIdx++
+		ai.mu.Unlock()
+
+		apiKey := keys[idx]
+		if apiKey == "" {
+			continue
+		}
+
+		url := "https://api.cerebras.ai/v1/chat/completions"
+		payload := map[string]interface{}{
+			"model": "llama-3.3-70b",
+			"messages": []map[string]string{
+				{"role": "user", "content": prompt},
+			},
+			"max_tokens": 400,
+		}
+
+		jsonBytes, _ := json.Marshal(payload)
+		req, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonBytes))
+		req.Header.Set("Authorization", "Bearer "+apiKey)
+		req.Header.Set("Content-Type", "application/json")
+
+		client := &http.Client{Timeout: 4 * time.Second}
+		resp, err := client.Do(req)
+		if err != nil {
+			log.Printf("[AI Key Rotator] Cerebras key #%d failed (%v). Hot-swapping to next key...", idx+1, err)
+			continue
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			resp.Body.Close()
+			log.Printf("[AI Key Rotator] Cerebras key #%d returned HTTP %d. Hot-swapping to next key...", idx+1, resp.StatusCode)
+			continue
+		}
+
+		body, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+
+		var res map[string]interface{}
+		if err := json.Unmarshal(body, &res); err == nil {
+			if choices, ok := res["choices"].([]interface{}); ok && len(choices) > 0 {
+				choice := choices[0].(map[string]interface{})
+				if message, ok := choice["message"].(map[string]interface{}); ok {
+					if content, ok := message["content"].(string); ok && strings.TrimSpace(content) != "" {
+						log.Printf("[AI Key Rotator] Cerebras Key #%d responded successfully!", idx+1)
+						return strings.TrimSpace(content)
+					}
+				}
+			}
+		}
+	}
+	return ""
+}
+
+func (ai *AIEngine) callGemini(prompt string) string {
+	keys := ai.getKeysForProvider("GEMINI_API_KEYS", "GEMINI_API_KEY", ai.geminiKeys)
+	if len(keys) == 0 {
+		return ""
+	}
+
+	for i := 0; i < len(keys); i++ {
+		ai.mu.Lock()
+		idx := ai.geminiIdx % len(keys)
+		ai.geminiIdx++
+		ai.mu.Unlock()
+
+		apiKey := keys[idx]
+		if apiKey == "" {
+			continue
+		}
+
+		url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=%s", apiKey)
+		payload := map[string]interface{}{
+			"contents": []map[string]interface{}{
+				{
+					"parts": []map[string]string{
+						{"text": prompt},
+					},
+				},
+			},
+		}
+
+		jsonBytes, _ := json.Marshal(payload)
+		req, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonBytes))
+		req.Header.Set("Content-Type", "application/json")
+
+		client := &http.Client{Timeout: 5 * time.Second}
+		resp, err := client.Do(req)
+		if err != nil {
+			log.Printf("[AI Key Rotator] Gemini key #%d failed (%v). Hot-swapping to next key...", idx+1, err)
+			continue
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			resp.Body.Close()
+			log.Printf("[AI Key Rotator] Gemini key #%d returned HTTP %d. Hot-swapping to next key...", idx+1, resp.StatusCode)
+			continue
+		}
+
+		body, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+
+		var res map[string]interface{}
+		if err := json.Unmarshal(body, &res); err == nil {
+			if candidates, ok := res["candidates"].([]interface{}); ok && len(candidates) > 0 {
+				cand := candidates[0].(map[string]interface{})
+				if content, ok := cand["content"].(map[string]interface{}); ok {
+					if parts, ok := content["parts"].([]interface{}); ok && len(parts) > 0 {
+						part := parts[0].(map[string]interface{})
+						if text, ok := part["text"].(string); ok && strings.TrimSpace(text) != "" {
+							log.Printf("[AI Key Rotator] Gemini Key #%d responded successfully!", idx+1)
+							return strings.TrimSpace(text)
+						}
+					}
+				}
+			}
+		}
+	}
 	return ""
 }
 
 func (ai *AIEngine) callOpenRouter(prompt string) string {
-	apiKey := os.Getenv("OPENROUTER_API_KEY")
-	if apiKey == "" {
+	keys := ai.getKeysForProvider("OPENROUTER_API_KEYS", "OPENROUTER_API_KEY", ai.openRouter)
+	if len(keys) == 0 {
 		return ""
 	}
 
-	url := "https://openrouter.ai/api/v1/chat/completions"
-	payload := map[string]interface{}{
-		"model": "google/gemini-2.0-flash-lite-001",
-		"messages": []map[string]string{
-			{"role": "user", "content": prompt},
-		},
-		"max_tokens": 400,
+	for i := 0; i < len(keys); i++ {
+		ai.mu.Lock()
+		idx := ai.openRouterIdx % len(keys)
+		ai.openRouterIdx++
+		ai.mu.Unlock()
+
+		apiKey := keys[idx]
+		if apiKey == "" {
+			continue
+		}
+
+		url := "https://openrouter.ai/api/v1/chat/completions"
+		payload := map[string]interface{}{
+			"model": "google/gemini-2.0-flash-lite-001",
+			"messages": []map[string]string{
+				{"role": "user", "content": prompt},
+			},
+			"max_tokens": 400,
+		}
+
+		jsonBytes, _ := json.Marshal(payload)
+		req, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonBytes))
+		req.Header.Set("Authorization", "Bearer "+apiKey)
+		req.Header.Set("Content-Type", "application/json")
+
+		client := &http.Client{Timeout: 5 * time.Second}
+		resp, err := client.Do(req)
+		if err != nil {
+			log.Printf("[AI Key Rotator] OpenRouter key #%d failed (%v). Hot-swapping to next key...", idx+1, err)
+			continue
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			resp.Body.Close()
+			log.Printf("[AI Key Rotator] OpenRouter key #%d returned HTTP %d. Hot-swapping to next key...", idx+1, resp.StatusCode)
+			continue
+		}
+
+		body, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+
+		var res map[string]interface{}
+		if err := json.Unmarshal(body, &res); err == nil {
+			if choices, ok := res["choices"].([]interface{}); ok && len(choices) > 0 {
+				choice := choices[0].(map[string]interface{})
+				if message, ok := choice["message"].(map[string]interface{}); ok {
+					if content, ok := message["content"].(string); ok && strings.TrimSpace(content) != "" {
+						log.Printf("[AI Key Rotator] OpenRouter Key #%d responded successfully!", idx+1)
+						return strings.TrimSpace(content)
+					}
+				}
+			}
+		}
 	}
-
-	jsonBytes, _ := json.Marshal(payload)
-	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonBytes))
-	req.Header.Set("Authorization", "Bearer "+apiKey)
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{Timeout: 5 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return ""
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return ""
-	}
-
-	body, _ := io.ReadAll(resp.Body)
-	var res map[string]interface{}
-	json.Unmarshal(body, &res)
-
-	if choices, ok := res["choices"].([]interface{}); ok && len(choices) > 0 {
-		choice := choices[0].(map[string]interface{})
-		message := choice["message"].(map[string]interface{})
-		return message["content"].(string)
-	}
-
 	return ""
 }
+
 
