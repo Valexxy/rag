@@ -107,6 +107,8 @@ func main() {
 	http.HandleFunc("/ar", arViewerHandler)
 	http.HandleFunc("/ar/", arViewerHandler)
 	http.HandleFunc("/test/simulation/call", testSimulationCallHandler)
+	http.HandleFunc("/c/alarm-status", executiveChatAlarmStatusHandler)
+
 
 
 
@@ -410,8 +412,59 @@ func executiveChatPortalHandler(w http.ResponseWriter, r *http.Request) {
         .refresh-btn { background: #1f6feb; color: white; border: none; padding: 9px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; gap: 5px; }
         .refresh-btn:hover { background: #388bfd; }
     </style>
+    <style>
+        @keyframes pulseAlert { 0% { background: #da3633; box-shadow: 0 0 0 0 rgba(218,54,51,0.7); } 70% { background: #f85149; box-shadow: 0 0 0 15px rgba(248,81,73,0); } 100% { background: #da3633; box-shadow: 0 0 0 0 rgba(218,54,51,0); } }
+        .alarm-banner { animation: pulseAlert 1.2s infinite; padding: 18px; border-radius: 12px; color: white; text-align: center; font-weight: bold; margin-bottom: 20px; font-size: 16px; border: 2px solid #ff7b72; }
+    </style>
     <script>
         var isTyping = false;
+        var audioCtx = null;
+        var ringInterval = null;
+        var isRinging = false;
+
+        function playRingtone() {
+            if (isRinging) return;
+            isRinging = true;
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                ringInterval = setInterval(function() {
+                    try {
+                        var osc = audioCtx.createOscillator();
+                        var gain = audioCtx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(853, audioCtx.currentTime);
+                        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start();
+                        osc.stop(audioCtx.currentTime + 1.2);
+                    } catch(e) {}
+                }, 2000);
+            } catch(e) {}
+            if (navigator.vibrate) navigator.vibrate([500, 200, 500, 200, 500]);
+        }
+
+        function stopRingtone() {
+            isRinging = false;
+            if (ringInterval) clearInterval(ringInterval);
+            var el = document.getElementById('alarm-container');
+            if (el) el.style.display = 'none';
+        }
+
+        function checkAlarmStatus() {
+            fetch('/c/alarm-status?phone=%s')
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    var el = document.getElementById('alarm-container');
+                    if (data.alarm_active) {
+                        if (el) el.style.display = 'block';
+                        playRingtone();
+                    } else {
+                        stopRingtone();
+                    }
+                }).catch(function(e) {});
+        }
+
         function manualRefresh() {
             fetch(window.location.href)
                 .then(function(r) { return r.text(); })
@@ -424,14 +477,23 @@ func executiveChatPortalHandler(w http.ResponseWriter, r *http.Request) {
                     }
                 }).catch(function(e) {});
         }
+
         setInterval(function() {
             if (!isTyping) {
                 manualRefresh();
+                checkAlarmStatus();
             }
-        }, 2500);
+        }, 2000);
     </script>
 </head>
 <body>
+    <div id="alarm-container" style="display: none;">
+        <div class="alarm-banner">
+            🚨 INCOMING CUSTOMER CALL — MANAGER ASSISTANCE REQUESTED!<br>
+            <span style="font-size: 13px; font-weight: normal; opacity: 0.9;">Phone speaker is ringing continuous call alert tone...</span><br>
+            <button onclick="stopRingtone()" style="margin-top: 12px; background: white; color: #b10a0a; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer;">📞 Answer Call & Mute Ringtone</button>
+        </div>
+    </div>
     <div class="header">
         <div class="h-title">📋 Executive Chat Summary</div>
         <div>👤 <b>Customer Phone:</b> %s</div>
@@ -454,7 +516,8 @@ func executiveChatPortalHandler(w http.ResponseWriter, r *http.Request) {
         </form>
     </div>
 </body>
-</html>`, phone, phone, locStr, ledgerStr, phone, turnsHTML, phone)
+</html>`, phone, phone, phone, locStr, ledgerStr, phone, turnsHTML, phone)
+
 
 
 
@@ -481,7 +544,26 @@ func executiveChatReplyHandler(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Invalid reply request", http.StatusBadRequest)
 }
 
+func executiveChatAlarmStatusHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	phone := r.URL.Query().Get("phone")
+	if phone == "" {
+		w.Write([]byte(`{"alarm_active":false}`))
+		return
+	}
+
+	globalDialogueEngine.mu.RLock()
+	hasReplied := globalDialogueEngine.managerReplied[phone]
+	state := globalDialogueEngine.states[phone]
+	globalDialogueEngine.mu.RUnlock()
+
+	isActive := (state == "HUMAN_AGENT_ACTIVE" || state == "HUMAN_ESCALATED") && !hasReplied
+
+	w.Write([]byte(fmt.Sprintf(`{"alarm_active":%t}`, isActive)))
+}
+
 func webBroadcastHubHandler(w http.ResponseWriter, r *http.Request) {
+
 	w.Header().Set("Content-Type", "text/html")
 	html := `<!DOCTYPE html>
 <html>
