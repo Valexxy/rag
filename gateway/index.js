@@ -162,14 +162,20 @@ async function connectToWhatsApp() {
                 for (const msg of m.messages) {
                     if (!msg.key.fromMe) {
                         const sender = msg.key.remoteJid.split('@')[0];
-                        const text = msg.message?.conversation || msg.message?.extendedTextMessage?.text || '';
-                        if (text) {
-                            console.log(`[Baileys Gateway] Message from ${sender}: ${text}`);
+                        const text = msg.message?.conversation || msg.message?.extendedTextMessage?.text || msg.message?.imageMessage?.caption || '';
+                        const isImage = !!msg.message?.imageMessage;
+                        const imageUrl = msg.message?.imageMessage?.url || '';
+
+                        if (text || isImage) {
+                            console.log(`[Baileys Gateway] Message from ${sender}: ${text || '[IMAGE UPLOAD]'}`);
                             try {
                                 const payload = JSON.stringify({
                                     data: {
                                         key: { remoteJid: msg.key.remoteJid, fromMe: false },
-                                        message: { conversation: text },
+                                        message: { 
+                                            conversation: text,
+                                            imageMessage: isImage ? { caption: text, url: imageUrl } : null
+                                        },
                                         pushName: msg.pushName || ''
                                     }
                                 });
@@ -191,6 +197,7 @@ async function connectToWhatsApp() {
                 }
             }
         });
+
     } catch (err) {
         console.error('[Baileys Init Error]', err.message);
         setTimeout(connectToWhatsApp, 5000);

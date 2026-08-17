@@ -103,6 +103,8 @@ func main() {
 	http.HandleFunc("/c-reply", executiveChatReplyHandler)
 	http.HandleFunc("/c/reply", executiveChatReplyHandler)
 	http.HandleFunc("/submit-loc", submitLocationAPIHandler)
+	http.HandleFunc("/broadcasts", webBroadcastHubHandler)
+
 
 
 
@@ -465,6 +467,35 @@ func executiveChatReplyHandler(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Invalid reply request", http.StatusBadRequest)
 }
 
+func webBroadcastHubHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+	html := `<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zero-Cost Broadcast Canvas Hub — Teeslux Global Store</title>
+    <style>
+        body { background: #0d1117; color: #c9d1d9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px 15px; max-width: 600px; margin: 0 auto; }
+        .card { background: #161b22; border: 1px solid #238636; border-radius: 16px; padding: 24px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        h1 { color: #3fb950; font-size: 22px; margin-top: 0; }
+        .btn { display: block; background: #238636; color: white; text-decoration: none; text-align: center; padding: 14px; border-radius: 8px; font-weight: bold; margin-top: 15px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>📢 Official Store Announcements & Flash Offers</h1>
+        <p>Welcome to our Zero-Cost Executive Web Canvas Hub! Store announcements and VIP flash sales are published here with 0 Meta broadcast fees.</p>
+        <div style="background: #1c2620; border-left: 4px solid #238636; padding: 14px; border-radius: 8px; margin: 15px 0;">
+            <strong>⚡ FLASH SALE:</strong> 20,000 mAh Solar Outdoor Fast-Charging Power Banks now available at ₦18,500.00! Reply <b>#buy 2</b> on WhatsApp to order!
+        </div>
+        <a class="btn" href="https://wa.me/2349036857618">📲 Back to Store Chat</a>
+    </div>
+</body>
+</html>`
+	w.Write([]byte(html))
+}
+
+
 
 
 // 🛡️ NIGERIA GEOFENCING & ANTI-VPN API HANDLER
@@ -589,13 +620,32 @@ func processUnifiedPayloadAsync(payloadBytes []byte) {
 			if remoteJid, ok := key["remoteJid"].(string); ok && remoteJid != "" {
 				senderPhone := strings.Split(remoteJid, "@")[0]
 				var messageText string
+				var imageURL string
 				if msgObj, ok := data["message"].(map[string]interface{}); ok {
 					if conv, ok := msgObj["conversation"].(string); ok {
 						messageText = conv
 					} else if extendedMsg, ok := msgObj["extendedTextMessage"].(map[string]interface{}); ok {
 						messageText, _ = extendedMsg["text"].(string)
 					}
+					if imgMsg, ok := msgObj["imageMessage"].(map[string]interface{}); ok {
+						if urlStr, ok := imgMsg["url"].(string); ok {
+							imageURL = urlStr
+						}
+						if captionStr, ok := imgMsg["caption"].(string); ok && messageText == "" {
+							messageText = captionStr
+						}
+					}
 				}
+
+				if imageURL != "" {
+					log.Printf("[Webhook Gateway] Image upload detected from customer %s: %s", senderPhone, imageURL)
+					visionReply := globalVisionEngine.AnalyzeCustomerImage(imageURL, senderPhone)
+					globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, visionReply)
+					globalDialogueEngine.AddTurn(senderPhone, "user", "[IMAGE UPLOAD]")
+					globalDialogueEngine.AddTurn(senderPhone, "assistant", visionReply)
+					return
+				}
+
 				if messageText != "" {
 					var profileName string
 					if pushName, ok := data["pushName"].(string); ok {
@@ -605,6 +655,7 @@ func processUnifiedPayloadAsync(payloadBytes []byte) {
 					return
 				}
 			}
+
 		}
 	}
 
