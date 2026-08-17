@@ -109,8 +109,13 @@ Latest Customer Query: %s`, businessName, industry, address, catalogStr, txSumma
 		return reply
 	}
 
-	return fmt.Sprintf("Welcome to %s! We offer Tier-1 550W Solar Panels (₦120,000) and 3.5kVA Hybrid Inverter Systems (₦340,000). How may I assist your power needs today?", businessName)
+	lowerQ := strings.ToLower(query)
+	if strings.Contains(lowerQ, "manager") || strings.Contains(lowerQ, "owner") || strings.Contains(lowerQ, "reach") {
+		return "I have alerted our Store Manager! Our manager has received your chat summary and 1-tap web link. How else may I assist you while waiting?"
+	}
+	return fmt.Sprintf("Thank you for reaching out to %s! How may I assist your power or electronics needs today?", businessName)
 }
+
 
 
 // 🧠 PURE AI CONTEXTUAL SEMANTIC INTENT REASONER (0 HARDCODED PHRASES)

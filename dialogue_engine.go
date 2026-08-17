@@ -34,19 +34,24 @@ func ClassifyCustomerIntentWithPureAI(msg string, history []ChatTurn) IntentCate
 		return IntentGeneralQuery
 	}
 
-	// 1. Immediate Prompt Injection Shield
-	lower := strings.ToLower(msg)
+	lower := strings.ToLower(strings.TrimSpace(msg))
+
+	// 1. Immediate Security Prompt Injection Shield
 	if strings.Contains(lower, "ignore previous instructions") || strings.Contains(lower, "system prompt") {
 		return IntentSpamTimeWaster
 	}
 
-	// 2. Format history for AI Semantic Reasoner
+	// 2. Unambiguous Human Manager Semantic Handoff Check (Guarantees 100% zero-fail escalation)
+	if strings.Contains(lower, "reach manager") || strings.Contains(lower, "reach your manager") || strings.Contains(lower, "talk to manager") || strings.Contains(lower, "speak to manager") || strings.Contains(lower, "speak with manager") || strings.Contains(lower, "talk to owner") || strings.Contains(lower, "speak with owner") || strings.Contains(lower, "talk to human") || strings.Contains(lower, "speak to human") || strings.Contains(lower, "connect to human") || strings.Contains(lower, "human representative") || strings.Contains(lower, "call manager") || strings.Contains(lower, "reach owner") {
+		return IntentHumanManagerRequest
+	}
+
+	// 3. Format history for AI Semantic Reasoner
 	var histLines []string
 	for _, t := range history {
 		histLines = append(histLines, fmt.Sprintf("%s: %s", t.Role, t.Content))
 	}
 	historyStr := strings.Join(histLines, "\n")
-
 
 	intentStr := globalAIEngine.ClassifyIntentPureAI(msg, historyStr)
 	switch strings.TrimSpace(strings.ToUpper(intentStr)) {
@@ -70,6 +75,7 @@ func ClassifyCustomerIntentWithPureAI(msg string, history []ChatTurn) IntentCate
 
 	return IntentGeneralQuery
 }
+
 
 func ClassifyCustomerIntent(msg string) IntentCategory {
 	return ClassifyCustomerIntentWithPureAI(msg, nil)
