@@ -862,13 +862,14 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 		if !globalSessionTracker.HasBeenGreeted(senderPhone) {
 			opening := globalWorldFirstEngine.GeneratePersonalizedOpening(senderPhone, profileName, messageText, merchantName)
 			lowerMsg := strings.ToLower(strings.TrimSpace(messageText))
-			if lowerMsg == "hello" || lowerMsg == "hi" || lowerMsg == "hey" || lowerMsg == "good morning" || lowerMsg == "good afternoon" || lowerMsg == "good evening" {
+			if lowerMsg == "hello" || lowerMsg == "hi" || lowerMsg == "hey" || lowerMsg == "start" || lowerMsg == "good morning" || lowerMsg == "good afternoon" || lowerMsg == "good evening" {
 				finalReply = opening
 			} else {
-				finalReply = fmt.Sprintf("%s\n\n%s", opening, personalizedReply)
+				finalReply = personalizedReply
 			}
 			globalSessionTracker.MarkGreeted(senderPhone)
 		}
+
 
 		taggedReply := fmt.Sprintf("🤖 *[Bot Assistant]:*\n%s", finalReply)
 		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, taggedReply)
