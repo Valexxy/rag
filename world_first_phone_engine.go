@@ -136,14 +136,19 @@ func (e *WorldFirstPhoneEngine) GeneratePersonalizedOpening(phone, profileName, 
 		merchantName = "our Store"
 	}
 
-	// 1. Mandatory Location & Name Check
-	locationTag := ""
+	nameStr := prof.Name
+	if nameStr == "" || nameStr == "Valued Client" || strings.HasPrefix(nameStr, "+") {
+		nameStr = "there"
+	}
+
+	// 1-Click GPS Location Shortlink
 	longURL := fmt.Sprintf("https://sovereign-ai-backend-production.up.railway.app/loc?phone=%s", phone)
 	shortURL := ShortenURLWithFreeService(longURL)
 	if shortURL == "" || !strings.HasPrefix(shortURL, "http") {
 		shortURL = longURL
 	}
 
+	locationTag := ""
 	if custLoc.City != "" {
 		if custLoc.State != "" {
 			locationTag = fmt.Sprintf("📍 *[Verified Location: %s, %s]*\n", custLoc.City, custLoc.State)
@@ -151,16 +156,10 @@ func (e *WorldFirstPhoneEngine) GeneratePersonalizedOpening(phone, profileName, 
 			locationTag = fmt.Sprintf("📍 *[Verified Location: %s]*\n", custLoc.City)
 		}
 	} else {
-		locationTag = fmt.Sprintf("📍 *[Mandatory Location Notice]*\nPlease reply with your **Name & Location (LGA, City, or State)** so we can quote local delivery rates and branch stock!\n📍 *Or tap 1-Click GPS Pin:* %s\n", shortURL)
+		locationTag = fmt.Sprintf("📍 *[1-Click GPS Location Pin]*\nTo check branch stock & calculate accurate delivery fees, please tap your 1-click location pin:\n👉 %s\n", shortURL)
 	}
 
-	// 2. Customer Name Greeting
-	nameStr := ""
-	if prof.Name != "" && prof.Name != "Valued Client" && prof.Name != "WhatsApp User" && !strings.HasPrefix(prof.Name, "+") {
-		nameStr = fmt.Sprintf(" %s", prof.Name)
-	}
-
-	// 3. Live Satellite Weather
+	// Live Satellite Weather
 	weatherInfo := e.GetLocalWeatherNotice(custLoc.City, phone)
 	weatherStr := ""
 	if weatherInfo != "" {
@@ -169,8 +168,9 @@ func (e *WorldFirstPhoneEngine) GeneratePersonalizedOpening(phone, profileName, 
 
 	categorySummary := "\n\n🛍️ *OUR LIVE PRODUCT CATEGORIES:*\n• ⚡ *Solar Systems:* 550W Monocrystalline Panels, 1.5kVA Generators, 3.5kVA Hybrid Inverters\n• 🔋 *Power Banks:* 20,000 mAh Solar Outdoor Fast-Charging Power Banks\n• 🍚 *Food Staples:* 50kg Premium White Rice Bags\n• 🪙 *Gold Investments:* 24K Gold Bar Bullion (1-Gram)\n\n📲 Reply *#catalog* to view full item list & buy codes (`#buy 1`, `#buy 2`), or reply *#help* for instant commands!"
 
-	return fmt.Sprintf("%s%s%s! %s Welcome to %s!%s%s", locationTag, greetingText, nameStr, emoji, merchantName, weatherStr, categorySummary)
+	return fmt.Sprintf("%s %s %s!\nWelcome to %s! 🌟\n\n%s%s%s", emoji, greetingText, nameStr, merchantName, locationTag, weatherStr, categorySummary)
 }
+
 
 
 
