@@ -948,11 +948,12 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 	if intent == IntentHumanManagerRequest {
 		globalDialogueEngine.Start60SecondManagerCallAlarm(senderPhone, profileName)
 
-		custMsg := "🤖 *[Store Manager Notified]*\nI have alerted our Store Manager with your request and 1-tap chat transcript! While waiting for our manager, I am right here to help you browse products, calculate delivery, or answer any questions!"
+		custMsg := "🤖 *[Store Manager Notified & Escalated]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nI have dispatched a high-priority executive alert to our Store Manager (+234 807 201 5725) with your request!\n\n📲 *Tap to Chat Manager Directly:* https://wa.me/2348072015725\n📞 *Direct Phone Line:* +234 807 201 5725\n\nWhile our manager connects with you, I am right here to help you browse products, calculate delivery, or answer any questions!"
 		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, custMsg)
 		globalDialogueEngine.AddTurn(senderPhone, "assistant", custMsg)
-		// DO NOT RETURN! AI Bot remains 100% engaged to answer customer questions live!
+		return
 	}
+
 
 
 	if intent == IntentSpamTimeWaster {
