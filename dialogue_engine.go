@@ -309,13 +309,29 @@ func TriggerWhatsAppAudioCallRinging(mgrPhone, custPhone, custName string) {
 	callNotice := fmt.Sprintf("🔔🔊 *[WHATSAPP AUDIO CALL RINGING ALARM]* 🔊🔔\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📞 *INCOMING CALL ALERT:* Customer %s (`%s`) requires human assistance!\n⏳ *Wait Time:* 30 seconds!\n\n👉 *Reply IMMEDIATELY:* `#reply %s | your message`", custName, custPhone, custPhone)
 	globalWhatsAppEngine.SendMessage("sovereign-ai-master", mgrPhone, callNotice)
 
-	// 2. Dispatch Baileys Internal Gateway Audio Call PTT Signal (100% Guaranteed Hit)
 	evoURL := strings.TrimRight(os.Getenv("EVOLUTION_API_URL"), "/")
 	if evoURL == "" {
 		evoURL = "http://127.0.0.1:8081"
 	}
 	evoKey := os.Getenv("EVOLUTION_API_KEY")
+	client := &http.Client{Timeout: 5 * time.Second}
 
+	// 2. Dispatch Baileys Call Offer Stanza (Rings Full-Screen Call Ringing on WhatsApp)
+	offerURL := evoURL + "/call/offer/sovereign-ai-master"
+	offerPayload := map[string]string{"number": mgrPhone}
+	oData, _ := json.Marshal(offerPayload)
+	reqOffer, _ := http.NewRequest("POST", offerURL, strings.NewReader(string(oData)))
+	reqOffer.Header.Set("Content-Type", "application/json")
+	if evoKey != "" {
+		reqOffer.Header.Set("apikey", evoKey)
+	}
+	respO, errO := client.Do(reqOffer)
+	if errO == nil && respO != nil {
+		respO.Body.Close()
+		log.Printf("[WhatsApp Call Offer Stanza] Gateway call offer status: %d", respO.StatusCode)
+	}
+
+	// 3. Dispatch Audio PTT Ringing Voice Message
 	callURL := evoURL + "/message/sendAudio/sovereign-ai-master"
 	audioPayload := map[string]string{
 		"number":  mgrPhone,
@@ -328,13 +344,11 @@ func TriggerWhatsAppAudioCallRinging(mgrPhone, custPhone, custName string) {
 	if evoKey != "" {
 		req.Header.Set("apikey", evoKey)
 	}
-	client := &http.Client{Timeout: 4 * time.Second}
 	resp, err := client.Do(req)
 	if err == nil && resp != nil {
 		defer resp.Body.Close()
 		log.Printf("[WhatsApp Call Ringing] Gateway audio status: %d", resp.StatusCode)
 	}
-
 }
 
 // 📞 STAGE 3: FREE GSM FLASH CALL RINGING
@@ -346,7 +360,9 @@ func TriggerGSMFlashCallRinging(mgrPhone, custPhone, custName string) {
 	gsmNotice := fmt.Sprintf("🚨🚨 *[GSM FLASH PHONE CALL ALARM — 60s EXPIRED]* 🚨🚨\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📞 *GSM PHONE RINGING MANAGER:* +%s\n👤 *Waiting Customer:* %s (`%s`)\n\n👉 *Reply IMMEDIATELY:* `#reply %s | your message`", cleanPhone, custName, custPhone, custPhone)
 	globalWhatsAppEngine.SendMessage("sovereign-ai-master", mgrPhone, gsmNotice)
 
-	// 2. Termii Voice Call API Gateway (If API Key Configured)
+	client := &http.Client{Timeout: 5 * time.Second}
+
+	// 2. Termii Voice Call API Gateway
 	termiiKey := os.Getenv("TERMII_API_KEY")
 	if termiiKey != "" {
 		tURL := "https://api.ng.termii.com/api/chat/apply"
@@ -358,10 +374,31 @@ func TriggerGSMFlashCallRinging(mgrPhone, custPhone, custName string) {
 			"api_key": termiiKey,
 		}
 		tData, _ := json.Marshal(tPayload)
-		resp, err := http.Post(tURL, "application/json", strings.NewReader(string(tData)))
+		resp, err := client.Post(tURL, "application/json", strings.NewReader(string(tData)))
 		if err == nil && resp != nil {
-			defer resp.Body.Close()
+			resp.Body.Close()
 			log.Printf("[Termii GSM Flash] Termii Voice Call Status: %d", resp.StatusCode)
+		}
+	}
+
+	// 3. Twilio Voice Call Gateway
+	twilioSID := os.Getenv("TWILIO_ACCOUNT_SID")
+	twilioAuth := os.Getenv("TWILIO_AUTH_TOKEN")
+	twilioFrom := os.Getenv("TWILIO_PHONE_NUMBER")
+	if twilioSID != "" && twilioAuth != "" && twilioFrom != "" {
+		twURL := fmt.Sprintf("https://api.twilio.com/2010-04-01/Accounts/%s/Calls.json", twilioSID)
+		vData := url.Values{}
+		vData.Set("To", "+"+cleanPhone)
+		vData.Set("From", twilioFrom)
+		vData.Set("Twiml", fmt.Sprintf("<Response><Say>Urgent store alert! Customer %s is waiting for your reply on WhatsApp.</Say></Response>", custName))
+
+		reqTw, _ := http.NewRequest("POST", twURL, strings.NewReader(vData.Encode()))
+		reqTw.SetBasicAuth(twilioSID, twilioAuth)
+		reqTw.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		resp, err := client.Do(reqTw)
+		if err == nil && resp != nil {
+			resp.Body.Close()
+			log.Printf("[Twilio Voice Call] Twilio PSTN call status: %d", resp.StatusCode)
 		}
 	}
 }
@@ -369,6 +406,7 @@ func TriggerGSMFlashCallRinging(mgrPhone, custPhone, custName string) {
 func TriggerDirectPhoneCallAlarm(mgrPhone, custPhone, custName string) {
 	TriggerGSMFlashCallRinging(mgrPhone, custPhone, custName)
 }
+
 
 
 

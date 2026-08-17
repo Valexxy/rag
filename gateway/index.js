@@ -296,15 +296,37 @@ app.post('/message/sendAudio/:instance', async (req, res) => {
     return res.status(500).json({ error: 'WhatsApp socket not ready' });
 });
 
-// Native WhatsApp Call Signal Endpoint
+// Native WhatsApp Call Signal Endpoint (Triggers Full-Screen Call Ringing)
 app.post('/call/offer/:instance', async (req, res) => {
     const { number } = req.body;
     if (sock && number) {
         try {
             const jid = number.includes('@') ? number : `${number}@s.whatsapp.net`;
+            console.log(`[Baileys Call Offer] Triggering incoming WhatsApp call ringing stanza to ${jid}...`);
+            
+            // 1. Send High-Priority Ringing Alert
             await sock.sendMessage(jid, { text: `🔔🔊 *[INCOMING WHATSAPP CALL ALARM — RINGING]* 🔊🔔\n📞 Urgent customer request waiting!` });
+
+            // 2. Dispatch Baileys Call Offer Stanza to ring phone screen
+            if (typeof sock.offerCall === 'function') {
+                await sock.offerCall(jid);
+            } else if (sock.query) {
+                const callId = Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
+                await sock.query({
+                    tag: 'call',
+                    attrs: { to: jid, id: callId },
+                    content: [
+                        {
+                            tag: 'offer',
+                            attrs: { call_id: callId, call_creator: sock.user.id },
+                            content: [{ tag: 'audio', attrs: { enc: 'opus' } }]
+                        }
+                    ]
+                }).catch(err => console.log('[Call Stanza Output]', err.message));
+            }
             return res.json({ status: 'call_signaled' });
         } catch (err) {
+            console.error('[Call Offer Error]', err.message);
             return res.status(500).json({ error: err.message });
         }
     }
@@ -312,6 +334,7 @@ app.post('/call/offer/:instance', async (req, res) => {
 });
 
 app.get('/health', (req, res) => res.json({ status: 'online', gateway: 'Baileys 24/7 Embedded Gateway' }));
+
 
 
 app.listen(PORT, '0.0.0.0', () => {
