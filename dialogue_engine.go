@@ -248,35 +248,32 @@ func (d *DialogueEngine) Start60SecondManagerCallAlarm(customerPhone, profileNam
 		historySummary = "• Customer requested human manager assistance"
 	}
 
-	// STAGE 1 (T=0s): Initial Executive Notification to Manager
+	// STAGE 1 (T=0s): 1 SINGLE Executive Notification to Manager (No spamming!)
 	mgrAlert := fmt.Sprintf("👔 *[EXECUTIVE HANDOFF ALERT]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Customer:* %s (`%s`)\n\n📋 *PREVIOUS CHAT CONTEXT:*\n%s\n\n🔗 *1-Tap Full Live Transcript & Ledger:* %s\n\n👉 *Reply:* `#reply %s | your message`", profileName, customerPhone, historySummary, shortChatURL, customerPhone)
 	globalWhatsAppEngine.SendMessage("sovereign-ai-master", managerPhone, mgrAlert)
 
 
-	// STAGE 2 (T=30s): WhatsApp Native Audio Call Ringing Signal
+	// STAGE 2 (T=30s): PURE WHATSAPP AUDIO CALL RINGING ACTION (ZERO TEXT MESSAGES)
 	time.AfterFunc(30*time.Second, func() {
 		d.mu.RLock()
 		hasReplied := d.managerReplied[customerPhone]
 		d.mu.RUnlock()
 
 		if !hasReplied {
-			log.Printf("[CASCADING STAGE 2] 30s expired! Triggering WhatsApp Audio Call Ringing to Manager +%s!", managerPhone)
+			log.Printf("[CASCADING STAGE 2] 30s expired! Executing Pure WhatsApp Audio Call Ringing Stanza to Manager +%s!", managerPhone)
 			TriggerWhatsAppAudioCallRinging(managerPhone, customerPhone, profileName)
 		}
 	})
 
-	// STAGE 3 (T=60s): Free GSM Phone Call Ringing / Flash Call Alert
+	// STAGE 3 (T=60s): PURE 0-KOBO GSM HARDWARE FLASH CALL & WEBRTC CALL ACTION (ZERO TEXT MESSAGES)
 	d.pendingTimers[customerPhone] = time.AfterFunc(60*time.Second, func() {
 		d.mu.RLock()
 		hasReplied := d.managerReplied[customerPhone]
 		d.mu.RUnlock()
 
 		if !hasReplied {
-			log.Printf("[CASCADING STAGE 3] 60s expired! Flashing GSM Phone Line +%s!", managerPhone)
+			log.Printf("[CASCADING STAGE 3] 60s expired! Executing Pure GSM Hardware Call Ringing Action to +%s!", managerPhone)
 			TriggerGSMFlashCallRinging(managerPhone, customerPhone, profileName)
-
-			ringAlert := fmt.Sprintf("🚨🚨 *[GSM FLASH CALL ALARM — 60s EXPIRED]* 🚨🚨\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📞 *GSM RINGING MANAGER PHONE:* +%s\n👤 *Waiting Customer:* %s (`%s`)\n📋 *Transcript:* %s\n\n👉 *Reply IMMEDIATELY:* `#reply %s | your message`", managerPhone, profileName, customerPhone, shortChatURL, customerPhone)
-			globalWhatsAppEngine.SendMessage("sovereign-ai-master", managerPhone, ringAlert)
 		}
 	})
 
@@ -305,25 +302,17 @@ func (d *DialogueEngine) CancelManagerCallAlarm(customerPhone string) {
 }
 
 
-// 📞 STAGE 2: WHATSAPP AUDIO CALL RINGING SIGNAL
+// 📞 STAGE 2: PURE WHATSAPP AUDIO CALL RINGING ACTION (NO TEXT MESSAGES)
 func TriggerWhatsAppAudioCallRinging(mgrPhone, custPhone, custName string) {
-	log.Printf("[WhatsApp Call Ringing] Triggering WhatsApp Audio Call Alarm to Manager +%s for customer %s!", mgrPhone, custName)
+	log.Printf("[WhatsApp Call Ringing] Executing PURE Audio Call Offer Stanza to Manager +%s for customer %s!", mgrPhone, custName)
 	
-	// 1. Send High-Priority Call Alert Notice to Manager's WhatsApp
-	callNotice := fmt.Sprintf("🔔🔊 *[WHATSAPP AUDIO CALL RINGING ALARM]* 🔊🔔\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📞 *INCOMING CALL ALERT:* Customer %s (`%s`) requires human assistance!\n⏳ *Wait Time:* 30 seconds!\n\n👉 *Reply IMMEDIATELY:* `#reply %s | your message`", custName, custPhone, custPhone)
-	globalWhatsAppEngine.SendMessage("sovereign-ai-master", mgrPhone, callNotice)
-
-	// 2. Dispatch High-Priority Ringing PTT Audio Siren to Manager Line
-	sirenAudioURL := "https://actions.google.com/sounds/v1/alarms/digital_watch_alarm.ogg"
-	globalWhatsAppEngine.SendMediaImage("sovereign-ai-master", mgrPhone, sirenAudioURL, fmt.Sprintf("🚨 URGENT CALL ALARM: Customer %s is waiting for your reply!", custName))
-
 	evoURL := strings.TrimRight(os.Getenv("EVOLUTION_API_URL"), "/")
 	if evoURL == "" {
 		evoURL = "http://127.0.0.1:8081"
 	}
 	evoKey := os.Getenv("EVOLUTION_API_KEY")
 
-	// 3. Dispatch Baileys Call Offer Stanza
+	// Dispatch Baileys Native Call Offer Stanza (Triggers native WhatsApp incoming call screen)
 	callURL := fmt.Sprintf("%s/call/offer/sovereign-ai-master", evoURL)
 	payload := map[string]string{"number": mgrPhone}
 	jsonBytes, _ := json.Marshal(payload)
@@ -341,28 +330,20 @@ func TriggerWhatsAppAudioCallRinging(mgrPhone, custPhone, custName string) {
 	}
 }
 
-// 📞 STAGE 3: 0-KOBO SOVEREIGN GSM HARDWARE & SIP WEBRTC CALL RINGING
+// 📞 STAGE 3: PURE 0-KOBO GSM HARDWARE & WEBRTC CALL RINGING ACTION (NO TEXT MESSAGES)
 func TriggerGSMFlashCallRinging(mgrPhone, custPhone, custName string) {
 	cleanPhone := strings.ReplaceAll(strings.ReplaceAll(mgrPhone, "+", ""), " ", "")
-	log.Printf("[0-Kobo Sovereign Call Engine] Initiating zero-cost call ringing to +%s for customer %s", cleanPhone, custName)
-
-	// 1. Send High-Priority High-Vibration Call Ringing Alert
-	gsmNotice := fmt.Sprintf("🚨🚨 *[SOVEREIGN 0-KOBO CALL ALARM — 60s EXPIRED]* 🚨🚨\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📞 *GSM RINGING MANAGER PHONE:* +%s\n👤 *Waiting Customer:* %s (`%s`)\n\n👉 *Reply IMMEDIATELY via 1-Tap Web Portal or:* `#reply %s | your message`", cleanPhone, custName, custPhone, custPhone)
-	globalWhatsAppEngine.SendMessage("sovereign-ai-master", mgrPhone, gsmNotice)
-
-	// 2. Dispatch Emergency Siren PTT
-	sirenAudioURL := "https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg"
-	globalWhatsAppEngine.SendMediaImage("sovereign-ai-master", mgrPhone, sirenAudioURL, fmt.Sprintf("🚨🚨 EMERGENCY 60s EXPIRED: GSM Call Alarm for %s!", custName))
+	log.Printf("[0-Kobo Sovereign Call Engine] Executing PURE call ringing action to +%s for customer %s", cleanPhone, custName)
 
 	client := &http.Client{Timeout: 5 * time.Second}
 
-	// 3. Dispatch Zero-Cost WebRTC Call Offer Stanza
+	// 1. Dispatch WebRTC Call Offer Stanza to internal gateway
 	evoURL := strings.TrimRight(os.Getenv("EVOLUTION_API_URL"), "/")
 	if evoURL == "" {
 		evoURL = "http://127.0.0.1:8081"
 	}
 	offerURL := evoURL + "/call/offer/sovereign-ai-master"
-	offerPayload := map[string]string{"number": mgrPhone}
+	offerPayload := map[string]string{"number": cleanPhone}
 	oData, _ := json.Marshal(offerPayload)
 	reqOffer, _ := http.NewRequest("POST", offerURL, strings.NewReader(string(oData)))
 	reqOffer.Header.Set("Content-Type", "application/json")
