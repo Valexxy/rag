@@ -918,6 +918,13 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 			return
 		}
 		lowerCmd := strings.ToLower(messageText)
+		if strings.Contains(lowerCmd, "reset") || strings.Contains(lowerCmd, "#reset") {
+			globalDialogueEngine.ResetAllConversations()
+			globalSessionTracker.ResetAllGreetings()
+			resetCard := "🔄 *[SYSTEM MASTER RESET COMPLETE]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nAll conversation histories, session greeted states, timers, and manager flags have been reset to clean slate!\n\nYou can test all features freshly from scratch!"
+			globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, resetCard)
+			return
+		}
 		if strings.Contains(lowerCmd, "status") || strings.Contains(lowerCmd, "analytics") || strings.Contains(lowerCmd, "sales") {
 			globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, GenerateExecutiveAnalyticsCard())
 			return
@@ -930,6 +937,7 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 			return
 		}
 	}
+
 
 	lower := strings.ToLower(messageText)
 
