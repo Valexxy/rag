@@ -240,12 +240,9 @@ func (d *DialogueEngine) Start60SecondManagerCallAlarm(customerPhone, profileNam
 	}
 	d.mu.Unlock()
 
-	// Generate Short Executive Chat Link (via is.gd API with direct fallback)
-	longChatURL := fmt.Sprintf("https://sovereign-ai-backend-production.up.railway.app/c/%s", customerPhone)
-	shortChatURL := ShortenURLWithFreeService(longChatURL)
-	if shortChatURL == "" || !strings.HasPrefix(shortChatURL, "http") {
-		shortChatURL = longChatURL
-	}
+	// Pristine Direct Executive Chat Link (Zero 3rd-party 404 shortener failure)
+	cleanChatURL := fmt.Sprintf("https://sovereign-ai-backend-production.up.railway.app/c/%s", customerPhone)
+
 
 
 	// Extract Recent Customer Questions for Immediate Glancable Context
@@ -265,8 +262,9 @@ func (d *DialogueEngine) Start60SecondManagerCallAlarm(customerPhone, profileNam
 	}
 
 	// STAGE 1 (T=0s): 1 SINGLE Executive Notification to Manager (No spamming!)
-	mgrAlert := fmt.Sprintf("👔 *[EXECUTIVE HANDOFF ALERT]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Customer:* %s (`%s`)\n\n📋 *PREVIOUS CHAT CONTEXT:*\n%s\n\n🔗 *1-Tap Full Live Transcript & Ledger:* %s\n\n👉 *Reply:* `#reply %s | your message`", profileName, customerPhone, historySummary, shortChatURL, customerPhone)
+	mgrAlert := fmt.Sprintf("👔 *[EXECUTIVE HANDOFF ALERT]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Customer:* %s (`%s`)\n\n📋 *PREVIOUS CHAT CONTEXT:*\n%s\n\n🔗 *1-Tap Full Live Transcript & Ledger:* %s\n\n👉 *Reply:* `#reply %s | your message`", profileName, customerPhone, historySummary, cleanChatURL, customerPhone)
 	globalWhatsAppEngine.SendMessage("sovereign-ai-master", managerPhone, mgrAlert)
+
 
 
 	// STAGE 2 (T=30s): PURE WHATSAPP AUDIO CALL RINGING ACTION (ZERO TEXT MESSAGES)
