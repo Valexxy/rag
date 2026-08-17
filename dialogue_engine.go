@@ -228,9 +228,26 @@ func (d *DialogueEngine) Start60SecondManagerCallAlarm(customerPhone, profileNam
 	longChatURL := fmt.Sprintf("https://sovereign-ai-backend-production.up.railway.app/c/%s", customerPhone)
 	shortChatURL := ShortenURLWithFreeService(longChatURL)
 
+	// Extract Recent Customer Questions for Immediate Glancable Context
+	turns := d.GetTurns(customerPhone)
+	var recentSnippets []string
+	count := 0
+	for i := len(turns) - 1; i >= 0 && count < 3; i-- {
+		t := turns[i]
+		if t.Role == "user" {
+			recentSnippets = append([]string{fmt.Sprintf("• Customer Question: \"%s\"", t.Content)}, recentSnippets...)
+			count++
+		}
+	}
+	historySummary := strings.Join(recentSnippets, "\n")
+	if historySummary == "" {
+		historySummary = "• Customer requested human manager assistance"
+	}
+
 	// STAGE 1 (T=0s): Initial Executive Notification to Manager
-	mgrAlert := fmt.Sprintf("👔 *[EXECUTIVE HANDOFF ALERT]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Customer:* %s (`%s`)\n📋 *1-Tap Executive Summary & Ledger:* %s\n\n👉 *Reply:* `#reply %s | your message`", profileName, customerPhone, shortChatURL, customerPhone)
+	mgrAlert := fmt.Sprintf("👔 *[EXECUTIVE HANDOFF ALERT]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Customer:* %s (`%s`)\n\n📋 *PREVIOUS CHAT CONTEXT:*\n%s\n\n🔗 *1-Tap Full Live Transcript & Ledger:* %s\n\n👉 *Reply:* `#reply %s | your message`", profileName, customerPhone, historySummary, shortChatURL, customerPhone)
 	globalWhatsAppEngine.SendMessage("sovereign-ai-master", managerPhone, mgrAlert)
+
 
 	// STAGE 2 (T=30s): WhatsApp Native Audio Call Ringing Signal
 	time.AfterFunc(30*time.Second, func() {
