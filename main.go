@@ -810,7 +810,7 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 	intent := ClassifyCustomerIntent(messageText)
 
 	// ALWAYS trigger human manager call alarm whenever customer asks for human manager or owner!
-	if intent == IntentHumanManagerRequest || strings.Contains(lower, "owner") || strings.Contains(lower, "manager") || strings.Contains(lower, "human") || strings.Contains(lower, "person") || strings.Contains(lower, "agent") || strings.Contains(lower, "representative") || strings.Contains(lower, "speak with someone") || strings.Contains(lower, "talk to someone") || strings.Contains(lower, "reach someone") {
+	if intent == IntentHumanManagerRequest {
 		globalDialogueEngine.Start60SecondManagerCallAlarm(senderPhone, profileName)
 
 		custMsg := "🤖 *[Store Manager Notified]*\nI have alerted our Store Manager with your request and 1-tap chat transcript! While waiting for our manager, I am right here to help you browse products, calculate delivery, or answer any questions!"
@@ -818,6 +818,7 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 		globalDialogueEngine.AddTurn(senderPhone, "assistant", custMsg)
 		// DO NOT RETURN! AI Bot remains 100% engaged to answer customer questions live!
 	}
+
 
 	if intent == IntentSpamTimeWaster {
 		log.Printf("[Zero-Cost Security Shield] Blocked time-waster/spam message from %s (0 LLM credits spent)", senderPhone)
@@ -1030,21 +1031,19 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 		personalizedReply := globalLocationEngine.ApplyDialectTone(senderPhone, aiReply)
 		
 		finalReply := personalizedReply
+		lowerMsg := strings.ToLower(strings.TrimSpace(messageText))
 		if !globalSessionTracker.HasBeenGreeted(senderPhone) {
-			opening := globalWorldFirstEngine.GeneratePersonalizedOpening(senderPhone, profileName, messageText, merchantName)
-			lowerMsg := strings.ToLower(strings.TrimSpace(messageText))
 			if lowerMsg == "hello" || lowerMsg == "hi" || lowerMsg == "hey" || lowerMsg == "start" || lowerMsg == "good morning" || lowerMsg == "good afternoon" || lowerMsg == "good evening" {
+				opening := globalWorldFirstEngine.GeneratePersonalizedOpening(senderPhone, profileName, messageText, merchantName)
 				finalReply = opening
-			} else {
-				finalReply = personalizedReply
 			}
 			globalSessionTracker.MarkGreeted(senderPhone)
 		}
 
-
 		taggedReply := fmt.Sprintf("🤖 *[Bot Assistant]:*\n%s", finalReply)
 		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, taggedReply)
 		globalDialogueEngine.AddTurn(senderPhone, "assistant", finalReply)
+
 	}
 
 
