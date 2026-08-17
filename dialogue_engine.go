@@ -26,109 +26,52 @@ const (
 	IntentGeneralQuery         IntentCategory = "GENERAL_QUERY"
 )
 
-// 🛡️ SUB-1MS PATTERN-BASED ZERO-COST INTENT CLASSIFIER (0 AI CREDITS SPENT)
-func ClassifyCustomerIntent(msg string) IntentCategory {
-	lower := strings.ToLower(strings.TrimSpace(msg))
-
-	// 1. SPAM / TIME-WASTER / PROMPT INJECTION / ABUSE DETECTOR
-	spamTriggers := []string{
-		"ignore previous instructions", "system prompt", "who created you", "tell me a joke",
-		"are you a joke", "is this a joke", "are you joke", "joke", "funny", "are you single",
-		"do you love me", "fuck", "bitch", "bastard", "idiot", "nonsense", "stupid", "fool",
-		"send nudes", "marry me", "dance for me", "what is your age", "as a large language model",
-		"pretend you are", "write a poem", "write code for me", "scam", "cheat", "useless",
+// 🧠 PURE AI CONTEXTUAL SEMANTIC INTENT REASONER (0 HARDCODED PHRASES)
+func ClassifyCustomerIntentWithPureAI(msg string, history []Turn) IntentCategory {
+	if strings.TrimSpace(msg) == "" {
+		return IntentGeneralQuery
 	}
 
-	for _, st := range spamTriggers {
-		if strings.Contains(lower, st) {
-			return IntentSpamTimeWaster
-		}
+	// 1. Immediate Prompt Injection Shield
+	lower := strings.ToLower(msg)
+	if strings.Contains(lower, "ignore previous instructions") || strings.Contains(lower, "system prompt") {
+		return IntentSpamTimeWaster
 	}
 
-	// 2. AI VIBE & LIFESTYLE MATCH DETECTOR
-	vibeTriggers := []string{
-		"setup for", "vibe", "package for", "outfit for", "bundle for", "power for",
-		"best for", "nomad", "apartment", "salon", "barbershop", "rave", "detty december",
-		"party", "blackout", "backup", "hostel", "studio",
+	// 2. Format history for AI Semantic Reasoner
+	var histLines []string
+	for _, t := range history {
+		histLines = append(histLines, fmt.Sprintf("%s: %s", t.Role, t.Content))
 	}
-	for _, vt := range vibeTriggers {
-		if strings.Contains(lower, vt) {
-			return IntentVibeSearch
-		}
-	}
+	historyStr := strings.Join(histLines, "\n")
 
-	// 3. FRIENDS & FAMILY / PERSONAL CHAT DETECTOR (BYPASSES SALES CATALOG DUMPING)
-	familyTriggers := []string{
-		"how far bros", "how far bro", "how far boss", "how is mama", "how is family",
-		"send me money", "send 5k", "send 10k", "aunty says hi", "uncle says", "my cuz",
-		"are you home", "coming home", "my wife", "my husband", "my bro", "my sis",
-	}
-	for _, st := range familyTriggers {
-		if strings.Contains(lower, st) {
-			return IntentPersonalFamily
-		}
-	}
-
-
-	// 3. EXPLICIT HUMAN MANAGER & STORE OWNER HANDOFF REQUEST DETECTOR
-	handoffTriggers := []string{
-		"owner", "manager", "human", "person", "agent", "representative", "speak with someone",
-		"talk to someone", "reach someone", "speak with manager", "talk to manager", "connect me",
-	}
-	for _, st := range handoffTriggers {
-		if strings.Contains(lower, st) {
-			return IntentHumanManagerRequest
-		}
-	}
-
-	// 4. SESSION END / GOODBYE DETECTOR
-	endTriggers := []string{
-		"goodbye", "bye", "that's all", "that is all", "all for now", "im done", "i'm done",
-		"no more questions", "thanks bye", "thank you bye", "have a nice day", "talk later",
-	}
-	for _, st := range endTriggers {
-		if strings.Contains(lower, st) {
-			return IntentSessionEnd
-		}
-	}
-
-	// 5. MARKET SOURCING / WHOLESALE SUPPLIER / B2B INQUIRY DETECTOR
-	sourcingTriggers := []string{
-		"supplier", "sourcing", "manufacturer", "factory", "container", "importing",
-		"wholesale price", "distributor", "raw materials", "partnership", "b2b",
-		"bulk supply", "shenzhen", "china import", "consignee", "bill of lading", "waybill supply",
-	}
-	for _, st := range sourcingTriggers {
-		if strings.Contains(lower, st) {
-			return IntentMarketSourcing
-		}
-	}
-
-	// 6. SERVICE BUSINESS INQUIRY DETECTOR (INSTALLATION, REPAIR, MAINTENANCE, BOOKING)
-	serviceTriggers := []string{
-		"install", "installation", "repair", "fix", "maintenance", "servicing",
-		"technician", "engineer", "inspection", "consultation", "booking", "book service",
-		"audit", "site visit", "wiring", "mounting", "troubleshoot",
-	}
-	for _, st := range serviceTriggers {
-		if strings.Contains(lower, st) {
-			return IntentServiceBooking
-		}
-	}
-
-	// 7. RETAIL PRODUCT SALES DETECTOR
-	salesTriggers := []string{
-		"buy", "price", "how much", "cost", "catalog", "catalogue", "panel", "inverter",
-		"generator", "power bank", "rice", "gold", "stock", "order", "purchase", "pay",
-	}
-	for _, st := range salesTriggers {
-		if strings.Contains(lower, st) {
-			return IntentRetailSales
-		}
+	intentStr := globalAIEngine.ClassifyIntentPureAI(msg, historyStr)
+	switch strings.TrimSpace(strings.ToUpper(intentStr)) {
+	case "HUMAN_MANAGER_REQUEST":
+		return IntentHumanManagerRequest
+	case "PERSONAL_FAMILY":
+		return IntentPersonalFamily
+	case "VIBE_SEARCH":
+		return IntentVibeSearch
+	case "SESSION_END":
+		return IntentSessionEnd
+	case "MARKET_SOURCING":
+		return IntentMarketSourcing
+	case "SERVICE_BOOKING":
+		return IntentServiceBooking
+	case "RETAIL_SALES":
+		return IntentRetailSales
+	case "SPAM_TIME_WASTER":
+		return IntentSpamTimeWaster
 	}
 
 	return IntentGeneralQuery
 }
+
+func ClassifyCustomerIntent(msg string) IntentCategory {
+	return ClassifyCustomerIntentWithPureAI(msg, nil)
+}
+
 
 func GeneratePoliteDeflectionResponse() string {
 	return "🤖 *[Teeslux Business Assistant]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nHello! I am programmed strictly to assist with product orders, service bookings, and wholesale business inquiries.\n\n👉 If you would like to view our product catalog, reply *#catalog*.\n👉 If you need a service booking or installation, reply *#service*.\n👉 For wholesale market sourcing, reply *#manager*."

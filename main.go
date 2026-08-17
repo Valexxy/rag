@@ -815,8 +815,10 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 
 	lower := strings.ToLower(messageText)
 
-	// 🛡️ ZERO-COST INTENT & SPAM/FAMILY/HUMAN SECURITY SHIELD
-	intent := ClassifyCustomerIntent(messageText)
+	// 🧠 PURE AI CONTEXTUAL SEMANTIC INTENT REASONER (0 HARDCODED PHRASES)
+	history := globalDialogueEngine.GetTurns(senderPhone)
+	intent := ClassifyCustomerIntentWithPureAI(messageText, history)
+
 
 	// ALWAYS trigger human manager call alarm whenever customer asks for human manager or owner!
 	if intent == IntentHumanManagerRequest {

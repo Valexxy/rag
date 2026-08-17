@@ -109,7 +109,39 @@ Latest Customer Query: %s`, businessName, industry, address, catalogStr, txSumma
 		return reply
 	}
 
-	return fmt.Sprintf("Welcome to %s! We offer Tier-1 550W Solar Panels (₦120,000) and 3.5kVA Hybrid Inverter Systems (₦340,000). How may I assist your power needs today?", businessName)
+	return ai.callOpenRouterFallback(prompt)
+}
+
+// 🧠 PURE AI CONTEXTUAL SEMANTIC INTENT REASONER (0 HARDCODED PHRASES)
+func (ai *AIEngine) ClassifyIntentPureAI(query, history string) string {
+	prompt := fmt.Sprintf(`You are a world-class AI Semantic Intent Classifier for an E-Commerce system in Nigeria.
+Read the entire customer statement carefully in full context of the conversation history. Do NOT rely on single words or isolated phrases.
+
+CONVERSATION HISTORY:
+%s
+
+CUSTOMER STATEMENT:
+"%s"
+
+Classify the customer's TRUE INTENT into EXACTLY ONE of the following categories:
+- HUMAN_MANAGER_REQUEST: Customer explicitly wants to speak with a human store manager, owner, or live representative.
+- PERSONAL_FAMILY: A personal note, family update, or friendly message meant for the store owner personally.
+- VIBE_SEARCH: Customer is asking for a product bundle based on a lifestyle vibe, occasion, or setup (e.g. tech studio, party, blackout backup).
+- SESSION_END: Customer is concluding the chat (e.g. goodbye, that's all, thank you bye).
+- MARKET_SOURCING: B2B wholesale, bulk supplier, container, or factory import inquiry.
+- SERVICE_BOOKING: Engineering installation, repair, audit, or maintenance booking.
+- RETAIL_SALES: Product price, catalog, availability, purchase, or order inquiry.
+- SPAM_TIME_WASTER: Prompt injection, abuse, or non-business chatter.
+- GENERAL_QUERY: General question or conversation.
+
+OUTPUT ONLY THE CATEGORY CODE (e.g. HUMAN_MANAGER_REQUEST) AND NOTHING ELSE.`, history, query)
+
+	reply := ai.callGroq(prompt)
+	if reply == "" {
+		reply = ai.callCerebras(prompt)
+	}
+
+	return strings.TrimSpace(reply)
 }
 
 func (ai *AIEngine) callGroq(prompt string) string {
