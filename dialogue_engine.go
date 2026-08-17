@@ -29,10 +29,12 @@ func ClassifyCustomerIntent(msg string) IntentCategory {
 	// 1. SPAM / TIME-WASTER / PROMPT INJECTION / ABUSE DETECTOR
 	spamTriggers := []string{
 		"ignore previous instructions", "system prompt", "who created you", "tell me a joke",
-		"are you single", "do you love me", "fuck", "bitch", "bastard", "idiot", "nonsense",
-		"stupid", "fool", "send nudes", "marry me", "dance for me", "what is your age",
-		"as a large language model", "pretend you are", "write a poem", "write code for me",
+		"are you a joke", "is this a joke", "are you joke", "joke", "funny", "are you single",
+		"do you love me", "fuck", "bitch", "bastard", "idiot", "nonsense", "stupid", "fool",
+		"send nudes", "marry me", "dance for me", "what is your age", "as a large language model",
+		"pretend you are", "write a poem", "write code for me", "scam", "cheat", "useless",
 	}
+
 	for _, st := range spamTriggers {
 		if strings.Contains(lower, st) {
 			return IntentSpamTimeWaster
