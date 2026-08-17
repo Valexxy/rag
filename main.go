@@ -628,39 +628,18 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 		return
 	}
 
-	// Smart Co-Pilot Listener: Forward copy of customer message to Store Manager while AI continues assisting
-	if globalDialogueEngine.IsHumanHandoff(senderPhone) {
-		managerNotice := fmt.Sprintf("💬 *[HUMAN CHAT — CUSTOMER MESSAGE]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Customer:* %s (`%s`)\n💬 *Message:* \"%s\"\n\n(Reply using `#reply %s | your response`)", profileName, senderPhone, messageText, senderPhone)
-		globalWhatsAppEngine.SendMessage("sovereign-ai-master", managerPhone, managerNotice)
-		log.Printf("[Smart Co-Pilot] Forwarded copy of customer message from %s to Store Manager %s.", senderPhone, managerPhone)
-	}
-
-
-
-
 	lower := strings.ToLower(messageText)
 
-	// 👔 EXPLICIT HUMAN MANAGER & STORE OWNER TAKEOVER INTERCEPTOR
-	if strings.Contains(lower, "owner") || strings.Contains(lower, "manager") || strings.Contains(lower, "human") || strings.Contains(lower, "person") || strings.Contains(lower, "agent") || strings.Contains(lower, "representative") || strings.Contains(lower, "speak with someone") || strings.Contains(lower, "talk to someone") {
-		globalDialogueEngine.SetHumanHandoff(senderPhone)
-		globalDialogueEngine.Start60SecondManagerCallAlarm(senderPhone, profileName)
-
-		custMsg := "👔 *[Connected to Human Manager]*\nThe AI Bot has disengaged. Our Store Manager (2348072015725) has been notified! If unanswered, our cascading alarm pipeline will ring the Manager's phone directly!"
-		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, custMsg)
-		globalDialogueEngine.AddTurn(senderPhone, "assistant", custMsg)
-		return
-	}
-
-
 	// 👔 EXPLICIT HUMAN MANAGER & STORE OWNER TAKEOVER INTERCEPTOR (NON-DISENGAGING CO-PILOT)
-	if strings.Contains(lower, "owner") || strings.Contains(lower, "manager") || strings.Contains(lower, "human") || strings.Contains(lower, "person") || strings.Contains(lower, "agent") || strings.Contains(lower, "representative") || strings.Contains(lower, "speak with someone") || strings.Contains(lower, "talk to someone") {
+	if strings.Contains(lower, "owner") || strings.Contains(lower, "manager") || strings.Contains(lower, "human") || strings.Contains(lower, "person") || strings.Contains(lower, "agent") || strings.Contains(lower, "representative") || strings.Contains(lower, "speak with someone") || strings.Contains(lower, "talk to someone") || strings.Contains(lower, "reach someone") || strings.Contains(lower, "talk to someone") {
 		globalDialogueEngine.Start60SecondManagerCallAlarm(senderPhone, profileName)
 
-		custMsg := "🤖 *[Store Manager Notified]*\nI have notified our Store Manager with your inquiry and 1-tap chat transcript! While waiting, I am right here to help you browse products, check prices, or answer any questions!"
+		custMsg := "🤖 *[Store Manager Notified]*\nI have alerted our Store Manager with your request and 1-tap chat transcript! While waiting for our manager, I am right here to help you browse products, calculate delivery, or answer any questions!"
 		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, custMsg)
 		globalDialogueEngine.AddTurn(senderPhone, "assistant", custMsg)
-		// DO NOT RETURN! Allow AI bot to continue answering customer questions in real time!
+		// DO NOT RETURN! AI Bot remains 100% engaged to answer customer questions live!
 	}
+
 
 
 

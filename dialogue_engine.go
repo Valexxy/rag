@@ -263,6 +263,13 @@ func (d *DialogueEngine) CancelManagerCallAlarm(customerPhone string) {
 
 // 📞 STAGE 2: WHATSAPP AUDIO CALL RINGING SIGNAL
 func TriggerWhatsAppAudioCallRinging(mgrPhone, custPhone, custName string) {
+	log.Printf("[WhatsApp Call Ringing] Triggering WhatsApp Audio Call Alarm to Manager +%s for customer %s!", mgrPhone, custName)
+	
+	// 1. Send High-Priority Call Alert Notice to Manager's WhatsApp
+	callNotice := fmt.Sprintf("🔔🔊 *[WHATSAPP AUDIO CALL RINGING ALARM]* 🔊🔔\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📞 *INCOMING CALL ALERT:* Customer %s (`%s`) requires human assistance!\n⏳ *Wait Time:* 30 seconds!\n\n👉 *Reply IMMEDIATELY:* `#reply %s | your message`", custName, custPhone, custPhone)
+	globalWhatsAppEngine.SendMessage("sovereign-ai-master", mgrPhone, callNotice)
+
+	// 2. Dispatch Baileys / Evolution API Audio Call Ringing Signal
 	evoURL := strings.TrimRight(os.Getenv("EVOLUTION_API_URL"), "/")
 	if evoURL == "" {
 		evoURL = "https://evolution-api-latest-gxue.onrender.com"
@@ -290,30 +297,46 @@ func TriggerWhatsAppAudioCallRinging(mgrPhone, custPhone, custName string) {
 		req.Header.Set("apikey", evoKey)
 	}
 	client := &http.Client{Timeout: 4 * time.Second}
-	client.Do(req)
+	resp, err := client.Do(req)
+	if err == nil && resp != nil {
+		defer resp.Body.Close()
+		log.Printf("[WhatsApp Call Ringing] Evolution API call status: %d", resp.StatusCode)
+	}
 }
 
 // 📞 STAGE 3: FREE GSM FLASH CALL RINGING
 func TriggerGSMFlashCallRinging(mgrPhone, custPhone, custName string) {
-	log.Printf("[GSM Flash Call] Initiating 0-kobo GSM flash ringing to +%s for customer %s", mgrPhone, custName)
+	cleanPhone := strings.ReplaceAll(strings.ReplaceAll(mgrPhone, "+", ""), " ", "")
+	log.Printf("[GSM Flash Call] Initiating 0-kobo GSM flash ringing to +%s for customer %s", cleanPhone, custName)
+
+	// 1. Send High-Priority GSM Ringing Notice
+	gsmNotice := fmt.Sprintf("🚨🚨 *[GSM FLASH PHONE CALL ALARM — 60s EXPIRED]* 🚨🚨\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📞 *GSM PHONE RINGING MANAGER:* +%s\n👤 *Waiting Customer:* %s (`%s`)\n\n👉 *Reply IMMEDIATELY:* `#reply %s | your message`", cleanPhone, custName, custPhone, custPhone)
+	globalWhatsAppEngine.SendMessage("sovereign-ai-master", mgrPhone, gsmNotice)
+
+	// 2. Termii Voice Call API Gateway (If API Key Configured)
 	termiiKey := os.Getenv("TERMII_API_KEY")
 	if termiiKey != "" {
 		tURL := "https://api.ng.termii.com/api/chat/apply"
 		tPayload := map[string]string{
-			"to":      mgrPhone,
+			"to":      cleanPhone,
 			"from":    "TeesluxStore",
 			"type":    "voice_call",
 			"message": fmt.Sprintf("Urgent store alert! Customer %s is waiting for your reply on WhatsApp.", custName),
 			"api_key": termiiKey,
 		}
 		tData, _ := json.Marshal(tPayload)
-		http.Post(tURL, "application/json", strings.NewReader(string(tData)))
+		resp, err := http.Post(tURL, "application/json", strings.NewReader(string(tData)))
+		if err == nil && resp != nil {
+			defer resp.Body.Close()
+			log.Printf("[Termii GSM Flash] Termii Voice Call Status: %d", resp.StatusCode)
+		}
 	}
 }
 
 func TriggerDirectPhoneCallAlarm(mgrPhone, custPhone, custName string) {
 	TriggerGSMFlashCallRinging(mgrPhone, custPhone, custName)
 }
+
 
 
 
