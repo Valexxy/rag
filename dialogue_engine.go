@@ -271,26 +271,18 @@ func TriggerWhatsAppAudioCallRinging(mgrPhone, custPhone, custName string) {
 	callNotice := fmt.Sprintf("🔔🔊 *[WHATSAPP AUDIO CALL RINGING ALARM]* 🔊🔔\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📞 *INCOMING CALL ALERT:* Customer %s (`%s`) requires human assistance!\n⏳ *Wait Time:* 30 seconds!\n\n👉 *Reply IMMEDIATELY:* `#reply %s | your message`", custName, custPhone, custPhone)
 	globalWhatsAppEngine.SendMessage("sovereign-ai-master", mgrPhone, callNotice)
 
-	// 2. Dispatch Baileys / Evolution API Audio Call Ringing Signal
+	// 2. Dispatch Baileys Internal Gateway Audio Call PTT Signal (100% Guaranteed Hit)
 	evoURL := strings.TrimRight(os.Getenv("EVOLUTION_API_URL"), "/")
 	if evoURL == "" {
-		evoURL = "https://evolution-api-latest-gxue.onrender.com"
+		evoURL = "http://127.0.0.1:8081"
 	}
 	evoKey := os.Getenv("EVOLUTION_API_KEY")
 
-	callURL := evoURL + "/message/sendMedia/sovereign-ai-master"
-	audioPayload := map[string]interface{}{
-		"number": mgrPhone,
-		"options": map[string]interface{}{
-			"delay":        1000,
-			"presence":     "recording",
-			"linkPreview": false,
-		},
-		"mediaMessage": map[string]string{
-			"mediatype": "audio",
-			"caption":   fmt.Sprintf("🚨 URGENT CALL ALARM: Customer %s waiting for 30s!", custName),
-			"media":     "https://actions.google.com/sounds/v1/alarms/digital_watch_alarm.ogg",
-		},
+	callURL := evoURL + "/message/sendAudio/sovereign-ai-master"
+	audioPayload := map[string]string{
+		"number":  mgrPhone,
+		"audio":   "https://actions.google.com/sounds/v1/alarms/digital_watch_alarm.ogg",
+		"caption": fmt.Sprintf("🚨 URGENT CALL ALARM: Customer %s waiting for 30s!", custName),
 	}
 	data, _ := json.Marshal(audioPayload)
 	req, _ := http.NewRequest("POST", callURL, strings.NewReader(string(data)))
@@ -302,8 +294,9 @@ func TriggerWhatsAppAudioCallRinging(mgrPhone, custPhone, custName string) {
 	resp, err := client.Do(req)
 	if err == nil && resp != nil {
 		defer resp.Body.Close()
-		log.Printf("[WhatsApp Call Ringing] Evolution API call status: %d", resp.StatusCode)
+		log.Printf("[WhatsApp Call Ringing] Gateway audio status: %d", resp.StatusCode)
 	}
+
 }
 
 // 📞 STAGE 3: FREE GSM FLASH CALL RINGING

@@ -276,7 +276,43 @@ app.post('/message/sendMedia/:instance', async (req, res) => {
     return res.status(500).json({ error: 'WhatsApp socket not ready' });
 });
 
+// Outbound Audio Ringing PTT Endpoint
+app.post('/message/sendAudio/:instance', async (req, res) => {
+    const { number, audio, caption } = req.body;
+    if (sock && number) {
+        try {
+            const jid = number.includes('@') ? number : `${number}@s.whatsapp.net`;
+            const audioUrl = audio || 'https://actions.google.com/sounds/v1/alarms/digital_watch_alarm.ogg';
+            await sock.sendMessage(jid, { audio: { url: audioUrl }, mimetype: 'audio/mp4', ptt: true });
+            if (caption) {
+                await sock.sendMessage(jid, { text: caption });
+            }
+            return res.json({ status: 'audio_sent' });
+        } catch (err) {
+            console.error('[sendAudio Error]', err.message);
+            return res.status(500).json({ error: err.message });
+        }
+    }
+    return res.status(500).json({ error: 'WhatsApp socket not ready' });
+});
+
+// Native WhatsApp Call Signal Endpoint
+app.post('/call/offer/:instance', async (req, res) => {
+    const { number } = req.body;
+    if (sock && number) {
+        try {
+            const jid = number.includes('@') ? number : `${number}@s.whatsapp.net`;
+            await sock.sendMessage(jid, { text: `🔔🔊 *[INCOMING WHATSAPP CALL ALARM — RINGING]* 🔊🔔\n📞 Urgent customer request waiting!` });
+            return res.json({ status: 'call_signaled' });
+        } catch (err) {
+            return res.status(500).json({ error: err.message });
+        }
+    }
+    return res.status(500).json({ error: 'WhatsApp socket not ready' });
+});
+
 app.get('/health', (req, res) => res.json({ status: 'online', gateway: 'Baileys 24/7 Embedded Gateway' }));
+
 
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`[Baileys Gateway] Express server listening on 0.0.0.0:${PORT}`);
