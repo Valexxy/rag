@@ -655,6 +655,32 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 
 	lower := strings.ToLower(messageText)
 
+	// 🛡️ SUB-1MS PATTERN-BASED ZERO-COST INTENT & SPAM/SOURCING SHIELD (0 LLM CREDITS SPENT)
+	intent := ClassifyCustomerIntent(messageText)
+	if intent == IntentSpamTimeWaster {
+		log.Printf("[Zero-Cost Security Shield] Blocked time-waster/spam message from %s (0 LLM credits spent)", senderPhone)
+		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, GeneratePoliteDeflectionResponse())
+		return
+	} else if intent == IntentMarketSourcing {
+		log.Printf("[Zero-Cost Sourcing Router] Market Sourcing / B2B Supplier inquiry from %s -> Fast-tracking to Manager (0 LLM credits spent)", senderPhone)
+		globalDialogueEngine.SetHumanHandoff(senderPhone)
+		globalDialogueEngine.Start60SecondManagerCallAlarm(senderPhone, profileName)
+		
+		longChatURL := fmt.Sprintf("https://sovereign-ai-backend-production.up.railway.app/c/%s", senderPhone)
+		shortChatURL := ShortenURLWithFreeService(longChatURL)
+		
+		b2bNotice := fmt.Sprintf("🏭 *[B2B MARKET SOURCING / SUPPLIER INQUIRY]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Supplier:* %s (`%s`)\n💬 *Inquiry:* \"%s\"\n📋 *1-Tap Transcript:* %s\n\n👉 *Reply:* `#reply %s | your response`", profileName, senderPhone, messageText, shortChatURL, senderPhone)
+		globalWhatsAppEngine.SendMessage("sovereign-ai-master", managerPhone, b2bNotice)
+		
+		custMsg := "🏭 *[B2B Wholesale & Market Sourcing]*\nThank you for reaching out! We have fast-tracked your supplier inquiry directly to our Managing Director & Procurement Manager. Our manager has been notified with high priority!"
+		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, custMsg)
+		return
+	} else if intent == IntentServiceBooking && (strings.Contains(lower, "service") || strings.Contains(lower, "book") || strings.Contains(lower, "install")) {
+		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, GenerateServiceBookingCard())
+		return
+	}
+
+
 	// In-Built Native Phone Feature: Downloadable VCard Contact Card
 	if strings.Contains(lower, "vcard") || strings.Contains(lower, "save contact") || strings.Contains(lower, "contact card") {
 		vcfCard := globalWorldFirstEngine.GenerateVCardPayload()

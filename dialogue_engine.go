@@ -12,11 +12,85 @@ import (
 	"time"
 )
 
+type IntentCategory string
+
+const (
+	IntentSpamTimeWaster IntentCategory = "SPAM_TIME_WASTER"
+	IntentMarketSourcing IntentCategory = "MARKET_SOURCING"
+	IntentRetailSales    IntentCategory = "RETAIL_SALES"
+	IntentServiceBooking IntentCategory = "SERVICE_BOOKING"
+	IntentGeneralQuery   IntentCategory = "GENERAL_QUERY"
+)
+
+// 🛡️ SUB-1MS PATTERN-BASED ZERO-COST INTENT CLASSIFIER (0 AI CREDITS SPENT)
+func ClassifyCustomerIntent(msg string) IntentCategory {
+	lower := strings.ToLower(strings.TrimSpace(msg))
+
+	// 1. SPAM / TIME-WASTER / PROMPT INJECTION / ABUSE DETECTOR
+	spamTriggers := []string{
+		"ignore previous instructions", "system prompt", "who created you", "tell me a joke",
+		"are you single", "do you love me", "fuck", "bitch", "bastard", "idiot", "nonsense",
+		"stupid", "fool", "send nudes", "marry me", "dance for me", "what is your age",
+		"as a large language model", "pretend you are", "write a poem", "write code for me",
+	}
+	for _, st := range spamTriggers {
+		if strings.Contains(lower, st) {
+			return IntentSpamTimeWaster
+		}
+	}
+
+	// 2. MARKET SOURCING / WHOLESALE SUPPLIER / B2B INQUIRY DETECTOR
+	sourcingTriggers := []string{
+		"supplier", "sourcing", "manufacturer", "factory", "container", "importing",
+		"wholesale price", "distributor", "raw materials", "partnership", "b2b",
+		"bulk supply", "shenzhen", "china import", "consignee", "bill of lading", "waybill supply",
+	}
+	for _, st := range sourcingTriggers {
+		if strings.Contains(lower, st) {
+			return IntentMarketSourcing
+		}
+	}
+
+	// 3. SERVICE BUSINESS INQUIRY DETECTOR (INSTALLATION, REPAIR, MAINTENANCE, BOOKING)
+	serviceTriggers := []string{
+		"install", "installation", "repair", "fix", "maintenance", "servicing",
+		"technician", "engineer", "inspection", "consultation", "booking", "book service",
+		"audit", "site visit", "wiring", "mounting", "troubleshoot",
+	}
+	for _, st := range serviceTriggers {
+		if strings.Contains(lower, st) {
+			return IntentServiceBooking
+		}
+	}
+
+	// 4. RETAIL PRODUCT SALES DETECTOR
+	salesTriggers := []string{
+		"buy", "price", "how much", "cost", "catalog", "catalogue", "panel", "inverter",
+		"generator", "power bank", "rice", "gold", "stock", "order", "purchase", "pay",
+	}
+	for _, st := range salesTriggers {
+		if strings.Contains(lower, st) {
+			return IntentRetailSales
+		}
+	}
+
+	return IntentGeneralQuery
+}
+
+func GeneratePoliteDeflectionResponse() string {
+	return "🤖 *[Teeslux Business Assistant]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nHello! I am programmed strictly to assist with product orders, service bookings, and wholesale business inquiries.\n\n👉 If you would like to view our product catalog, reply *#catalog*.\n👉 If you need a service booking or installation, reply *#service*.\n👉 For wholesale market sourcing, reply *#manager*."
+}
+
+func GenerateServiceBookingCard() string {
+	return "🛠️ *[TEESLUX PROFESSIONAL SERVICES & INSTALLATIONS]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nWe provide professional engineering & installation services:\n\n1. ⚡ *Solar System Installation & Sizing* (Residential & Commercial)\n2. 🔧 *Inverter & Battery Bank Maintenance*\n3. 🔌 *Electrical Wiring & Load Balancing Audit*\n4. 📍 *On-Site Technical Inspection*\n\n📲 Reply *#manager* or specify your location & service requirement to book an engineer!"
+}
+
 func GeneratePaginatedCatalog(page int) string {
 	if page < 1 {
 		page = 1
 	}
 	itemsPerPage := 3
+
 	totalItems := len(storeCatalog)
 	totalPages := (totalItems + itemsPerPage - 1) / itemsPerPage
 	if page > totalPages {
