@@ -123,8 +123,34 @@ Latest Customer Query: %s`, businessName, industry, address, catalogStr, txSumma
 		return reply
 	}
 
-	return fmt.Sprintf("Welcome to %s! We offer Tier-1 Solar Systems, Generators, Power Banks, and Bullion Investments. How may I assist your order today?", businessName)
+	lowerQ := strings.ToLower(query)
+
+	// Factual Product & Price Resolver (Zero repetitive greeting cards)
+	if strings.Contains(lowerQ, "power bank") || strings.Contains(lowerQ, "20,000") || strings.Contains(lowerQ, "20000") {
+		return "🔋 *[20,000 mAh SOLAR POWER BANK]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n🏷️ *Catalog Price:* ₦18,500\n⚡ *Specs:* Rugged outdoor dual USB fast-charging with solar charging panel.\n🤝 *Best Price Offer:* ₦18,500 per unit. For bulk orders (3+ units), our merchant discount gives you ₦17,575 / unit (5% OFF)!\n\nReply `#buy 2` to order this item now!"
+	}
+	if strings.Contains(lowerQ, "solar panel") || strings.Contains(lowerQ, "550w") || strings.Contains(lowerQ, "panel") {
+		return "☀️ *[550W MONOCRYSTALLINE SOLAR PANEL]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n🏷️ *Catalog Price:* ₦120,000 per panel\n⚡ *Specs:* Tier-1 High Efficiency Monocrystalline\n🤝 *Best Price Offer:* ₦120,000 / unit.\n\nReply `#buy 1` to order now!"
+	}
+	if strings.Contains(lowerQ, "generator") || strings.Contains(lowerQ, "1.5kva") {
+		return "🔋 *[1.5kVA DUAL SOLAR GENERATOR]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n🏷️ *Catalog Price:* ₦185,000\n⚡ *Specs:* Silent pure sine wave inverter generator with lithium battery.\n\nReply `#buy 3` to order now!"
+	}
+	if strings.Contains(lowerQ, "inverter") || strings.Contains(lowerQ, "3.5kva") {
+		return "⚡ *[3.5kVA HYBRID SOLAR INVERTER]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n🏷️ *Catalog Price:* ₦340,000\n⚡ *Specs:* 3.5kVA 24V Pure Sine Wave Hybrid Solar Inverter.\n\nReply `#buy 6` to order now!"
+	}
+	if strings.Contains(lowerQ, "rice") || strings.Contains(lowerQ, "50kg") {
+		return "🌾 *[50kg PREMIUM WHITE RICE BAG]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n🏷️ *Catalog Price:* ₦60,000 per 50kg bag.\n\nReply `#buy 4` to order now!"
+	}
+	if strings.Contains(lowerQ, "gold") || strings.Contains(lowerQ, "bullion") {
+		return "🥇 *[24K GOLD BAR BULLION (1-GRAM)]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n🏷️ *Catalog Price:* ₦68,500\n⚡ *Specs:* 999.9 Fine Investment Grade Gold Bullion.\n\nReply `#buy 5` to order now!"
+	}
+	if strings.Contains(lowerQ, "price") || strings.Contains(lowerQ, "cost") || strings.Contains(lowerQ, "how much") || strings.Contains(lowerQ, "catalog") || strings.Contains(lowerQ, "list") {
+		return "📋 *[TEESLUX LIVE CATALOG & PRICE LIST]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n1️⃣ 550W Monocrystalline Solar Panel — ₦120,000\n2️⃣ 20,000 mAh Solar Power Bank — ₦18,500\n3️⃣ 1.5kVA Dual Solar Generator — ₦185,000\n4️⃣ 50kg Premium White Rice Bag — ₦60,000\n5️⃣ 24K Gold Bar Bullion (1-Gram) — ₦68,500\n6️⃣ 3.5kVA Hybrid Solar Inverter System — ₦340,000\n\nReply `#buy <id>` (e.g. `#buy 2`) to order any item!"
+	}
+
+	return fmt.Sprintf("Welcome to %s! How may I assist your order for Solar Systems, Generators, Power Banks, or Bullion today?", businessName)
 }
+
 
 
 
