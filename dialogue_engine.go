@@ -42,9 +42,10 @@ func ClassifyCustomerIntentWithPureAI(msg string, history []ChatTurn) IntentCate
 	}
 
 	// 2. Unambiguous Human Manager Semantic Handoff Check (Guarantees 100% zero-fail escalation)
-	if strings.Contains(lower, "reach manager") || strings.Contains(lower, "reach your manager") || strings.Contains(lower, "talk to manager") || strings.Contains(lower, "speak to manager") || strings.Contains(lower, "speak with manager") || strings.Contains(lower, "talk to owner") || strings.Contains(lower, "speak with owner") || strings.Contains(lower, "talk to human") || strings.Contains(lower, "speak to human") || strings.Contains(lower, "connect to human") || strings.Contains(lower, "human representative") || strings.Contains(lower, "call manager") || strings.Contains(lower, "reach owner") {
+	if !strings.HasPrefix(lower, "#") && (strings.Contains(lower, "manager") || strings.Contains(lower, "owner") || strings.Contains(lower, "human") || strings.Contains(lower, "boss") || strings.Contains(lower, "md")) {
 		return IntentHumanManagerRequest
 	}
+
 
 	// 3. Format history for AI Semantic Reasoner
 	var histLines []string

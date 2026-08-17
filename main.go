@@ -909,20 +909,22 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 	custLoc := globalLocationEngine.GetLocation(senderPhone)
 	log.Printf("[World-First Engine] Customer: %s (%s) | Location: %s, %s", custProf.Name, senderPhone, custLoc.City, custLoc.State)
 
+	lowerCmd := strings.ToLower(strings.TrimSpace(messageText))
+	if lowerCmd == "#reset" || lowerCmd == "reset" || strings.HasPrefix(lowerCmd, "#reset ") {
+		globalDialogueEngine.ResetAllConversations()
+		globalSessionTracker.ResetAllGreetings()
+		resetCard := "🔄 *[SYSTEM MASTER RESET COMPLETE]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nAll conversation histories, session greeted states, timers, and manager flags have been reset to clean slate!\n\nYou can test all features freshly from scratch!"
+		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, resetCard)
+		return
+	}
+
 	// 👔 STORE OWNER & MANAGER EXECUTIVE COMMAND CENTER
 	if senderPhone == managerPhone || senderPhone == ownerPhone || strings.HasPrefix(messageText, "#") {
 		if isCmd, resultMsg := globalDialogueEngine.HandleManagerCommand(messageText, senderPhone); isCmd {
 			globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, resultMsg)
 			return
 		}
-		lowerCmd := strings.ToLower(messageText)
-		if strings.Contains(lowerCmd, "reset") || strings.Contains(lowerCmd, "#reset") {
-			globalDialogueEngine.ResetAllConversations()
-			globalSessionTracker.ResetAllGreetings()
-			resetCard := "🔄 *[SYSTEM MASTER RESET COMPLETE]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nAll conversation histories, session greeted states, timers, and manager flags have been reset to clean slate!\n\nYou can test all features freshly from scratch!"
-			globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, resetCard)
-			return
-		}
+
 		if strings.Contains(lowerCmd, "status") || strings.Contains(lowerCmd, "analytics") || strings.Contains(lowerCmd, "sales") {
 			globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, GenerateExecutiveAnalyticsCard())
 			return

@@ -123,12 +123,9 @@ Latest Customer Query: %s`, businessName, industry, address, catalogStr, txSumma
 		return reply
 	}
 
-	lowerQ := strings.ToLower(query)
-	if strings.Contains(lowerQ, "manager") || strings.Contains(lowerQ, "owner") || strings.Contains(lowerQ, "reach") {
-		return "I have alerted our Store Manager! Our manager has received your chat summary and 1-tap web link. How else may I assist you while waiting?"
-	}
-	return fmt.Sprintf("Thank you for reaching out to %s! How may I assist your power or electronics needs today?", businessName)
+	return fmt.Sprintf("Welcome to %s! We offer Tier-1 Solar Systems, Generators, Power Banks, and Bullion Investments. How may I assist your order today?", businessName)
 }
+
 
 
 
