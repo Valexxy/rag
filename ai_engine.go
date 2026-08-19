@@ -315,22 +315,6 @@ func (ai *AIEngine) callGroq(prompt string) string {
 				}
 			}
 		}
-
-		body, _ := io.ReadAll(resp.Body)
-		resp.Body.Close()
-
-		var res map[string]interface{}
-		if err := json.Unmarshal(body, &res); err == nil {
-			if choices, ok := res["choices"].([]interface{}); ok && len(choices) > 0 {
-				choice := choices[0].(map[string]interface{})
-				if message, ok := choice["message"].(map[string]interface{}); ok {
-					if content, ok := message["content"].(string); ok && strings.TrimSpace(content) != "" {
-						log.Printf("[AI Key Rotator] Groq Key #%d responded successfully!", idx+1)
-						return strings.TrimSpace(content)
-					}
-				}
-			}
-		}
 	}
 	return ""
 }

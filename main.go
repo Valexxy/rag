@@ -1061,28 +1061,6 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 			amt = 5000.0
 		} else if strings.Contains(lower, "60000") {
 			amt = 60000.0
-		} else if strings.Contains(lower, "120000") {
-			amt = 120000.0
-		}
-
-		txRef := fmt.Sprintf("MON-SANDBOX-%d", time.Now().UnixNano()%1000000)
-
-		// Accumulate payment in global ledger
-		amtKobo := NgnToKobo(amt)
-		totalCumulativeKobo := globalPaymentLedger.AddPaymentKobo(senderPhone, amtKobo)
-		totalCumulativeNgn := KoboToNgn(totalCumulativeKobo)
-
-		item := storeCatalog[1] // 20,000 mAh Solar Power Bank (₦18,500.00)
-		itemPriceKobo := NgnToKobo(item.Price)
-		itemPriceNgn := item.Price
-
-		if totalCumulativeKobo < itemPriceKobo {
-			balanceKobo := itemPriceKobo - totalCumulativeKobo
-			balanceNgn := KoboToNgn(balanceKobo)
-			custReceipt := fmt.Sprintf("🟡 *[PARTIAL PAYMENT VERIFIED — MONNIFY SANDBOX]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nDear %s,\nWe verified your partial bank transfer payment of *₦%.2f*!\n\n📦 *Item:* %s\n🏷️ *Catalog Price:* ₦%.2f\n💵 *Total Paid So Far:* ₦%.2f\n⚠️ *OUTSTANDING BALANCE DUE:* ₦%.2f\nReceipt Reference: `%s`\n\nPlease transfer the remaining balance of *₦%.2f* to complete your order!", profileName, amt, item.Name, itemPriceNgn, totalCumulativeNgn, balanceNgn, txRef, balanceNgn)
-
-			globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, custReceipt)
-
 			managerAlert := fmt.Sprintf("🟡 *[MANAGER ALERT — PARTIAL PAYMENT RECEIVED]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 *Customer:* %s (`%s`)\n📦 *Item:* %s\n💵 *Latest Payment:* ₦%.2f\n💵 *Total Paid So Far:* ₦%.2f (Catalog Price: ₦%.2f)\n⚠️ *OUTSTANDING BALANCE:* ₦%.2f\n🧾 *Tx Ref:* `%s`", profileName, senderPhone, item.Name, amt, totalCumulativeNgn, itemPriceNgn, balanceNgn, txRef)
 			globalWhatsAppEngine.SendMessage("sovereign-ai-master", managerPhone, managerAlert)
 			return
@@ -1097,62 +1075,33 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 		}
 	}
 
+	// 🧠 AI-FIRST INFERENCE ENGINE: All natural language messages are processed by AI LLM first!
+	globalDialogueEngine.AddTurn(senderPhone, "user", messageText)
 
+	var catLines []string
+	for _, p := range storeCatalog {
+		catLines = append(catLines, fmt.Sprintf("- %s: ₦%.2f — %s", p.Name, p.Price, p.Description))
+	}
+	catalogStr := strings.Join(catLines, "\n")
 
-
-
-	// 📰 3-TIER NIGERIAN INTELLIGENCE NEWS ENGINE (LGA / STATE / COUNTRY)
-	if strings.Contains(lower, "news") || strings.Contains(lower, "update") || strings.Contains(lower, "happenings") || strings.Contains(lower, "headline") {
-		newsCard := globalNewsEngine.GetMultiTierNigerianNews(custLoc.City, custLoc.State, "Nigeria")
-		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, newsCard)
-		globalDialogueEngine.AddTurn(senderPhone, "user", messageText)
-		globalDialogueEngine.AddTurn(senderPhone, "assistant", newsCard)
-		return
+	tenant := globalMultiTenantRegistry.GetTenant("tenant_default")
+	merchantName := tenant.MerchantName
+	if merchantName == "" {
+		merchantName = "Teeslux Global Electronics & Solar"
+	}
+	address := tenant.Address
+	if address == "" {
+		address = "Lagos & Anambra, Nigeria"
 	}
 
-	// FEATURE 5: Autonomous Neighborhood Group Buy & Co-Op Buying Intercept
-	if strings.Contains(lower, "group buy") || strings.Contains(lower, "neighborhood") || strings.Contains(lower, "co-op") || strings.Contains(lower, "pool") {
-		groupNotice := globalLocationEngine.GenerateNeighborhoodGroupBuyNotice(senderPhone)
-		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, groupNotice)
-		return
-	}
+	history := globalDialogueEngine.GetTurns(senderPhone)
+	aiReply := globalAIEngine.GenerateReply(messageText, senderPhone, merchantName, address, "Commerce & Retail", catalogStr, history)
 
-
-	// Autonomous Logistics & Shipping Agent
-	if strings.Contains(lower, "waybill") || strings.Contains(lower, "shipping") || strings.Contains(lower, "delivery fee") || strings.Contains(lower, "deliver to") {
-		logisticsAgent := &LogisticsAgent{}
-		_, _, logQuote := logisticsAgent.CalculateWaybillRate(custLoc.State)
-		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, logQuote)
-		return
-	}
-
-	// Autonomous AI Bargainer & Bulk Negotiator Plugin
-	if strings.Contains(lower, "bulk") || strings.Contains(lower, "discount") || strings.Contains(lower, "units") || strings.Contains(lower, "wholesale") || strings.Contains(lower, "quantity") {
-		qty := 5
-		if strings.Contains(lower, "10") {
-			qty = 10
-		}
-		p := storeCatalog[0]
-		isApproved, _, bargainReply := globalBargainerPlugin.EvaluateBulkOffer(p.Name, p.Price, qty)
-		if isApproved {
-			globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, bargainReply)
-			return
-		}
-	}
-
-	// Autonomous Interactive Paginated Catalog Router
-	if strings.Contains(lower, "catalogue") || strings.Contains(lower, "catalog") || strings.Contains(lower, "products") || strings.Contains(lower, "all items") || strings.Contains(lower, "show catalogue") || strings.Contains(lower, "full list") {
-		catCard := GeneratePaginatedCatalog(1)
-		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, catCard)
-		return
-	}
-
-	// 24/7 Autonomous Visual Canvas & Photo Card Delivery Plugin (For specific item picture requests)
-	if (strings.Contains(lower, "picture") || strings.Contains(lower, "pictures") || strings.Contains(lower, "photo") || strings.Contains(lower, "photos") || strings.Contains(lower, "image") || strings.Contains(lower, "images") || strings.Contains(lower, "send pic") || strings.Contains(lower, "product picture")) && !strings.Contains(lower, "catalog") && !strings.Contains(lower, "catalogue") {
-
+	// Catalog Search Logic
+	if strings.Contains(lower, "show me") || strings.Contains(lower, "search") {
 		for _, p := range storeCatalog {
 			pName := strings.ToLower(p.Name)
-			if strings.Contains(lower, strings.ToLower(p.ID)) || (strings.Contains(pName, "panel") && strings.Contains(lower, "panel")) || (strings.Contains(pName, "inverter") && strings.Contains(lower, "inverter")) || (strings.Contains(pName, "generator") && strings.Contains(lower, "generator")) || (strings.Contains(pName, "rice") && strings.Contains(lower, "rice")) || (strings.Contains(pName, "gold") && strings.Contains(lower, "gold")) || (strings.Contains(pName, "power bank") && strings.Contains(lower, "power")) {
+			if (strings.Contains(pName, "panel") && strings.Contains(lower, "panel")) || (strings.Contains(pName, "inverter") && strings.Contains(lower, "inverter")) || (strings.Contains(pName, "generator") && strings.Contains(lower, "generator")) || (strings.Contains(pName, "rice") && strings.Contains(lower, "rice")) || (strings.Contains(pName, "gold") && strings.Contains(lower, "gold")) || (strings.Contains(pName, "power bank") && strings.Contains(lower, "power")) {
 				card := globalVisualCanvasPlugin.GenerateVisualShowcaseCard(p.ID, p.Name, p.Price, p.ImageURL)
 				globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, card)
 				return
