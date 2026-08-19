@@ -226,21 +226,30 @@ OUTPUT ONLY THE CATEGORY CODE (e.g. HUMAN_MANAGER_REQUEST) AND NOTHING ELSE.`, h
 
 func (ai *AIEngine) getKeysForProvider(envVarKeys, envVarSingle string, hardcodedPool []string) []string {
 	var pool []string
-	if raw := os.Getenv(envVarKeys); raw != "" {
-		for _, k := range strings.Split(raw, ",") {
-			if k = strings.TrimSpace(k); k != "" {
-				pool = append(pool, k)
-			}
-		}
-	}
-	if raw := os.Getenv(envVarSingle); raw != "" {
-		pool = append(pool, strings.TrimSpace(raw))
-	}
-	for _, k := range hardcodedPool {
-		if k = strings.TrimSpace(k); k != "" && !strings.Contains(k, "free_key") {
+	seen := make(map[string]bool)
+
+	addKey := func(k string) {
+		k = strings.TrimSpace(k)
+		if k != "" && !seen[k] && !strings.Contains(k, "fallback_key") && !strings.Contains(k, "free_key") {
+			seen[k] = true
 			pool = append(pool, k)
 		}
 	}
+
+	if raw := os.Getenv(envVarKeys); raw != "" {
+		for _, k := range strings.Split(raw, ",") {
+			addKey(k)
+		}
+	}
+	if raw := os.Getenv(envVarSingle); raw != "" {
+		for _, k := range strings.Split(raw, ",") {
+			addKey(k)
+		}
+	}
+	for _, k := range hardcodedPool {
+		addKey(k)
+	}
+
 	return pool
 }
 
