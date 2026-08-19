@@ -150,7 +150,7 @@ func isCatalogDiscovery(s string) bool {
 }
 
 func isOutOfCatalogRequest(s string) bool {
-	matches := []string{"market survey", "web design", "website", "software app", "graphics design", "marketing campaign", "consultancy", "non catalog"}
+	matches := []string{"market survey", "market check", "market search", "web design", "website", "software app", "graphics design", "marketing campaign", "consultancy", "non catalog", "custom order"}
 	for _, m := range matches {
 		if strings.Contains(s, m) {
 			return true

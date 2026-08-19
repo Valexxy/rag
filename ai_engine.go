@@ -169,11 +169,15 @@ Latest Customer Query: %s`, businessName, industry, address, catalogStr, txSumma
 
 func SynthesizeLocalContextualReply(query, phone, businessName string) string {
 	lower := strings.ToLower(query)
-	if strings.Contains(lower, "survey") || strings.Contains(lower, "custom") || strings.Contains(lower, "service") {
-		return fmt.Sprintf("💼 *[SPECIALIZED STORE CAPABILITIES — %s]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nWe specialize in *Solar Power Systems, High-Capacity Power Banks, Generators, Food Staples, and Gold Investment Bullion*.\n\nFor custom business inquiries, corporate partnerships, or custom bulk orders, our Store Manager is available to assist you directly!\n\n📲 *Chat Manager Directly:* https://wa.me/2348072015725\n📞 *Direct Call Line:* +234 807 201 5725\n\nHow else may I assist your product order today?", businessName)
+	if strings.Contains(lower, "survey") || strings.Contains(lower, "custom") || strings.Contains(lower, "service") || strings.Contains(lower, "market") || strings.Contains(lower, "check") || strings.Contains(lower, "sourcing") {
+		return fmt.Sprintf("💼 *[SPECIALIZED STORE CAPABILITIES — %s]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nWe specialize in *Solar Power Systems, High-Capacity Power Banks, Generators, Food Staples, and Gold Investment Bullion*.\n\nFor custom market checks, corporate partnerships, or custom bulk sourcing, our Store Manager is available to assist you directly!\n\n📲 *Chat Manager Directly:* https://wa.me/2348072015725\n📞 *Direct Call Line:* +234 807 201 5725\n\nHow else may I assist your product order today?", businessName)
 	}
 
-	return fmt.Sprintf("Thank you for contacting %s! We are operational and ready to process your order for Solar Systems, Generators, Power Banks, and Bullion. How can we serve you today?", businessName)
+	if strings.Contains(lower, "how") || strings.Contains(lower, "what") || strings.Contains(lower, "help") || strings.Contains(lower, "can you") {
+		return fmt.Sprintf("Hello! 😊 %s is open and ready to assist you today. We supply Solar Panels, Generators, Inverters, Power Banks, Rice, and Gold Bullion across Nigeria.\n\nWhat item or price quote can I check for you?", businessName)
+	}
+
+	return fmt.Sprintf("Hello! 😊 How can I help you with your order at %s today?", businessName)
 }
 
 
