@@ -92,6 +92,7 @@ func main() {
 	http.HandleFunc("/pair-submit", pairSubmitHandler)
 	http.HandleFunc("/api/v1/pair-code", pairCodeJSONHandler)
 	http.HandleFunc("/api/catchup", catchupHandler)
+	http.HandleFunc("/webhook", metaWebhookHandler)
 	http.HandleFunc("/webhook/meta", metaWebhookHandler)
 	http.HandleFunc("/webhook/evolution", metaWebhookHandler)
 	http.HandleFunc("/webhook/monnify", monnifyWebhookHandler)
