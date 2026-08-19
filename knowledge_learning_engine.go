@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"log"
+	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -146,3 +148,27 @@ func (k *AutonomousKnowledgeEngine) GetDynamicStoreCatalog(businessName string, 
 	sb.WriteString("Reply `#buy <id>` (e.g. `#buy 2`) to order any item immediately!")
 	return sb.String()
 }
+
+func MakeSupabaseRPCRequest(table, jsonPayload string) {
+	if supabaseURL == "" || supabaseKey == "" {
+		return
+	}
+
+	url := fmt.Sprintf("%s/rest/v1/%s", strings.TrimRight(supabaseURL, "/"), table)
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer([]byte(jsonPayload)))
+	if err != nil {
+		return
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("apikey", supabaseKey)
+	req.Header.Set("Authorization", "Bearer "+supabaseKey)
+	req.Header.Set("Prefer", "return=minimal")
+
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Do(req)
+	if err == nil && resp != nil {
+		resp.Body.Close()
+	}
+}
+
