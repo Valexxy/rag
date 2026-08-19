@@ -37,6 +37,11 @@ func (n *LocalNLUEngine) ResolveLocalNLU(query, phone, profileName, businessName
 		}
 	}
 
+	// 0. 🧠 DYNAMIC KNOWLEDGE ENGINE CHECK (Learns & grows from Store Manager & Customer Chats)
+	if learnedAnswer, found := globalKnowledgeEngine.QueryKnowledgeBase(businessName, query); found {
+		return NLUSatchMatch{Matched: true, IntentCode: "LEARNED_KNOWLEDGE_BASE_HIT", ResponseMsg: learnedAnswer}
+	}
+
 	timeOfDay := "day"
 	hour := time.Now().Hour()
 	switch {
@@ -60,11 +65,12 @@ func (n *LocalNLUEngine) ResolveLocalNLU(query, phone, profileName, businessName
 		return NLUSatchMatch{Matched: true, IntentCode: "GREETING_SMALLTALK", ResponseMsg: greetings[idx]}
 	}
 
-	// 2. 🛍️ CATALOG & PRODUCT DISCOVERY ("what do you sell today", "what products do you have", "show me catalog")
+	// 2. 🛍️ DYNAMIC CATALOG & PRODUCT DISCOVERY (0 HARDCODING — Pulled Live from Database)
 	if isCatalogDiscovery(lower) {
-		msg := fmt.Sprintf("🛍️ *[LIVE PRODUCT CATEGORIES & STOCK — %s]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n%s\n\n⚡ *Solar Systems & Inverters:*\n  • 550W Monocrystalline Panels — ₦120,000\n  • 1.5kVA Dual Solar Generator — ₦185,000\n  • 3.5kVA Hybrid Inverter System — ₦340,000\n\n🔋 *Portable Power:*\n  • 20,000 mAh Solar Fast-Charging Power Bank — ₦18,500\n\n🌾 *Food & Commodities:*\n  • 50kg Premium White Rice Bag — ₦60,000\n\n🥇 *Assets & Investments:*\n  • 24K Gold Bar Bullion (1-Gram) — ₦68,500\n\nReply `#buy <id>` (e.g., `#buy 2`) to order, or reply `#catalog` for photos!", businessName, locTag)
+		msg := globalKnowledgeEngine.GetDynamicStoreCatalog(businessName, custLoc)
 		return NLUSatchMatch{Matched: true, IntentCode: "CATALOG_DISCOVERY", ResponseMsg: msg}
 	}
+
 
 	// 3. 🛠️ OUT-OF-CATALOG / SERVICE REQUESTS ("can you do a market survey for me", "web design", "custom service")
 	if isOutOfCatalogRequest(lower) {

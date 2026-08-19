@@ -562,9 +562,24 @@ Type any hashtag command above to trigger instantly!`
 		msgText := strings.TrimSpace(sub[1])
 
 		d.CancelManagerCallAlarm(targetPhone)
+
+		// 🧠 AUTONOMOUS SELF-LEARNING ENGINE: Learn from Manager Reply for future customers!
+		turns := d.GetTurns(targetPhone)
+		var lastCustQ string
+		for i := len(turns) - 1; i >= 0; i-- {
+			if turns[i].Role == "user" {
+				lastCustQ = turns[i].Content
+				break
+			}
+		}
+		if lastCustQ != "" {
+			globalKnowledgeEngine.LearnFromManagerReply("Teeslux Global Electronics & Solar", lastCustQ, msgText)
+		}
+
 		replyPayload := fmt.Sprintf("💬 *[Store Manager]:* %s\n\n📞 *Call Manager:* tel:+%s\n💬 *Chat Manager:* https://wa.me/%s", msgText, senderPhone, senderPhone)
 		globalWhatsAppEngine.SendMessage("sovereign-ai-master", targetPhone, replyPayload)
-		return true, fmt.Sprintf("✅ Message delivered to customer `%s` (Call Alarm Disarmed).", targetPhone)
+		return true, fmt.Sprintf("✅ Message delivered to customer `%s` (Call Alarm Disarmed & AI Learned Answer).", targetPhone)
+
 
 
 	case "#mute":
