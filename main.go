@@ -1202,8 +1202,8 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 			globalSessionTracker.MarkGreeted(senderPhone)
 		}
 
-		taggedReply := fmt.Sprintf("🤖 *[Bot Assistant]:*\n%s", finalReply)
-		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, taggedReply)
+		// Send natural humanized message with 0 robotic tags
+		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, finalReply)
 		globalDialogueEngine.AddTurn(senderPhone, "assistant", finalReply)
 
 	}

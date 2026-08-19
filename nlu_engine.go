@@ -53,8 +53,12 @@ func (n *LocalNLUEngine) ResolveLocalNLU(query, phone, profileName, businessName
 		timeOfDay = "evening"
 	}
 
-	// 1. 🤝 GREETINGS & SMALL TALK ("hello how is work", "good morning", "hi", "how are you")
+	// 1. 🤝 GREETINGS & SMALL TALK ("hello how is work", "going fine and yours", "good morning", "hi", "how are you")
 	if isSmallTalk(lower) {
+		if strings.Contains(lower, "yours") || strings.Contains(lower, "fine") || strings.Contains(lower, "good") || strings.Contains(lower, "well") {
+			return NLUSatchMatch{Matched: true, IntentCode: "GREETING_SMALLTALK", ResponseMsg: fmt.Sprintf("Everything is going great on my end, thank you! 😊 %s is open and operating at full capacity. What can I get for you today?", businessName)}
+		}
+
 		greetings := []string{
 			fmt.Sprintf("Hello %s! 👋 Good %s!\n%s\nWe are operating at full capacity serving clients across Nigeria today. How may I assist your solar, electronics, or investment needs?", nameStr, timeOfDay, locTag),
 			fmt.Sprintf("Good %s %s! 🌟 Hope your day is going smoothly.\n%s\n%s is open and ready to take your order. What can we get for you today?", timeOfDay, nameStr, locTag, businessName),
@@ -64,6 +68,7 @@ func (n *LocalNLUEngine) ResolveLocalNLU(query, phone, profileName, businessName
 		idx := int(phoneHash(phone)+uint64(hour)) % len(greetings)
 		return NLUSatchMatch{Matched: true, IntentCode: "GREETING_SMALLTALK", ResponseMsg: greetings[idx]}
 	}
+
 
 	// 2. 🛍️ DYNAMIC CATALOG & PRODUCT DISCOVERY (0 HARDCODING — Pulled Live from Database)
 	if isCatalogDiscovery(lower) {
@@ -125,7 +130,7 @@ func (n *LocalNLUEngine) ResolveLocalNLU(query, phone, profileName, businessName
 }
 
 func isSmallTalk(s string) bool {
-	matches := []string{"hello", "hi", "hey", "good morning", "good afternoon", "good evening", "how is work", "how are you", "howdy", "wassup", "sup"}
+	matches := []string{"hello", "hi", "hey", "good morning", "good afternoon", "good evening", "how is work", "how are you", "howdy", "wassup", "sup", "going fine", "fine and yours", "doing well", "all good", "going well", "good day", "how far", "fine thank you", "good thanks", "doing great", "blessed", "fine"}
 	for _, m := range matches {
 		if s == m || strings.HasPrefix(s, m+" ") || strings.HasSuffix(s, " "+m) || strings.Contains(s, " "+m+" ") {
 			return true
