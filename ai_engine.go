@@ -261,31 +261,50 @@ func (ai *AIEngine) callGroq(prompt string) string {
 			continue
 		}
 
-		url := "https://api.groq.com/openai/v1/chat/completions"
-		payload := map[string]interface{}{
-			"model": "llama-3.3-70b-versatile",
-			"messages": []map[string]string{
-				{"role": "user", "content": prompt},
-			},
-			"max_tokens": 400,
-		}
+		models := []string{"llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768", "gemma2-9b-it"}
+		for _, modelName := range models {
+			url := "https://api.groq.com/openai/v1/chat/completions"
+			payload := map[string]interface{}{
+				"model": modelName,
+				"messages": []map[string]string{
+					{"role": "user", "content": prompt},
+				},
+				"max_tokens": 400,
+			}
 
-		jsonBytes, _ := json.Marshal(payload)
-		req, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonBytes))
-		req.Header.Set("Authorization", "Bearer "+apiKey)
-		req.Header.Set("Content-Type", "application/json")
+			jsonBytes, _ := json.Marshal(payload)
+			req, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonBytes))
+			req.Header.Set("Authorization", "Bearer "+apiKey)
+			req.Header.Set("Content-Type", "application/json")
 
-		client := &http.Client{Timeout: 5 * time.Second}
-		resp, err := client.Do(req)
-		if err != nil {
-			log.Printf("[AI Key Rotator] Groq key #%d failed (%v). Hot-swapping to next key...", idx+1, err)
-			continue
-		}
+			client := &http.Client{Timeout: 5 * time.Second}
+			resp, err := client.Do(req)
+			if err != nil {
+				log.Printf("[AI Key Rotator] Groq model %s with key #%d failed (%v). Trying next...", modelName, idx+1, err)
+				continue
+			}
 
-		if resp.StatusCode != http.StatusOK {
+			if resp.StatusCode != http.StatusOK {
+				resp.Body.Close()
+				log.Printf("[AI Key Rotator] Groq model %s with key #%d returned HTTP %d. Trying next...", modelName, idx+1, resp.StatusCode)
+				continue
+			}
+
+			body, _ := io.ReadAll(resp.Body)
 			resp.Body.Close()
-			log.Printf("[AI Key Rotator] Groq key #%d returned HTTP %d. Hot-swapping to next key...", idx+1, resp.StatusCode)
-			continue
+
+			var res map[string]interface{}
+			if err := json.Unmarshal(body, &res); err == nil {
+				if choices, ok := res["choices"].([]interface{}); ok && len(choices) > 0 {
+					choice := choices[0].(map[string]interface{})
+					if message, ok := choice["message"].(map[string]interface{}); ok {
+						if content, ok := message["content"].(string); ok && strings.TrimSpace(content) != "" {
+							log.Printf("[AI Key Rotator] Groq Model %s (Key #%d) responded successfully!", modelName, idx+1)
+							return strings.TrimSpace(content)
+						}
+					}
+				}
+			}
 		}
 
 		body, _ := io.ReadAll(resp.Body)
