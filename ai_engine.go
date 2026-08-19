@@ -151,8 +151,18 @@ Latest Customer Query: %s`, businessName, industry, address, catalogStr, txSumma
 		return "📋 *[TEESLUX LIVE CATALOG & PRICE LIST]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n1️⃣ 550W Monocrystalline Solar Panel — ₦120,000\n2️⃣ 20,000 mAh Solar Power Bank — ₦18,500\n3️⃣ 1.5kVA Dual Solar Generator — ₦185,000\n4️⃣ 50kg Premium White Rice Bag — ₦60,000\n5️⃣ 24K Gold Bar Bullion (1-Gram) — ₦68,500\n6️⃣ 3.5kVA Hybrid Solar Inverter System — ₦340,000\n\nReply `#buy <id>` (e.g. `#buy 2`) to order any item!"
 	}
 
-	return fmt.Sprintf("Welcome to %s! How may I assist your order for Solar Systems, Generators, Power Banks, or Bullion today?", businessName)
+	return SynthesizeLocalContextualReply(query, phone, businessName)
 }
+
+func SynthesizeLocalContextualReply(query, phone, businessName string) string {
+	lower := strings.ToLower(query)
+	if strings.Contains(lower, "survey") || strings.Contains(lower, "custom") || strings.Contains(lower, "service") {
+		return fmt.Sprintf("💼 *[SPECIALIZED STORE CAPABILITIES — %s]*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nWe specialize in *Solar Power Systems, High-Capacity Power Banks, Generators, Food Staples, and Gold Investment Bullion*.\n\nFor custom business inquiries, corporate partnerships, or custom bulk orders, our Store Manager is available to assist you directly!\n\n📲 *Chat Manager Directly:* https://wa.me/2348072015725\n📞 *Direct Call Line:* +234 807 201 5725\n\nHow else may I assist your product order today?", businessName)
+	}
+
+	return fmt.Sprintf("Thank you for contacting %s! We are operational and ready to process your order for Solar Systems, Generators, Power Banks, and Bullion. How can we serve you today?", businessName)
+}
+
 
 
 

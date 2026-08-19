@@ -939,9 +939,20 @@ func dispatchIncomingMessage(senderPhone, messageText, profileName string) {
 
 	lower := strings.ToLower(messageText)
 
+	// ⚡ TIER 0: ZERO-COST LOCAL NLU RESOLUTION ENGINE (<1ms SLA, $0 COST, 0 REPETITIVE CARDS)
+	nluMatch := globalNLUEngine.ResolveLocalNLU(messageText, senderPhone, profileName, "Teeslux Global Electronics & Solar", custLoc)
+	if nluMatch.Matched {
+		log.Printf("[Tier 0 Local NLU Engine] Sub-1ms Instant Resolution (%s) for %s (0 LLM credits spent)", nluMatch.IntentCode, senderPhone)
+		globalWhatsAppEngine.SendMessage("sovereign-ai-master", senderPhone, nluMatch.ResponseMsg)
+		globalDialogueEngine.AddTurn(senderPhone, "user", messageText)
+		globalDialogueEngine.AddTurn(senderPhone, "assistant", nluMatch.ResponseMsg)
+		return
+	}
+
 	// 🧠 PURE AI CONTEXTUAL SEMANTIC INTENT REASONER (0 HARDCODED PHRASES)
 	history := globalDialogueEngine.GetTurns(senderPhone)
 	intent := ClassifyCustomerIntentWithPureAI(messageText, history)
+
 
 
 	// ALWAYS trigger human manager call alarm whenever customer asks for human manager or owner!
