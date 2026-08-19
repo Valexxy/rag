@@ -101,7 +101,7 @@ Latest Customer Query: %s`, businessName, industry, address, catalogStr, txSumma
 
 
 
-	// 5-Tier AI Model Failover Rotator: Groq -> Cerebras -> Gemini 2.0 Flash -> OpenRouter
+	// 6-Tier Free AI Model Failover Rotator: Groq -> Cerebras -> Gemini 2.0 -> Cloudflare -> SambaNova -> OpenRouter
 	reply := ai.callGroq(prompt)
 	if reply != "" {
 		log.Printf("[AI Rotator] Tier 1 Groq Llama-3.3 70B responded successfully!")
@@ -120,11 +120,24 @@ Latest Customer Query: %s`, businessName, industry, address, catalogStr, txSumma
 		return reply
 	}
 
-	reply = ai.callOpenRouter(prompt)
+	reply = ai.callCloudflare(prompt)
 	if reply != "" {
-		log.Printf("[AI Rotator] Tier 4 OpenRouter responded successfully!")
+		log.Printf("[AI Rotator] Tier 4 Cloudflare Workers AI responded successfully!")
 		return reply
 	}
+
+	reply = ai.callSambaNova(prompt)
+	if reply != "" {
+		log.Printf("[AI Rotator] Tier 5 SambaNova Llama 405B responded successfully!")
+		return reply
+	}
+
+	reply = ai.callOpenRouter(prompt)
+	if reply != "" {
+		log.Printf("[AI Rotator] Tier 6 OpenRouter responded successfully!")
+		return reply
+	}
+
 
 	lowerQ := strings.ToLower(query)
 
@@ -482,5 +495,95 @@ func (ai *AIEngine) callOpenRouter(prompt string) string {
 	}
 	return ""
 }
+
+func (ai *AIEngine) callCloudflare(prompt string) string {
+	accountID := os.Getenv("CLOUDFLARE_ACCOUNT_ID")
+	apiToken := os.Getenv("CLOUDFLARE_API_TOKEN")
+	if accountID == "" || apiToken == "" {
+		return ""
+	}
+
+	url := fmt.Sprintf("https://api.cloudflare.com/client/v4/accounts/%s/ai/run/@cf/meta/llama-3.1-8b-instruct", accountID)
+	payload := map[string]interface{}{
+		"messages": []map[string]string{
+			{"role": "user", "content": prompt},
+		},
+		"max_tokens": 400,
+	}
+
+	jsonBytes, _ := json.Marshal(payload)
+	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonBytes))
+	req.Header.Set("Authorization", "Bearer "+apiToken)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return ""
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return ""
+	}
+
+	body, _ := io.ReadAll(resp.Body)
+	var res map[string]interface{}
+	if err := json.Unmarshal(body, &res); err == nil {
+		if result, ok := res["result"].(map[string]interface{}); ok {
+			if response, ok := result["response"].(string); ok && strings.TrimSpace(response) != "" {
+				return strings.TrimSpace(response)
+			}
+		}
+	}
+	return ""
+}
+
+func (ai *AIEngine) callSambaNova(prompt string) string {
+	apiKey := os.Getenv("SAMBANOVA_API_KEY")
+	if apiKey == "" {
+		return ""
+	}
+
+	url := "https://api.sambanova.ai/v1/chat/completions"
+	payload := map[string]interface{}{
+		"model": "Meta-Llama-3.1-405B-Instruct",
+		"messages": []map[string]string{
+			{"role": "user", "content": prompt},
+		},
+		"max_tokens": 400,
+	}
+
+	jsonBytes, _ := json.Marshal(payload)
+	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonBytes))
+	req.Header.Set("Authorization", "Bearer "+apiKey)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return ""
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return ""
+	}
+
+	body, _ := io.ReadAll(resp.Body)
+	var res map[string]interface{}
+	if err := json.Unmarshal(body, &res); err == nil {
+		if choices, ok := res["choices"].([]interface{}); ok && len(choices) > 0 {
+			choice := choices[0].(map[string]interface{})
+			if message, ok := choice["message"].(map[string]interface{}); ok {
+				if content, ok := message["content"].(string); ok && strings.TrimSpace(content) != "" {
+					return strings.TrimSpace(content)
+				}
+			}
+		}
+	}
+	return ""
+}
+
 
 
